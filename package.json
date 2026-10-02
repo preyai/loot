@@ -11,7 +11,8 @@
     "test": "vitest run",
     "update-bases": "node scripts/update-bases.mjs",
     "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1",
-    "update-names": "node scripts/update-names.mjs"
+    "update-names": "node scripts/update-names.mjs",
+    "update-uniques": "node scripts/update-uniques.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",

@@ -236,7 +236,7 @@ const ru = {
   'rules.dropLevel': 'ур. {n}',
   'rules.worn': 'носят {share}',
   'rules.offerHint': 'Обычные предметы на трейде, по одному лоту на продавца',
-  'rules.uniqueHint': 'Самый дорогой уник на этой базе',
+  'rules.uniqueHint': 'Самый дорогой уник на этой базе, который можно получить сферой удачи',
   'rules.offer': '{kind}: от {price}',
   'rules.sellers': ' · продавцов: {n}',
   'rules.trade': 'трейд',
@@ -319,6 +319,9 @@ const ru = {
   'unique.listings': 'Лотов: {n}',
   'unique.tooFew': ' — слишком мало, цене нельзя верить',
   'unique.variant': 'Один из вариантов',
+  'unique.chance.yes': 'Сфера удачи: можно получить',
+  'unique.chance.no': 'Сфера удачи: не получить — уник из особого источника',
+  'unique.chance.unknown': 'Сфера удачи: нет данных',
   'unique.modsNote': 'Свойства показаны на английском: в источнике данных перевода нет.',
 } as const
 
@@ -554,7 +557,7 @@ const en: Record<Key, string> = {
   'rules.dropLevel': 'lvl {n}',
   'rules.worn': 'worn by {share}',
   'rules.offerHint': 'Normal items on trade, one listing per seller',
-  'rules.uniqueHint': 'The most expensive unique on this base',
+  'rules.uniqueHint': 'The most expensive unique on this base that an Orb of Chance can give',
   'rules.offer': '{kind}: from {price}',
   'rules.sellers': ' · sellers: {n}',
   'rules.trade': 'trade',
@@ -637,6 +640,9 @@ const en: Record<Key, string> = {
   'unique.listings': 'Listings: {n}',
   'unique.tooFew': ' — too few, the price cannot be trusted',
   'unique.variant': 'One of the variants',
+  'unique.chance.yes': 'Orb of Chance: can be chanced',
+  'unique.chance.no': 'Orb of Chance: cannot be chanced — drop-restricted',
+  'unique.chance.unknown': 'Orb of Chance: no data',
   'unique.modsNote': '',
 }
 

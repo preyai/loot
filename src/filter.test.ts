@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chancingBases, chancingRule, topUnique, uniquesByBase } from './chancing'
+import { chanceOf, chancingBases, chancingRule, dropSource, topUnique, uniquesByBase } from './chancing'
 import { DEFAULT_CONFIG } from './defaults'
 import { baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, moveItem, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
@@ -303,6 +303,24 @@ describe('шансинг', () => {
     expect(chancingBases(all, 1)).toEqual(['Utility Belt', 'Heavy Belt'])
     expect(chancingBases(all, 100)).toEqual(['Utility Belt'])
     expect(chancingBases(all, 1000)).toEqual([])
+  })
+
+  it('уник из особого источника сферой удачи не получить — база берётся по шансящемуся', () => {
+    expect(chanceOf('Mageblood')).toBe('yes')
+    expect(chanceOf('Temporalis')).toBe('no')
+    expect(dropSource('Temporalis')).toContain('Zarokh')
+    expect(dropSource('Mageblood')).toBeNull()
+    // Уник, которого вики не знает: ни «можно», ни «нельзя».
+    expect(chanceOf('Cheap')).toBe('unknown')
+    expect(chanceOf('constructor')).toBe('unknown')
+
+    const boss = base('Heavy Belt', [unique('Temporalis', 6900), unique('Headhunter', 36)])
+    expect(topUnique(boss)?.name).toBe('Headhunter')
+    expect(chancingBases([boss], 100)).toEqual([])
+    expect(chancingBases([boss], 10)).toEqual(['Heavy Belt'])
+    const bossOnly = base('Utility Belt', [unique('Temporalis', 6900), unique('Cheap', 500)])
+    expect(topUnique(bossOnly)).toBeNull()
+    expect(chancingBases([bossOnly], 1)).toEqual([])
   })
 
   it('уник без надёжной цены базу под шансинг не делает', () => {

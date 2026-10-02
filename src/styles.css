@@ -715,6 +715,27 @@ main {
   color: var(--danger);
 }
 
+.unique-card-chance {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.unique-card-chance .count {
+  display: block;
+}
+
+.unique-card-chance--yes {
+  color: #8fbf6a;
+}
+
+.unique-card-chance--no {
+  color: #d0705f;
+}
+
+.unique-card-chance--unknown {
+  color: var(--muted);
+}
+
 .unique-card-links {
   display: flex;
   gap: 14px;

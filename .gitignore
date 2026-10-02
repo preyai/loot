@@ -2,7 +2,7 @@ node_modules
 dist
 dist-server
 # цены баз с трейда — локальные данные, обновляются вручную
-data
+/data
 *.log
 # адрес сервера для npm run deploy
 deploy.config.json

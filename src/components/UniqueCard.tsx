@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { uniqueTradeUrl, wikiUrl } from '../bases'
+import { chanceOf, dropSource } from '../chancing'
+import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
 import { formatPrice } from '../tiering'
 import type { Currency, MarketSnapshot, ModLine, UniqueInfo } from '../types'
@@ -38,6 +40,7 @@ export function UniqueCard({ unique, base, league, rates, currency, onClose }: P
 
   const change = unique.divine !== null && unique.weekChange !== null ? unique.weekChange : null
   const variant = t('unique.variant')
+  const chance = chanceOf(unique.name)
   const plain = (lines: string[]) => lines.map((text) => ({ text }))
   const hasMods = unique.properties.length + unique.implicits.length + unique.explicits.length + unique.skills.length > 0
 
@@ -76,6 +79,11 @@ export function UniqueCard({ unique, base, league, rates, currency, onClose }: P
             <div className="count">
               {t('unique.listings', { n: unique.listings })}
               {unique.divine === null && t('unique.tooFew')}
+            </div>
+            <div className={`unique-card-chance unique-card-chance--${chance}`}>
+              {t(keyOf('unique.chance', chance))}
+              {/* Источник — текст вики, перевода у него нет. */}
+              {chance === 'no' && <span className="count">{dropSource(unique.name)}</span>}
             </div>
             <div className="unique-card-links">
               <a href={wikiUrl(unique.name, lang)} target="_blank" rel="noreferrer">

@@ -75,7 +75,7 @@ interface BaseContext {
   shares: Shares | null
   scan: ExceptionalScan | null
   league: string | null
-  /** Самый дорогой уник каждой базы и его цена на языке интерфейса — повод поднять белую базу под шансинг. */
+  /** Самый дорогой шансящийся уник каждой базы и его цена на языке интерфейса — повод поднять белую базу под шансинг. */
   uniques: Map<string, UniqueInfo>
   priceOf: (unique: UniqueInfo) => string
 }

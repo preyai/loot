@@ -1,4 +1,5 @@
 import catalog from './data/bases.json'
+import { keyOf, type Lang, type T } from './i18n'
 import { RARITIES, type BaseRule } from './types'
 
 export type BaseGroup = 'weapon' | 'armour' | 'jewellery'
@@ -34,8 +35,9 @@ export function baseIconUrl(name: string): string | null {
   return icon ? `${ICON_HOST}/${icon}.webp` : null
 }
 
-/** Страница предмета (базы или уника) в справочнике poe2db. */
-export const baseWikiUrl = (name: string) => `https://poe2db.tw/ru/${encodeURIComponent(name.replaceAll(' ', '_'))}`
+/** Страница предмета (базы или уника) в справочнике poe2db на языке интерфейса. */
+export const wikiUrl = (name: string, lang: Lang) =>
+  `https://poe2db.tw/${lang === 'ru' ? 'ru' : 'us'}/${encodeURIComponent(name.replaceAll(' ', '_'))}`
 
 /** Поиск уника на официальном трейде: лоты с мгновенным выкупом, от дешёвых. */
 export function uniqueTradeUrl(name: string, base: string, league: string): string {
@@ -76,11 +78,8 @@ export function baseTradeUrl(name: string, league: string, rule: BaseRule): stri
   return `https://www.pathofexile.com/trade2/search/poe2/${encodeURIComponent(league)}?q=${query}`
 }
 
-export const BASE_GROUPS: { id: BaseGroup; title: string }[] = [
-  { id: 'weapon', title: 'Оружие' },
-  { id: 'armour', title: 'Броня' },
-  { id: 'jewellery', title: 'Бижутерия' },
-]
+/** Названия групп — в словаре: «baseGroup.<id>». */
+export const BASE_GROUPS: BaseGroup[] = ['weapon', 'armour', 'jewellery']
 
 export const classNames = (...groups: BaseGroup[]) => BASE_CLASSES.filter((c) => groups.includes(c.group)).map((c) => c.name)
 
@@ -118,27 +117,25 @@ export const EMPTY_RULE: Omit<BaseRule, 'id' | 'name'> = {
   tier: 'C',
 }
 
-const RARITY_WORDS = { Normal: 'обычные', Magic: 'магические', Rare: 'редкие' } as const
-
 /** Правило одной строкой, как его прочёл бы человек. */
-export function describeRule(rule: BaseRule): string {
+export function describeRule(rule: BaseRule, t: T): string {
   const all = rule.rarities.length === 0 || rule.rarities.length === RARITIES.length
   const scope = rule.bases.length
-    ? `баз: ${rule.bases.length}`
+    ? t('desc.bases', { n: rule.bases.length })
     : rule.classes.length === 0
-      ? 'классы не выбраны'
+      ? t('desc.noClasses')
       : rule.classes.length <= 3
-        ? rule.classes.join(', ')
-        : `классов: ${rule.classes.length}`
+        ? rule.classes.map((name) => t(keyOf('class', name))).join(', ')
+        : t('desc.classes', { n: rule.classes.length })
   return [
-    all ? 'любая редкость' : rule.rarities.map((r) => RARITY_WORDS[r]).join(' и '),
+    all ? t('desc.anyRarity') : rule.rarities.map((r) => t(keyOf('rarityLower', r))).join(t('desc.and')),
     scope,
-    rule.minItemLevel > 0 && `ур. предмета ${rule.minItemLevel}+`,
-    rule.minQuality > 0 && `качество ${rule.minQuality}%+`,
-    rule.minSockets > 0 && `гнёзд ${rule.minSockets}+`,
-    rule.minUnidentifiedTier > 0 && `ступень свойств ${rule.minUnidentifiedTier}+`,
-    rule.excludeCorrupted && 'не осквернённые',
-    rule.minAreaLevel > 0 && `с уровня области ${rule.minAreaLevel}`,
+    rule.minItemLevel > 0 && t('desc.itemLevel', { n: rule.minItemLevel }),
+    rule.minQuality > 0 && t('desc.quality', { n: rule.minQuality }),
+    rule.minSockets > 0 && t('desc.sockets', { n: rule.minSockets }),
+    rule.minUnidentifiedTier > 0 && t('desc.unidentified', { n: rule.minUnidentifiedTier }),
+    rule.excludeCorrupted && t('desc.notCorrupted'),
+    rule.minAreaLevel > 0 && t('desc.area', { n: rule.minAreaLevel }),
   ]
     .filter(Boolean)
     .join(' · ')
@@ -153,11 +150,11 @@ export function popularBases(classes: string[], shares: Record<string, number>, 
   )
 }
 
-export function popularRule(shares: Record<string, number>): Omit<BaseRule, 'id'> {
+export function popularRule(shares: Record<string, number>, t: T): Omit<BaseRule, 'id'> {
   const classes = BASE_CLASSES.filter((c) => c.bases.some((b) => (shares[b.name] ?? 0) >= POPULAR_SHARE)).map((c) => c.name)
   return {
     ...EMPTY_RULE,
-    name: 'Популярные базы, ур. предмета 82+',
+    name: t('template.popular'),
     classes,
     bases: popularBases(classes, shares, POPULAR_SHARE),
     rarities: ['Normal', 'Magic'],
@@ -165,12 +162,15 @@ export function popularRule(shares: Record<string, number>): Omit<BaseRule, 'id'
   }
 }
 
-export const RULE_TEMPLATES: { title: string; make: () => Omit<BaseRule, 'id'> }[] = [
+type TemplateKey = 'template.top' | 'template.quality' | 'template.sockets' | 'template.jewellery' | 'template.empty'
+
+/** Шаблоны отдельных правил; название правила создаётся на языке интерфейса в момент добавления. */
+export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule, 'id'> }[] = [
   {
-    title: 'Топовые базы, ур. предмета 82+',
-    make: () => ({
+    title: 'template.top',
+    make: (t) => ({
       ...EMPTY_RULE,
-      name: 'Топовые базы, ур. предмета 82+',
+      name: t('template.top'),
       classes: GEAR_CLASSES,
       bases: topBases(GEAR_CLASSES),
       rarities: ['Normal', 'Magic'],
@@ -178,16 +178,16 @@ export const RULE_TEMPLATES: { title: string; make: () => Omit<BaseRule, 'id'> }
     }),
   },
   {
-    title: 'Качество 20%+',
-    make: () => ({ ...EMPTY_RULE, name: 'Качество 20%+', classes: GEAR_CLASSES, minQuality: 20 }),
+    title: 'template.quality',
+    make: (t) => ({ ...EMPTY_RULE, name: t('template.quality'), classes: GEAR_CLASSES, minQuality: 20 }),
   },
   {
-    title: 'Гнёзда: 2+',
-    make: () => ({ ...EMPTY_RULE, name: 'Гнёзда: 2+', classes: GEAR_CLASSES, minSockets: 2, tier: 'D' }),
+    title: 'template.sockets',
+    make: (t) => ({ ...EMPTY_RULE, name: t('template.sockets'), classes: GEAR_CLASSES, minSockets: 2, tier: 'D' }),
   },
   {
-    title: 'Редкая бижутерия',
-    make: () => ({ ...EMPTY_RULE, name: 'Редкая бижутерия', classes: classNames('jewellery'), rarities: ['Rare'] }),
+    title: 'template.jewellery',
+    make: (t) => ({ ...EMPTY_RULE, name: t('template.jewellery'), classes: classNames('jewellery'), rarities: ['Rare'] }),
   },
-  { title: 'Пустое правило', make: () => ({ ...EMPTY_RULE, name: 'Новое правило' }) },
+  { title: 'template.empty', make: (t) => ({ ...EMPTY_RULE, name: t('template.emptyName') }) },
 ]

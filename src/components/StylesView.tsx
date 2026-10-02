@@ -1,14 +1,7 @@
-import {
-  CURRENCIES,
-  DEFAULT_CONFIG,
-  EFFECT_COLORS,
-  FONT_SIZE,
-  ICON_SHAPES,
-  SOUND_IDS,
-  SOUND_VOLUME_MAX,
-  TIER_TITLES,
-} from '../defaults'
 import { useState } from 'react'
+import { CURRENCIES, DEFAULT_CONFIG, EFFECT_COLORS, FONT_SIZE, ICON_SHAPES, SOUND_IDS, SOUND_VOLUME_MAX } from '../defaults'
+import { keyOf } from '../i18n'
+import { useI18n } from '../i18n-react'
 import { playAlertSound } from '../sound'
 import type { UpdateConfig } from '../store'
 import { convertThresholds, perDivine } from '../tiering'
@@ -24,7 +17,9 @@ const fromHex = (hex: string, a: number): Rgba => ({
   a,
 })
 const OPAQUE_BLACK: Rgba = { r: 0, g: 0, b: 0, a: 255 }
-const ICON_SIZES = ['Крупный', 'Средний', 'Мелкий']
+const ICON_SIZES = [0, 1, 2] as const
+/** Предмет для образца плашки: его знают все, и название есть на обоих языках. */
+const SAMPLE_ITEM = 'Divine Orb'
 
 function ColorField(props: { label: string; value: Rgba; onChange: (v: Rgba) => void }): React.ReactNode
 function ColorField(props: { label: string; value: Rgba | null; onChange: (v: Rgba | null) => void; optional: true }): React.ReactNode
@@ -39,6 +34,7 @@ function ColorField({
   onChange: (v: Rgba) => void
   optional?: boolean
 }) {
+  const { t } = useI18n()
   const clear = onChange as (v: Rgba | null) => void
   return (
     <div className="field">
@@ -60,8 +56,8 @@ function ColorField({
             type="range"
             min={0}
             max={255}
-            aria-label={`${label}: непрозрачность`}
-            title="Непрозрачность"
+            aria-label={`${label}: ${t('styles.opacity')}`}
+            title={t('styles.opacity')}
             value={value.a}
             onChange={(e) => onChange({ ...value, a: Number(e.target.value) })}
           />
@@ -72,6 +68,7 @@ function ColorField({
 }
 
 function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onChange: (s: TierStyle) => void }) {
+  const { t, name } = useI18n()
   const set = <K extends keyof TierStyle>(key: K, value: TierStyle[K]) => onChange({ ...style, [key]: value })
   const [soundError, setSoundError] = useState(false)
   const listen = (soundId: number, volume: number) => {
@@ -81,17 +78,24 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
       if (!(e instanceof DOMException && e.name === 'AbortError')) setSoundError(true)
     })
   }
+  // В фильтр идут английские слова, на экране — перевод.
+  const colorOptions = EFFECT_COLORS.map((c) => (
+    <option key={c} value={c}>
+      {t(keyOf('color', c))}
+    </option>
+  ))
+
   return (
     <section className="tier-editor">
-      <h2>{TIER_TITLES[id]}</h2>
+      <h2>{t(keyOf('tier', id))}</h2>
 
       <div className="ground ground--wide">
-        <ItemLabel name="Divine Orb" style={style} />
+        <ItemLabel name={name(SAMPLE_ITEM)} style={style} />
       </div>
 
       <div className="fields">
         <div className="field">
-          <label htmlFor={`font-${id}`}>Размер шрифта: {style.fontSize}</label>
+          <label htmlFor={`font-${id}`}>{t('styles.fontSize', { size: style.fontSize })}</label>
           <input
             id={`font-${id}`}
             type="range"
@@ -101,9 +105,9 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
             onChange={(e) => set('fontSize', Number(e.target.value))}
           />
         </div>
-        <ColorField label="Текст" value={style.text} onChange={(v) => set('text', v)} />
-        <ColorField label="Рамка" optional value={style.border} onChange={(v) => set('border', v)} />
-        <ColorField label="Фон" optional value={style.background} onChange={(v) => set('background', v)} />
+        <ColorField label={t('styles.text')} value={style.text} onChange={(v) => set('text', v)} />
+        <ColorField label={t('styles.border')} optional value={style.border} onChange={(v) => set('border', v)} />
+        <ColorField label={t('styles.background')} optional value={style.background} onChange={(v) => set('background', v)} />
 
         <div className="field">
           <label className="check">
@@ -112,18 +116,18 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
               checked={style.sound !== null}
               onChange={(e) => set('sound', e.target.checked ? { id: 1, volume: SOUND_VOLUME_MAX } : null)}
             />
-            Звук
+            {t('styles.sound')}
           </label>
           {style.sound && (
             <>
               <select
-                aria-label="Номер звука"
+                aria-label={t('styles.soundNumber')}
                 value={style.sound.id}
                 onChange={(e) => {
-                  const id = Number(e.target.value)
-                  set('sound', { ...style.sound!, id })
+                  const soundId = Number(e.target.value)
+                  set('sound', { ...style.sound!, id: soundId })
                   // Звуки выбирают на слух: проигрываем сразу, не заставляя жать отдельную кнопку.
-                  listen(id, style.sound!.volume)
+                  listen(soundId, style.sound!.volume)
                 }}
               >
                 {SOUND_IDS.map((n) => (
@@ -136,20 +140,20 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
                 type="range"
                 min={0}
                 max={SOUND_VOLUME_MAX}
-                aria-label="Громкость"
-                title={`Громкость: ${style.sound.volume}`}
+                aria-label={t('styles.volume')}
+                title={`${t('styles.volume')}: ${style.sound.volume}`}
                 value={style.sound.volume}
                 onChange={(e) => set('sound', { ...style.sound!, volume: Number(e.target.value) })}
               />
               <button
                 className="sound-play"
-                aria-label={`Прослушать звук № ${style.sound.id}`}
-                title="Прослушать с выбранной громкостью"
+                aria-label={t('styles.listen', { n: style.sound.id })}
+                title={t('styles.listenHint')}
                 onClick={() => listen(style.sound!.id, style.sound!.volume)}
               >
                 ▶
               </button>
-              {soundError && <span className="note--error">Не удалось проиграть звук</span>}
+              {soundError && <span className="note--error">{t('styles.soundError')}</span>}
             </>
           )}
         </div>
@@ -161,18 +165,16 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
               checked={style.effect !== null}
               onChange={(e) => set('effect', e.target.checked ? { color: 'White', temp: false } : null)}
             />
-            Луч
+            {t('styles.beam')}
           </label>
           {style.effect && (
             <>
               <select
-                aria-label="Цвет луча"
+                aria-label={t('styles.beamColor')}
                 value={style.effect.color}
                 onChange={(e) => set('effect', { ...style.effect!, color: e.target.value })}
               >
-                {EFFECT_COLORS.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
+                {colorOptions}
               </select>
               <label className="check">
                 <input
@@ -180,7 +182,7 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
                   checked={style.effect.temp}
                   onChange={(e) => set('effect', { ...style.effect!, temp: e.target.checked })}
                 />
-                только при выпадении
+                {t('styles.beamTemp')}
               </label>
             </>
           )}
@@ -193,37 +195,37 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
               checked={style.icon !== null}
               onChange={(e) => set('icon', e.target.checked ? { size: 1, color: 'White', shape: 'Circle' } : null)}
             />
-            Значок на карте
+            {t('styles.icon')}
           </label>
           {style.icon && (
             <>
               <select
-                aria-label="Размер значка"
+                aria-label={t('styles.iconSize')}
                 value={style.icon.size}
                 onChange={(e) => set('icon', { ...style.icon!, size: Number(e.target.value) as 0 | 1 | 2 })}
               >
-                {ICON_SIZES.map((title, size) => (
+                {ICON_SIZES.map((size) => (
                   <option key={size} value={size}>
-                    {title}
+                    {t(keyOf('styles.size', size))}
                   </option>
                 ))}
               </select>
               <select
-                aria-label="Цвет значка"
+                aria-label={t('styles.iconColor')}
                 value={style.icon.color}
                 onChange={(e) => set('icon', { ...style.icon!, color: e.target.value })}
               >
-                {EFFECT_COLORS.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
+                {colorOptions}
               </select>
               <select
-                aria-label="Форма значка"
+                aria-label={t('styles.iconShape')}
                 value={style.icon.shape}
                 onChange={(e) => set('icon', { ...style.icon!, shape: e.target.value })}
               >
                 {ICON_SHAPES.map((s) => (
-                  <option key={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {t(keyOf('shape', s))}
+                  </option>
                 ))}
               </select>
             </>
@@ -242,34 +244,37 @@ interface Props {
 }
 
 export function StylesView({ config, update, rates }: Props) {
+  const { t, name } = useI18n()
   const unit = CURRENCIES[config.currency].short
-  const thresholdTiers = TIER_IDS.filter((t): t is Exclude<TierId, 'E'> => t !== 'E')
+  const thresholdTiers = TIER_IDS.filter((tier): tier is Exclude<TierId, 'E'> => tier !== 'E')
   const overrideCount = Object.keys(config.overrides).length
 
   return (
     <div>
       <header className="page-header">
-        <h1>Тиры и стили</h1>
+        <h1>{t('nav.styles')}</h1>
       </header>
 
       <section className="panel">
-        <h2>Пороги цен</h2>
+        <h2>{t('styles.thresholds')}</h2>
         <p className="note">
-          Предмет попадает в тир, если стоит не меньше порога. Цены — в {CURRENCIES[config.currency].title}
-          {rates && config.currency !== 'divine' && ` (сейчас 1 Divine ≈ ${Math.round(perDivine(config.currency, rates))} ${unit})`}.
-          Валюта выбирается вверху страницы. Всё, что дешевле D, уходит в E.
+          {t('styles.thresholdsNote', { currency: name(CURRENCIES[config.currency].title) })}
+          {rates &&
+            config.currency !== 'divine' &&
+            t('styles.rate', { value: Math.round(perDivine(config.currency, rates)), unit })}
+          . {t('styles.thresholdsNote2')}
         </p>
         <div className="thresholds">
-          {thresholdTiers.map((t) => (
-            <label key={t}>
-              {t} от
+          {thresholdTiers.map((tier) => (
+            <label key={tier}>
+              {t('styles.from', { tier })}
               <input
                 type="number"
                 min={0}
                 step="any"
-                value={config.thresholds[t]}
+                value={config.thresholds[tier]}
                 onChange={(e) =>
-                  update((c) => ({ ...c, thresholds: { ...c.thresholds, [t]: Math.max(0, Number(e.target.value)) } }))
+                  update((c) => ({ ...c, thresholds: { ...c.thresholds, [tier]: Math.max(0, Number(e.target.value)) } }))
                 }
               />
               {unit}
@@ -279,11 +284,8 @@ export function StylesView({ config, update, rates }: Props) {
       </section>
 
       <section className="panel">
-        <h2>Что показывать</h2>
-        <p className="note">
-          Общие настройки для всех разделов; в любом разделе их можно заменить своими. Тир, выбранный для предмета вручную,
-          важнее минимальной цены.
-        </p>
+        <h2>{t('styles.visibility')}</h2>
+        <p className="note">{t('styles.visibilityNote')}</p>
         <VisibilityFields
           value={config.visibility}
           thresholds={config.thresholds}
@@ -304,19 +306,19 @@ export function StylesView({ config, update, rates }: Props) {
       </div>
 
       <section className="panel">
-        <h2>Сброс</h2>
+        <h2>{t('styles.reset')}</h2>
         <div className="actions">
           <button
             disabled={overrideCount === 0}
-            onClick={() => confirm(`Сбросить ручной выбор тира у ${overrideCount} предметов?`) && update((c) => ({ ...c, overrides: {} }))}
+            onClick={() => confirm(t('styles.resetOverridesConfirm', { n: overrideCount })) && update((c) => ({ ...c, overrides: {} }))}
           >
-            Сбросить ручные тиры ({overrideCount})
+            {t('styles.resetOverrides', { n: overrideCount })}
           </button>
           <button
             disabled={!rates}
             onClick={() =>
               rates &&
-              confirm('Вернуть стили и пороги по умолчанию?') &&
+              confirm(t('styles.resetStylesConfirm')) &&
               update((c) => ({
                 ...c,
                 tiers: DEFAULT_CONFIG.tiers,
@@ -325,7 +327,7 @@ export function StylesView({ config, update, rates }: Props) {
               }))
             }
           >
-            Стили и пороги по умолчанию
+            {t('styles.resetStyles')}
           </button>
         </div>
       </section>

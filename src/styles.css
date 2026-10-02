@@ -1250,3 +1250,48 @@ main {
   color: var(--gold);
   line-height: 1;
 }
+
+/* Английское имя рядом с названием на языке интерфейса */
+
+.english-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* В строке предмета имя стоит справа от плашки и первым уступает место, если строка узкая. */
+.ground .english-name {
+  margin-left: 10px;
+  color: #a39a82;
+}
+
+.ground .item-label,
+.ground .stack {
+  flex: none;
+}
+
+.base-card .english-name {
+  max-width: 100%;
+}
+
+.unique-card-english {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  min-height: 0;
+}
+
+.unique-card-english .english-name {
+  color: #b9a58a;
+}
+
+.unique-card-note {
+  margin: 8px 18px 0;
+}

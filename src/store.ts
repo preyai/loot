@@ -1,18 +1,23 @@
 import { useEffect, useState } from 'react'
 import { EMPTY_RULE } from './bases'
 import { DEFAULT_CONFIG } from './defaults'
+import { detectLanguage, LANGUAGES } from './i18n'
 import type { BasePopularity, Config, ExceptionalScan, League, MarketSnapshot } from './types'
 
 const CONFIG_KEY = 'loot-filter-editor:config'
 
+/** Настройки для первого запуска: язык — по языку браузера. */
+const freshConfig = (): Config => ({ ...DEFAULT_CONFIG, language: detectLanguage() })
+
 function loadConfig(): Config {
   try {
     const stored = JSON.parse(localStorage.getItem(CONFIG_KEY) ?? 'null') as Partial<Config> | null
-    if (!stored) return DEFAULT_CONFIG
+    if (!stored) return freshConfig()
     // Поля, добавленные в новых версиях, берутся из значений по умолчанию.
     return {
       ...DEFAULT_CONFIG,
       ...stored,
+      language: LANGUAGES.find((lang) => lang === stored.language) ?? detectLanguage(),
       thresholds: { ...DEFAULT_CONFIG.thresholds, ...stored.thresholds },
       tiers: { ...DEFAULT_CONFIG.tiers, ...stored.tiers },
       visibility: { ...DEFAULT_CONFIG.visibility, ...stored.visibility },
@@ -20,7 +25,7 @@ function loadConfig(): Config {
       baseRules: (stored.baseRules ?? []).map((rule) => ({ ...EMPTY_RULE, ...rule })),
     }
   } catch {
-    return DEFAULT_CONFIG
+    return freshConfig()
   }
 }
 

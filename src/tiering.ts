@@ -1,4 +1,5 @@
 import { CURRENCIES } from './defaults'
+import type { T } from './i18n'
 import { SECTIONS } from './sections'
 import {
   TIER_IDS,
@@ -103,8 +104,8 @@ export function convertCurrency(config: Config, to: Currency, rates: Rates): Con
   }
 }
 
-export function formatPrice(divine: number | null, rates: Rates, currency: Currency): string {
-  if (divine === null) return 'нет цены'
+export function formatPrice(divine: number | null, rates: Rates, currency: Currency, t: T): string {
+  if (divine === null) return t('price.none')
   const round = (v: number) =>
     v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : String(Number(v.toPrecision(2)))
   // Дорогое нагляднее в divine, какой бы ни была основная валюта.

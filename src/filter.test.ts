@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './defaults'
-import { baseTradeQuery, baseTradeUrl, baseWikiUrl, describeRule, EMPTY_RULE, topBases } from './bases'
+import { baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
 import { baseRuleBlock, generateFilter, matchConditions, styleLines } from './filter'
+import { translator } from './i18n'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
 import type { BaseRule, Config, ExceptionalScan, MarketItem, MarketSnapshot } from './types'
+
+// Названия правил и подписи проверяются на русском; английский словарь — в i18n.test.ts.
+const t = translator('ru')
 
 const item = (name: string, divine: number | null, section: MarketItem['section'] = 'currency'): MarketItem => ({
   name,
@@ -114,11 +118,11 @@ describe('основная валюта', () => {
   })
 
   it('цена показывается в основной валюте, дорогое — в divine', () => {
-    expect(formatPrice(0.03, rates, 'exalted')).toBe('3.00 ex')
-    expect(formatPrice(0.03, rates, 'chaos')).toBe('0.3 c')
-    expect(formatPrice(0.03, rates, 'divine')).toBe('0.03 div')
-    expect(formatPrice(10, rates, 'chaos')).toBe('10.0 div')
-    expect(formatPrice(null, rates, 'chaos')).toBe('нет цены')
+    expect(formatPrice(0.03, rates, 'exalted', t)).toBe('3.00 ex')
+    expect(formatPrice(0.03, rates, 'chaos', t)).toBe('0.3 c')
+    expect(formatPrice(0.03, rates, 'divine', t)).toBe('0.03 div')
+    expect(formatPrice(10, rates, 'chaos', t)).toBe('10.0 div')
+    expect(formatPrice(null, rates, 'chaos', t)).toBe('нет цены')
   })
 })
 
@@ -230,8 +234,9 @@ describe('правила баз', () => {
   })
 
   it('описание правила читается одной строкой', () => {
-    expect(describeRule(rule)).toBe('обычные и магические · Bows · ур. предмета 82+')
-    expect(describeRule({ ...rule, rarities: [], bases: ['A', 'B'], minItemLevel: 0, minSockets: 3, excludeCorrupted: true })).toBe(
+    expect(describeRule(rule, t)).toBe('обычные и магические · Луки · ур. предмета 82+')
+    expect(describeRule(rule, translator('en'))).toBe('normal and magic · Bows · item level 82+')
+    expect(describeRule({ ...rule, rarities: [], bases: ['A', 'B'], minItemLevel: 0, minSockets: 3, excludeCorrupted: true }, t)).toBe(
       'любая редкость · баз: 2 · гнёзд 3+ · не осквернённые',
     )
   })
@@ -248,7 +253,7 @@ describe('готовые наборы', () => {
 
   it('каждый набор даёт правила, которые все попадают в фильтр', () => {
     for (const preset of RULE_PRESETS) {
-      const config = applyPreset({ ...DEFAULT_CONFIG, baseRules: [{ ...EMPTY_RULE, id: 'old', name: 'старое' }] }, preset, shares)
+      const config = applyPreset({ ...DEFAULT_CONFIG, baseRules: [{ ...EMPTY_RULE, id: 'old', name: 'старое' }] }, preset, shares, t)
       expect(config.baseRules.length).toBeGreaterThan(4)
       expect(config.baseRules.some((r) => r.id === 'old')).toBe(false)
       expect(new Set(config.baseRules.map((r) => r.id)).size).toBe(config.baseRules.length)
@@ -259,16 +264,16 @@ describe('готовые наборы', () => {
 
   it('«популярные базы» — это базы с долей от 3%, а без данных о популярности — старшие базы', () => {
     const balanced = RULE_PRESETS.find((p) => p.id === 'balanced')!
-    const popular = balanced.make(shares).find((r) => r.name.startsWith('Заготовки'))!
+    const popular = balanced.make(shares, t).find((r) => r.name.startsWith('Заготовки'))!
     expect(popular.bases).toEqual(['Obliterator Bow', 'Vile Robe'])
     expect(popular.classes).toEqual(['Bows', 'Body Armours'])
-    const fallback = balanced.make(null).find((r) => r.name.startsWith('Заготовки'))!
+    const fallback = balanced.make(null, t).find((r) => r.name.startsWith('Заготовки'))!
     expect(fallback.bases).toContain('Fanatic Bow')
   })
 
   it('строгий набор скрывает прочие редкие только с высокого уровня области', () => {
     const strict = RULE_PRESETS.find((p) => p.id === 'strict')!
-    const hide = strict.make(shares).at(-1)!
+    const hide = strict.make(shares, t).at(-1)!
     expect(hide.action).toBe('hide')
     expect(hide.minAreaLevel).toBe(75)
     expect(hide.rarities).toEqual(['Rare'])
@@ -308,7 +313,8 @@ describe('исключительные вещи с трейда', () => {
   })
 
   it('ссылки на базу: страница poe2db и поиск на трейде в выбранной лиге', () => {
-    expect(baseWikiUrl("Adherent's Raiment")).toBe("https://poe2db.tw/ru/Adherent's_Raiment")
+    expect(wikiUrl("Adherent's Raiment", 'ru')).toBe("https://poe2db.tw/ru/Adherent's_Raiment")
+    expect(wikiUrl('Vile Robe', 'en')).toBe('https://poe2db.tw/us/Vile_Robe')
     const plain: BaseRule = { ...EMPTY_RULE, id: '1', name: '' }
     const url = new URL(baseTradeUrl('Vile Robe', 'Forbidden Rites', plain))
     expect(url.pathname).toBe('/trade2/search/poe2/Forbidden%20Rites')
@@ -347,7 +353,7 @@ describe('исключительные вещи с трейда', () => {
   })
 
   it('на каждый вид с базами — правило для обычных не осквернённых предметов', () => {
-    const rules = exceptionalRules(scan, '100 ex', 'A')
+    const rules = exceptionalRules(scan, '100 ex', 'A', t)
     expect(rules.map((r) => r.name)).toEqual(['Исключительные от 100 ex: 3+ гнезда', 'Исключительные от 100 ex: качество 21%+'])
     expect(rules[0]).toMatchObject({ source: 'trade', rarities: ['Normal'], minSockets: 3, minQuality: 0, excludeCorrupted: true, tier: 'A' })
     expect(rules[0].classes).toEqual(['Bows', 'Body Armours'])
@@ -360,13 +366,13 @@ describe('исключительные вещи с трейда', () => {
   it('новый опрос заменяет прежние правила с трейда и не трогает ручные; наборы их сохраняют', () => {
     const manual: BaseRule = { ...EMPTY_RULE, id: 'manual', name: 'ручное' }
     const old: BaseRule = { ...EMPTY_RULE, id: 'old', name: 'старое с трейда', source: 'trade' }
-    const rules = withExceptionalRules([manual, old], exceptionalRules(scan, '100 ex', 'A'))
+    const rules = withExceptionalRules([manual, old], exceptionalRules(scan, '100 ex', 'A', t))
     expect(rules.map((r) => r.name)).toEqual([
       'Исключительные от 100 ex: 3+ гнезда',
       'Исключительные от 100 ex: качество 21%+',
       'ручное',
     ])
-    const afterPreset = applyPreset({ ...DEFAULT_CONFIG, baseRules: rules }, RULE_PRESETS[0], null).baseRules
+    const afterPreset = applyPreset({ ...DEFAULT_CONFIG, baseRules: rules }, RULE_PRESETS[0], null, t).baseRules
     expect(afterPreset.slice(0, 2).every((r) => r.source === 'trade')).toBe(true)
     expect(afterPreset.some((r) => r.id === 'manual')).toBe(false)
   })

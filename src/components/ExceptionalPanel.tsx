@@ -1,5 +1,7 @@
 import { CURRENCIES } from '../defaults'
-import { EXCEPTIONAL_KINDS, exceptionalBases, exceptionalRules, withExceptionalRules } from '../exceptional'
+import { exceptionalBases, exceptionalRules, withExceptionalRules } from '../exceptional'
+import { keyOf } from '../i18n'
+import { useI18n } from '../i18n-react'
 import type { UpdateConfig } from '../store'
 import { perDivine, tierByValue } from '../tiering'
 import type { Config, ExceptionalKind, ExceptionalScan, MarketSnapshot, TierId } from '../types'
@@ -18,8 +20,10 @@ interface Props {
 }
 
 export function ExceptionalPanel({ config, update, rates, scan, loading }: Props) {
+  const { t, locale } = useI18n()
   const bases = scan ? exceptionalBases(scan) : null
-  const found = bases ? (Object.keys(bases) as ExceptionalKind[]).filter((kind) => bases[kind].length > 0) : []
+  const kinds = bases ? (Object.keys(bases) as ExceptionalKind[]) : []
+  const price = scan ? `${scan.minExalted} ${CURRENCIES.exalted.short}` : ''
 
   const apply = () => {
     if (!scan) return
@@ -28,33 +32,31 @@ export function ExceptionalPanel({ config, update, rates, scan, loading }: Props
       rates && rates.exalted > 0
         ? tierByValue((scan.minExalted / rates.exalted) * perDivine(config.currency, rates), config.thresholds)
         : FALLBACK_TIER
-    const label = `${scan.minExalted} ${CURRENCIES.exalted.short}`
-    update((c) => ({ ...c, baseRules: withExceptionalRules(c.baseRules, exceptionalRules(scan, label, tier)) }))
+    update((c) => ({ ...c, baseRules: withExceptionalRules(c.baseRules, exceptionalRules(scan, price, tier, t)) }))
   }
 
   return (
     <section className="panel">
-      <h2>Исключительные вещи с трейда</h2>
-      <p className="note">
-        Сервер сам регулярно ищет на трейде обычные предметы с лишними гнёздами или качеством 21%+, выставленные не дешевле
-        порога. По найденным базам можно создать правила: они встанут первыми в списке и заменят прежние правила «с трейда»;
-        остальные правила не затрагиваются.
-      </p>
+      <h2>{t('exceptional.title')}</h2>
+      <p className="note">{t('exceptional.note')}</p>
       {scan && bases ? (
         <>
           <p className="note" role="status">
-            Данные от {new Date(scan.at).toLocaleString('ru-RU')}, цена от {scan.minExalted} {CURRENCIES.exalted.short}. Найдено
-            баз: {(Object.keys(bases) as ExceptionalKind[]).map((kind) => `${EXCEPTIONAL_KINDS[kind].title} — ${bases[kind].length}`).join(', ')}.
+            {t('exceptional.status', {
+              time: new Date(scan.at).toLocaleString(locale),
+              price,
+              found: kinds.map((kind) => `${t(keyOf('exceptional', kind))} — ${bases[kind].length}`).join(', '),
+            })}
           </p>
           <div className="actions">
-            <button className="primary" disabled={found.length === 0} onClick={apply}>
-              Создать правила из этих данных
+            <button className="primary" disabled={kinds.every((kind) => bases[kind].length === 0)} onClick={apply}>
+              {t('exceptional.create')}
             </button>
           </div>
         </>
       ) : (
         <p className="note" role="status">
-          {loading ? 'Загрузка…' : 'Для этой лиги данных пока нет: сервер опрашивает трейд по расписанию и только для основной лиги.'}
+          {loading ? t('exceptional.loading') : t('exceptional.none')}
         </p>
       )}
     </section>

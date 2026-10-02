@@ -1,5 +1,6 @@
-import type { Config, Currency, Rgba, TierId } from './types'
+import type { Config, Currency, Rgba } from './types'
 
+/** title — имя предмета-валюты в игре (английское); на экране переводится как любое имя предмета. */
 export const CURRENCIES: Record<Currency, { short: string; title: string }> = {
   exalted: { short: 'ex', title: 'Exalted Orb' },
   chaos: { short: 'c', title: 'Chaos Orb' },
@@ -19,18 +20,10 @@ export const FONT_SIZE = { min: 18, max: 45, base: 32 }
 export const SOUND_IDS = Array.from({ length: 16 }, (_, i) => i + 1)
 export const SOUND_VOLUME_MAX = 300
 
-export const TIER_TITLES: Record<TierId, string> = {
-  S: 'S — джекпот',
-  A: 'A — очень ценное',
-  B: 'B — ценное',
-  C: 'C — полезное',
-  D: 'D — мелочь',
-  E: 'E — мусор',
-}
-
 const rgba = (r: number, g: number, b: number, a = 255): Rgba => ({ r, g, b, a })
 
 export const DEFAULT_CONFIG: Config = {
+  language: 'ru',
   league: null,
   currency: 'exalted',
   thresholds: { S: 500, A: 50, B: 10, C: 2, D: 0.5 },

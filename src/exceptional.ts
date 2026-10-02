@@ -1,4 +1,5 @@
 import { BASE_CLASSES, classesOf, EMPTY_RULE } from './bases'
+import { keyOf, type T } from './i18n'
 import type { BaseRule, ExceptionalKind, ExceptionalScan, TierId } from './types'
 
 /** Один запрос к трейду: что именно считаем исключительным и в какой категории ищем. */
@@ -6,7 +7,7 @@ export interface ExceptionalQuery {
   kind: ExceptionalKind
   /** Категория в API трейда. */
   category: string
-  /** Подпись для хода опроса. */
+  /** Подпись для журнала сервера. */
   title: string
 }
 
@@ -33,17 +34,18 @@ const ONE_SOCKET: [string, string][] = [
   ['weapon.wand', 'Wands'],
 ]
 
-export const EXCEPTIONAL_KINDS: Record<ExceptionalKind, { title: string; sockets: number; quality: number }> = {
-  sockets3: { title: '3+ гнезда', sockets: 3, quality: 0 },
-  sockets2: { title: '2+ гнезда', sockets: 2, quality: 0 },
-  quality: { title: 'качество 21%+', sockets: 0, quality: 21 },
+/** Что ищем в каждом виде исключительности. Подписи — в словаре: «exceptional.<вид>». */
+export const EXCEPTIONAL_KINDS: Record<ExceptionalKind, { sockets: number; quality: number }> = {
+  sockets3: { sockets: 3, quality: 0 },
+  sockets2: { sockets: 2, quality: 0 },
+  quality: { sockets: 0, quality: 21 },
 }
 
 export const EXCEPTIONAL_QUERIES: ExceptionalQuery[] = [
-  ...TWO_SOCKET.map(([category, title]): ExceptionalQuery => ({ kind: 'sockets3', category, title: `${title}: 3+ гнезда` })),
-  ...ONE_SOCKET.map(([category, title]): ExceptionalQuery => ({ kind: 'sockets2', category, title: `${title}: 2+ гнезда` })),
-  { kind: 'quality', category: 'armour', title: 'Броня: качество 21%+' },
-  { kind: 'quality', category: 'weapon', title: 'Оружие: качество 21%+' },
+  ...TWO_SOCKET.map(([category, title]): ExceptionalQuery => ({ kind: 'sockets3', category, title: `${title}: 3+ sockets` })),
+  ...ONE_SOCKET.map(([category, title]): ExceptionalQuery => ({ kind: 'sockets2', category, title: `${title}: 2+ sockets` })),
+  { kind: 'quality', category: 'armour', title: 'Armour: quality 21%+' },
+  { kind: 'quality', category: 'weapon', title: 'Weapons: quality 21%+' },
 ]
 
 /** База попадает в правило, если её продают хотя бы столько разных продавцов: одиночный лот может быть чьей-то фантазией. */
@@ -92,13 +94,13 @@ export function baseOffers(scan: ExceptionalScan): Map<string, BaseOffer[]> {
 }
 
 /** Правила по результатам опроса: по одному на вид исключительности, для которого нашлись базы. */
-export function exceptionalRules(scan: ExceptionalScan, priceLabel: string, tier: TierId): Omit<BaseRule, 'id'>[] {
+export function exceptionalRules(scan: ExceptionalScan, priceLabel: string, tier: TierId, t: T): Omit<BaseRule, 'id'>[] {
   const bases = exceptionalBases(scan)
   return (Object.keys(bases) as ExceptionalKind[])
     .filter((kind) => bases[kind].length > 0)
     .map((kind) => ({
       ...EMPTY_RULE,
-      name: `Исключительные от ${priceLabel}: ${EXCEPTIONAL_KINDS[kind].title}`,
+      name: t('rule.exceptional', { price: priceLabel, kind: t(keyOf('exceptional', kind)) }),
       source: 'trade' as const,
       classes: classesOf(bases[kind]),
       bases: bases[kind],

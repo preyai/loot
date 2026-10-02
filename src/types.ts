@@ -1,3 +1,5 @@
+import type { Lang } from './i18n'
+
 export type SectionId =
   | 'currency'
   | 'fragments'
@@ -178,6 +180,8 @@ export interface BaseRule {
 }
 
 export interface Config {
+  /** Язык интерфейса и названий предметов. В файле фильтра имена всегда английские. */
+  language: Lang
   league: string | null
   currency: Currency
   /** Нижняя граница тира в основной валюте; всё, что дешевле D, попадает в E. */

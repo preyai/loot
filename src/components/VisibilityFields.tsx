@@ -1,4 +1,6 @@
-import { CURRENCIES, TIER_TITLES } from '../defaults'
+import { CURRENCIES } from '../defaults'
+import { keyOf } from '../i18n'
+import { useI18n } from '../i18n-react'
 import { cutoffPrice } from '../tiering'
 import { TIER_IDS, type Config, type Currency, type TierId, type Visibility } from '../types'
 
@@ -14,22 +16,23 @@ interface Props {
 
 /** Настройки «что показывать»: общие или для одного раздела. */
 export function VisibilityFields({ value, thresholds, currency, onChange, disabled, unstackable }: Props) {
+  const { t } = useI18n()
   const cutoff = cutoffPrice(value, thresholds)
   const unit = CURRENCIES[currency].short
   return (
     <fieldset className="visibility" disabled={disabled}>
       <label>
-        Показывать с тира
+        {t('vis.fromTier')}
         <select value={value.minTier} onChange={(e) => onChange({ ...value, minTier: e.target.value as TierId })}>
-          {TIER_IDS.map((t) => (
-            <option key={t} value={t}>
-              {t === 'E' ? 'E — показывать все тиры' : `${TIER_TITLES[t]} и выше`}
+          {TIER_IDS.map((tier) => (
+            <option key={tier} value={tier}>
+              {tier === 'E' ? t('vis.allTiers') : t('vis.andAbove', { tier: t(keyOf('tier', tier)) })}
             </option>
           ))}
         </select>
       </label>
       <label>
-        и не дешевле
+        {t('vis.notCheaper')}
         <input
           type="number"
           min={0}
@@ -40,11 +43,12 @@ export function VisibilityFields({ value, thresholds, currency, onChange, disabl
         {unit}
       </label>
       {unstackable ? (
-        <span className="note">Остальное скрывается: эти предметы не складываются в стопки.</span>
+        <span className="note">{t('vis.unstackable')}</span>
       ) : (
         <label className="check">
           <input type="checkbox" checked={value.stacks} onChange={(e) => onChange({ ...value, stacks: e.target.checked })} />
-          Остальное показывать стопками{cutoff > 0 && ` на сумму от ${cutoff} ${unit}`}
+          {t('vis.stacks')}
+          {cutoff > 0 && ` ${t('vis.stacksFrom', { value: cutoff, unit })}`}
         </label>
       )}
     </fieldset>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { TIER_TITLES } from '../defaults'
+import { keyOf } from '../i18n'
+import { useI18n } from '../i18n-react'
 import type { Section } from '../sections'
 import type { UpdateConfig } from '../store'
 import { formatPrice, itemDisplay, itemKey, visibilityFor, type Display } from '../tiering'
@@ -13,6 +14,7 @@ import {
   type Visibility,
 } from '../types'
 import { ItemLabel } from './ItemLabel'
+import { EnglishName } from './ItemName'
 import { UniqueCard } from './UniqueCard'
 import { VisibilityFields } from './VisibilityFields'
 
@@ -20,7 +22,6 @@ const CHOICES: TierChoice[] = [...TIER_IDS, 'hide']
 
 const GROUPS = [...TIER_IDS, 'stack', 'hide'] as const
 type GroupId = (typeof GROUPS)[number]
-const GROUP_TITLES: Record<GroupId, string> = { ...TIER_TITLES, stack: 'Только стопками', hide: 'Скрыто' }
 
 interface Row {
   item: MarketItem
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export function SectionView({ section, snapshot, config, update }: Props) {
+  const { t, name } = useI18n()
   const [query, setQuery] = useState('')
   const [opened, setOpened] = useState<{ unique: UniqueInfo; base: string } | null>(null)
   const enabled = !config.disabledSections.includes(section.id)
@@ -45,7 +47,8 @@ export function SectionView({ section, snapshot, config, update }: Props) {
     const map = new Map<GroupId, Row[]>()
     for (const item of snapshot.items) {
       if (item.section !== section.id) continue
-      const names = [item.name, ...(item.uniques ?? []).map((u) => u.name)]
+      // Ищем и по названию на языке интерфейса, и по английскому: в фильтре и на трейде предмет зовут по-английски.
+      const names = [item.name, ...(item.uniques ?? []).map((u) => u.name)].flatMap((n) => [n, name(n)])
       if (needle && !names.some((n) => n.toLowerCase().includes(needle))) continue
       const display = itemDisplay(item, config, snapshot.rates)
       const group = display.kind === 'show' ? display.tier : display.kind
@@ -55,7 +58,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
     }
     for (const list of map.values()) list.sort((a, b) => (b.item.divine ?? -1) - (a.item.divine ?? -1))
     return map
-  }, [snapshot, section.id, config, query])
+  }, [snapshot, section.id, config, query, name])
 
   const setTier = (key: string, choice: TierChoice | null) =>
     update((c) => {
@@ -82,21 +85,22 @@ export function SectionView({ section, snapshot, config, update }: Props) {
     })
 
   const failed = snapshot.failed.includes(section.id)
+  const groupTitle = (group: GroupId) => (group === 'stack' || group === 'hide' ? t(keyOf('group', group)) : t(keyOf('tier', group)))
 
   return (
     <div className={enabled ? 'section' : 'section section--disabled'}>
       <header className="page-header">
-        <h1>{section.title}</h1>
+        <h1>{t(keyOf('section', section.id))}</h1>
         <input
           className="search"
           type="search"
-          placeholder="Поиск предмета…"
+          placeholder={t('items.search')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <label className="check">
           <input type="checkbox" checked={enabled} onChange={toggleSection} />
-          Включить раздел в фильтр
+          {t('items.enable')}
         </label>
       </header>
 
@@ -107,7 +111,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
             checked={ownVisibility !== undefined}
             onChange={(e) => setVisibility(e.target.checked ? config.visibility : null)}
           />
-          Свои настройки показа для этого раздела
+          {t('items.ownVisibility')}
         </label>
         <VisibilityFields
           value={visibilityFor(config, section.id)}
@@ -119,20 +123,15 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         />
         {ownVisibility === undefined && (
           <p className="note">
-            Действуют общие настройки — они меняются на странице <a href="#/styles">«Тиры и стили»</a>.
+            {t('items.globalNote')} <a href="#/styles">«{t('nav.styles')}»</a>.
           </p>
         )}
       </section>
 
-      {section.unique && (
-        <p className="note">
-          Уники выпадают неопознанными, и фильтр видит только базовый тип, поэтому тир назначается базе — по самому дорогому
-          унику на ней. Если у какого-то уника слишком мало лотов, цене нельзя верить: такая база показывается всегда, в тире C.
-        </p>
-      )}
-      {!enabled && <p className="note">Раздел выключен: игра покажет эти предметы как обычно, без правил фильтра.</p>}
-      {failed && <p className="note note--error">Не удалось загрузить цены этого раздела. Попробуйте обновить цены.</p>}
-      {!failed && groups.size === 0 && <p className="note">{query ? 'Ничего не найдено.' : 'В этой лиге предметов нет.'}</p>}
+      {section.unique && <p className="note">{t('items.uniqueNote')}</p>}
+      {!enabled && <p className="note">{t('items.disabled')}</p>}
+      {failed && <p className="note note--error">{t('items.failed')}</p>}
+      {!failed && groups.size === 0 && <p className="note">{query ? t('items.notFound') : t('items.empty')}</p>}
 
       {GROUPS.map((group) => {
         const rows = groups.get(group)
@@ -140,7 +139,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         return (
           <section key={group} className="tier-group" data-tier={group}>
             <h2>
-              {GROUP_TITLES[group]}
+              {groupTitle(group)}
               <span className="count">{rows.length}</span>
             </h2>
             <ul className="items">
@@ -152,36 +151,37 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                     <img src={item.icon} alt="" loading="lazy" width={32} height={32} />
                     <div>
                       <div className="ground">
-                        <ItemLabel name={item.name} style={display.kind === 'hide' ? null : config.tiers[display.tier]} />
-                        {display.kind === 'stack' && <span className="stack">от {display.stackSize} шт.</span>}
+                        <ItemLabel name={name(item.name)} style={display.kind === 'hide' ? null : config.tiers[display.tier]} />
+                        {display.kind === 'stack' && <span className="stack">{t('items.stackFrom', { n: display.stackSize })}</span>}
+                        <EnglishName name={item.name} />
                       </div>
                       {item.uniques && (
                         <ul className="uniques">
                           {item.uniques.map((u) => (
                             <li key={u.name}>
-                              <button title="Свойства, цена и ссылки" onClick={() => setOpened({ unique: u, base: item.name })}>
-                                {u.name}
+                              <button title={t('items.uniqueHint')} onClick={() => setOpened({ unique: u, base: item.name })}>
+                                {name(u.name)}
                               </button>{' '}
-                              <span>{u.divine === null ? 'мало лотов' : formatPrice(u.divine, snapshot.rates, config.currency)}</span>
+                              <span>{u.divine === null ? t('items.fewListings') : formatPrice(u.divine, snapshot.rates, config.currency, t)}</span>
                             </li>
                           ))}
                         </ul>
                       )}
                     </div>
-                    <span className="price">{formatPrice(item.divine, snapshot.rates, config.currency)}</span>
-                    <div className="tier-picker" role="group" aria-label={`Тир для ${item.name}`}>
+                    <span className="price">{formatPrice(item.divine, snapshot.rates, config.currency, t)}</span>
+                    <div className="tier-picker" role="group" aria-label={t('items.tierFor', { name: name(item.name) })}>
                       <button
                         className={override === undefined ? 'active' : ''}
-                        title="Тир по цене"
+                        title={t('items.autoHint')}
                         onClick={() => setTier(key, null)}
                       >
-                        Авто
+                        {t('items.auto')}
                       </button>
                       {CHOICES.map((c) => (
                         <button
                           key={c}
                           className={override === c ? 'active' : ''}
-                          title={c === 'hide' ? 'Скрыть предмет' : TIER_TITLES[c]}
+                          title={c === 'hide' ? t('items.hide') : t(keyOf('tier', c))}
                           onClick={() => setTier(key, c)}
                         >
                           {c === 'hide' ? '✕' : c}

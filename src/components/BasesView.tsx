@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import {
   baseIconUrl,
   baseTradeUrl,
-  baseWikiUrl,
   BASE_CLASSES,
   BASE_GROUPS,
   describeRule,
@@ -10,32 +9,26 @@ import {
   popularBases,
   popularRule,
   RULE_TEMPLATES,
+  wikiUrl,
   type BaseInfo,
 } from '../bases'
-import { CURRENCIES, TIER_TITLES } from '../defaults'
-import { baseOffers, EXCEPTIONAL_KINDS } from '../exceptional'
-import { applyPreset, RULE_PRESETS } from '../presets'
+import { CURRENCIES } from '../defaults'
+import { baseOffers } from '../exceptional'
+import { keyOf, translateOr, type T } from '../i18n'
+import { useI18n } from '../i18n-react'
+import { applyPreset, RULE_PRESETS, type RulePreset } from '../presets'
 import { useExceptionalScan, usePopularity, type UpdateConfig } from '../store'
-import {
-  RARITIES,
-  TIER_IDS,
-  type BaseRule,
-  type Config,
-  type ExceptionalScan,
-  type MarketSnapshot,
-  type Rarity,
-  type TierId,
-} from '../types'
+import { RARITIES, TIER_IDS, type BaseRule, type Config, type ExceptionalScan, type MarketSnapshot, type TierId } from '../types'
 import { ExceptionalPanel } from './ExceptionalPanel'
 import { ItemLabel } from './ItemLabel'
+import { EnglishName } from './ItemName'
 
-const RARITY_TITLES: Record<Rarity, string> = { Normal: 'Обычные', Magic: 'Магические', Rare: 'Редкие' }
-const DEFENCE_TITLES: Record<string, string> = { a: 'броня', e: 'уклонение', s: 'энергощит' }
-
-const toggle = <T,>(list: T[], value: T) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
+const toggle = <V,>(list: V[], value: V) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
 const percent = (share: number) => `${(share * 100).toFixed(1)}%`
-const describe = (base: BaseInfo) =>
-  [`ур. ${base.drop}`, ...(base.defence ?? '').split('').map((d) => DEFENCE_TITLES[d])].join(', ')
+const describe = (base: BaseInfo, t: T) =>
+  [t('rules.dropLevel', { n: base.drop }), ...(base.defence ?? '').split('').map((d) => t(keyOf('defence', d)))].join(', ')
+/** Название класса на языке интерфейса; у нового класса, которого ещё нет в словаре, — имя из игры. */
+const classTitle = (t: T, name: string) => translateOr(t, 'class', name, name)
 
 type Shares = Record<string, number>
 
@@ -43,6 +36,7 @@ type Shares = Record<string, number>
 const SUMMARY_ICONS = 12
 
 function BaseIcon({ name, large }: { name: string; large?: boolean }) {
+  const title = useI18n().name(name)
   const url = baseIconUrl(name)
   const className = large ? 'base-icon base-icon--large' : 'base-icon'
   // Пустое место того же размера держит сетку ровной, когда иконки нет или она не загрузилась.
@@ -52,7 +46,7 @@ function BaseIcon({ name, large }: { name: string; large?: boolean }) {
       className={className}
       src={url}
       alt=""
-      title={name}
+      title={title}
       loading="lazy"
       onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
     />
@@ -67,6 +61,7 @@ interface BaseContext {
 }
 
 function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: BaseContext; onChange: (bases: string[]) => void }) {
+  const { t, lang, name } = useI18n()
   const { shares, scan, league } = context
   const offers = useMemo(() => (scan ? baseOffers(scan) : null), [scan])
   const [query, setQuery] = useState('')
@@ -82,26 +77,27 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
     [rule.classes, shares],
   )
   const needle = query.trim().toLowerCase()
+  const matches = (base: BaseInfo) => base.name.toLowerCase().includes(needle) || name(base.name).toLowerCase().includes(needle)
 
   return (
     <div className="base-picker">
       <div className="actions">
         <input
           type="search"
-          placeholder="Поиск базы…"
-          aria-label="Поиск базы"
+          placeholder={t('rules.searchBase')}
+          aria-label={t('rules.searchBase')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <label className="check">
-          Уровень выпадения от
+          {t('rules.minDrop')}
           <input type="number" min={1} max={100} value={minDrop} onChange={(e) => setMinDrop(Number(e.target.value))} />
         </label>
         <button onClick={() => onChange(classes.flatMap((c) => c.bases.filter((b) => b.drop >= minDrop).map((b) => b.name)))}>
-          Выбрать такие
+          {t('rules.pickByDrop')}
         </button>
         <label className="check">
-          Популярность от
+          {t('rules.minShare')}
           <input
             type="number"
             min={0}
@@ -114,45 +110,44 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
           %
         </label>
         <button disabled={!shares} onClick={() => shares && onChange(popularBases(rule.classes, shares, minShare / 100))}>
-          Выбрать популярные
+          {t('rules.pickPopular')}
         </button>
         <button disabled={rule.bases.length === 0} onClick={() => onChange([])}>
-          Очистить
+          {t('rules.clear')}
         </button>
       </div>
       {classes.map((c) => {
-        const bases = needle ? c.bases.filter((b) => b.name.toLowerCase().includes(needle)) : c.bases
+        const bases = needle ? c.bases.filter(matches) : c.bases
         if (bases.length === 0) return null
         return (
           <fieldset key={c.name}>
-            <legend>{c.name}</legend>
+            <legend>{classTitle(t, c.name)}</legend>
             {bases.map((b) => (
               <label key={b.name} className="base-card">
                 <input type="checkbox" checked={rule.bases.includes(b.name)} onChange={() => onChange(toggle(rule.bases, b.name))} />
                 <BaseIcon name={b.name} large />
-                <span className="base-card-name">{b.name}</span>
-                <span className="count">{describe(b)}</span>
-                {shares?.[b.name] !== undefined && <span className="share">носят {percent(shares[b.name])}</span>}
+                <span className="base-card-name">{name(b.name)}</span>
+                <EnglishName name={b.name} />
+                <span className="count">{describe(b, t)}</span>
+                {shares?.[b.name] !== undefined && <span className="share">{t('rules.worn', { share: percent(shares[b.name]) })}</span>}
                 {scan &&
                   offers?.get(b.name)?.map((offer) => (
-                    <span key={offer.kind} className="base-card-price" title="Обычные предметы на трейде, по одному лоту на продавца">
-                      {EXCEPTIONAL_KINDS[offer.kind].title}: от {scan.minExalted} {CURRENCIES.exalted.short}
-                      <span className="count"> · продавцов: {offer.sellers}</span>
+                    <span key={offer.kind} className="base-card-price" title={t('rules.offerHint')}>
+                      {t('rules.offer', {
+                        kind: t(keyOf('exceptional', offer.kind)),
+                        price: `${scan.minExalted} ${CURRENCIES.exalted.short}`,
+                      })}
+                      <span className="count">{t('rules.sellers', { n: offer.sellers })}</span>
                     </span>
                   ))}
                 {/* Ссылка внутри label не переключает галочку: браузер отдаёт клик самой ссылке. */}
                 <span className="base-card-links">
-                  <a href={baseWikiUrl(b.name)} target="_blank" rel="noreferrer">
+                  <a href={wikiUrl(b.name, lang)} target="_blank" rel="noreferrer">
                     poe2db
                   </a>
                   {league && (
-                    <a
-                      href={baseTradeUrl(b.name, league, rule)}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Поиск на трейде с условиями этого правила"
-                    >
-                      трейд
+                    <a href={baseTradeUrl(b.name, league, rule)} target="_blank" rel="noreferrer" title={t('rules.tradeHint')}>
+                      {t('rules.trade')}
                     </a>
                   )}
                 </span>
@@ -177,6 +172,7 @@ interface CardProps {
 }
 
 function RuleCard({ rule, index, total, config, context, onChange, onMove, onDelete }: CardProps) {
+  const { t, name } = useI18n()
   // Свёрнутое правило читается одной строкой; пустое сразу открыто — его всё равно надо заполнять.
   const [open, setOpen] = useState(rule.classes.length === 0)
   // Список баз длинный — рисуем его, только пока он раскрыт.
@@ -213,8 +209,8 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
         <span className="count">№ {index + 1}</span>
         <input
           type="checkbox"
-          aria-label={`Правило «${rule.name}» включено`}
-          title="Включено"
+          aria-label={t('rules.enabledFor', { name: rule.name })}
+          title={t('rules.enabled')}
           checked={rule.enabled}
           onChange={(e) => set('enabled', e.target.checked)}
         />
@@ -222,20 +218,20 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
           <input
             className="rule-name"
             type="text"
-            aria-label="Название правила"
+            aria-label={t('rules.name')}
             value={rule.name}
             onChange={(e) => set('name', e.target.value)}
           />
         ) : (
           <div className="rule-summary">
             <strong>
-              {rule.name} {rule.source === 'trade' && <span className="badge">с трейда</span>}
+              {rule.name} {rule.source === 'trade' && <span className="badge">{t('rules.fromTrade')}</span>}
             </strong>
-            <span className="count">{describeRule(rule)}</span>
+            <span className="count">{describeRule(rule, t)}</span>
             {rule.bases.length > 0 && (
               <div className="base-icons">
-                {rule.bases.slice(0, SUMMARY_ICONS).map((name) => (
-                  <BaseIcon key={name} name={name} />
+                {rule.bases.slice(0, SUMMARY_ICONS).map((base) => (
+                  <BaseIcon key={base} name={base} />
                 ))}
                 {rule.bases.length > SUMMARY_ICONS && <span className="count">+{rule.bases.length - SUMMARY_ICONS}</span>}
               </div>
@@ -245,46 +241,46 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
         {!open &&
           (rule.action === 'show' ? (
             <div className="ground">
-              <ItemLabel name={`Тир ${rule.tier}`} style={config.tiers[rule.tier]} />
+              <ItemLabel name={t('tier.label', { tier: rule.tier })} style={config.tiers[rule.tier]} />
             </div>
           ) : (
-            <span className="badge">скрывать</span>
+            <span className="badge">{t('rules.hideBadge')}</span>
           ))}
         <div className="actions">
           <button aria-expanded={open} onClick={() => setOpen(!open)}>
-            {open ? 'Свернуть' : 'Изменить'}
+            {open ? t('rules.collapse') : t('rules.edit')}
           </button>
-          <button disabled={index === 0} title="Выше — главнее" onClick={() => onMove(-1)}>
+          <button disabled={index === 0} title={t('rules.up')} onClick={() => onMove(-1)}>
             ↑
           </button>
-          <button disabled={index === total - 1} title="Ниже" onClick={() => onMove(1)}>
+          <button disabled={index === total - 1} title={t('rules.down')} onClick={() => onMove(1)}>
             ↓
           </button>
-          <button onClick={() => confirm(`Удалить правило «${rule.name}»?`) && onDelete()}>Удалить</button>
+          <button onClick={() => confirm(t('rules.deleteConfirm', { name: rule.name })) && onDelete()}>{t('rules.delete')}</button>
         </div>
       </header>
 
       {open && (
         <>
           <div className="rule-row">
-            <select aria-label="Действие" value={rule.action} onChange={(e) => set('action', e.target.value as BaseRule['action'])}>
-              <option value="show">Показывать</option>
-              <option value="hide">Скрывать</option>
+            <select aria-label={t('rules.action')} value={rule.action} onChange={(e) => set('action', e.target.value as BaseRule['action'])}>
+              <option value="show">{t('rules.show')}</option>
+              <option value="hide">{t('rules.hide')}</option>
             </select>
             {rule.action === 'show' && (
               <>
                 <label className="check">
-                  в стиле тира
+                  {t('rules.inTier')}
                   <select value={rule.tier} onChange={(e) => set('tier', e.target.value as TierId)}>
-                    {TIER_IDS.map((t) => (
-                      <option key={t} value={t}>
-                        {TIER_TITLES[t]}
+                    {TIER_IDS.map((tier) => (
+                      <option key={tier} value={tier}>
+                        {t(keyOf('tier', tier))}
                       </option>
                     ))}
                   </select>
                 </label>
                 <div className="ground">
-                  <ItemLabel name={rule.bases[0] ?? 'Предмет'} style={config.tiers[rule.tier]} />
+                  <ItemLabel name={rule.bases[0] ? name(rule.bases[0]) : t('rules.sampleItem')} style={config.tiers[rule.tier]} />
                 </div>
               </>
             )}
@@ -294,50 +290,45 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
             {RARITIES.map((r) => (
               <label key={r} className="check">
                 <input type="checkbox" checked={rule.rarities.includes(r)} onChange={() => set('rarities', toggle(rule.rarities, r))} />
-                {RARITY_TITLES[r]}
+                {t(keyOf('rarity', r))}
               </label>
             ))}
-            {minField('minItemLevel', 'Ур. предмета от', 100)}
-            {minField('minQuality', 'Качество от', 30)}
-            {minField('minSockets', 'Гнёзд от', 6)}
+            {minField('minItemLevel', t('rules.minItemLevel'), 100)}
+            {minField('minQuality', t('rules.minQuality'), 30)}
+            {minField('minSockets', t('rules.minSockets'), 6)}
           </div>
 
           <div className="rule-row">
-            {minField(
-              'minUnidentifiedTier',
-              'Ступень свойств от',
-              5,
-              'У неопознанной вещи: гарантированная минимальная ступень свойств. 0 — не проверять.',
-            )}
-            {minField('minAreaLevel', 'С уровня области', 100, 'Правило действует только в областях этого уровня и выше. 0 — везде.')}
-            <label className="check" title="Осквернённые и отзеркаленные предметы нельзя улучшать">
+            {minField('minUnidentifiedTier', t('rules.minUnidentified'), 5, t('rules.minUnidentifiedHint'))}
+            {minField('minAreaLevel', t('rules.minArea'), 100, t('rules.minAreaHint'))}
+            <label className="check" title={t('rules.excludeCorruptedHint')}>
               <input type="checkbox" checked={rule.excludeCorrupted} onChange={(e) => set('excludeCorrupted', e.target.checked)} />
-              Кроме осквернённых и отзеркаленных
+              {t('rules.excludeCorrupted')}
             </label>
           </div>
 
           {BASE_GROUPS.map((group) => {
-            const names = BASE_CLASSES.filter((c) => c.group === group.id).map((c) => c.name)
+            const names = BASE_CLASSES.filter((c) => c.group === group).map((c) => c.name)
             const allSelected = names.every((n) => rule.classes.includes(n))
             return (
-              <div key={group.id} className="rule-row chips">
+              <div key={group} className="rule-row chips">
                 <button
                   className="chip-group"
-                  title={allSelected ? 'Снять все' : 'Выбрать все'}
+                  title={allSelected ? t('rules.clearAll') : t('rules.selectAll')}
                   onClick={() =>
                     setClasses(allSelected ? rule.classes.filter((c) => !names.includes(c)) : [...new Set([...rule.classes, ...names])])
                   }
                 >
-                  {group.title}
+                  {t(keyOf('baseGroup', group))}
                 </button>
-                {names.map((name) => (
+                {names.map((className) => (
                   <button
-                    key={name}
+                    key={className}
                     className="chip"
-                    aria-pressed={rule.classes.includes(name)}
-                    onClick={() => setClasses(toggle(rule.classes, name))}
+                    aria-pressed={rule.classes.includes(className)}
+                    onClick={() => setClasses(toggle(rule.classes, className))}
                   >
-                    {name}
+                    {classTitle(t, className)}
                   </button>
                 ))}
               </div>
@@ -345,12 +336,10 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
           })}
 
           {rule.classes.length === 0 ? (
-            <p className="note note--error">Не выбран ни один класс — правило в фильтр не попадёт.</p>
+            <p className="note note--error">{t('rules.noClasses')}</p>
           ) : (
             <details open={pickerOpen} onToggle={(e) => setPickerOpen(e.currentTarget.open)}>
-              <summary>
-                {rule.bases.length === 0 ? 'Базы: любые из выбранных классов' : `Базы: выбрано ${rule.bases.length}`}
-              </summary>
+              <summary>{rule.bases.length === 0 ? t('rules.basesAny') : t('rules.basesChosen', { n: rule.bases.length })}</summary>
               {pickerOpen && <BasePicker rule={rule} context={context} onChange={(bases) => set('bases', bases)} />}
             </details>
           )}
@@ -368,17 +357,20 @@ interface Props {
 }
 
 export function BasesView({ config, update, rates }: Props) {
+  const { t, locale } = useI18n()
   const popularity = usePopularity(config.league)
   const shares = popularity.data?.shares ?? null
   const exceptional = useExceptionalScan(config.league)
   const context: BaseContext = { shares, scan: exceptional.scan, league: config.league }
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
+  const addRule = (rule: Omit<BaseRule, 'id'>) => setRules((rules) => [...rules, { ...rule, id: crypto.randomUUID() }])
 
-  const choosePreset = (preset: (typeof RULE_PRESETS)[number]) => {
+  const choosePreset = (preset: RulePreset) => {
     // Правила из опроса трейда набор не трогает — они остаются первыми.
     const count = config.baseRules.filter((r) => r.source !== 'trade').length
-    if (count > 0 && !confirm(`Набор «${preset.title}» заменит текущие правила (${count}). Продолжить?`)) return
-    update((c) => applyPreset(c, preset, shares))
+    const title = t(keyOf('preset', `${preset.id}.title`))
+    if (count > 0 && !confirm(t('rules.presetConfirm', { title, n: count }))) return
+    update((c) => applyPreset(c, preset, shares, t))
   }
 
   const move = (index: number, delta: number) =>
@@ -391,64 +383,57 @@ export function BasesView({ config, update, rates }: Props) {
   return (
     <div>
       <header className="page-header">
-        <h1>Правила баз</h1>
+        <h1>{t('nav.bases')}</h1>
       </header>
-      <p className="note">
-        Правила для обычных, магических и редких предметов экипировки. Игра применяет первое подошедшее правило, поэтому
-        порядок важен: чем выше правило, тем оно главнее. Уникальные предметы настраиваются в своих разделах и этими правилами
-        не затрагиваются.
-      </p>
+      <p className="note">{t('rules.note')}</p>
 
       <section className="panel">
-        <h2>Готовые наборы</h2>
+        <h2>{t('rules.presets')}</h2>
         <p className="note">
-          Набор заменяет все правила ниже. Потом любое правило можно поправить, выключить или удалить.
-          {!shares && !popularity.loading && ' Популярность баз не загрузилась — вместо популярных баз будут взяты старшие базы каждого класса.'}
+          {t('rules.presetsNote')}
+          {!shares && !popularity.loading && ` ${t('rules.noPopularity')}`}
         </p>
         <div className="presets">
           {RULE_PRESETS.map((preset) => (
             <article key={preset.id} className="preset">
-              <h3>{preset.title}</h3>
-              <p>{preset.summary}</p>
+              <h3>{t(keyOf('preset', `${preset.id}.title`))}</h3>
+              <p>{t(keyOf('preset', `${preset.id}.summary`))}</p>
               <ul>
-                {preset.details.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
+                {/* Пункты «что входит» записаны в словаре одной строкой через «|». */}
+                {t(keyOf('preset', `${preset.id}.details`))
+                  .split('|')
+                  .map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
               </ul>
               <button className="primary" disabled={popularity.loading} onClick={() => choosePreset(preset)}>
-                Применить
+                {t('rules.apply')}
               </button>
             </article>
           ))}
         </div>
-        <p className="note">
-          Списки популярных баз фиксируются в момент применения; чтобы обновить их, примените набор заново.
-        </p>
+        <p className="note">{t('rules.presetsFrozen')}</p>
       </section>
 
       <ExceptionalPanel config={config} update={update} rates={rates} scan={exceptional.scan} loading={exceptional.loading} />
 
       <section className="panel">
-        <h2>Добавить отдельное правило</h2>
+        <h2>{t('rules.add')}</h2>
         <div className="actions">
-          <button
-            disabled={!shares}
-            onClick={() => shares && setRules((rules) => [...rules, { ...popularRule(shares), id: crypto.randomUUID() }])}
-          >
-            Популярные базы, ур. предмета 82+
+          <button disabled={!shares} onClick={() => shares && addRule(popularRule(shares, t))}>
+            {t('template.popular')}
           </button>
           {RULE_TEMPLATES.map((template) => (
-            <button key={template.title} onClick={() => setRules((rules) => [...rules, { ...template.make(), id: crypto.randomUUID() }])}>
-              {template.title}
+            <button key={template.title} onClick={() => addRule(template.make(t))}>
+              {t(template.title)}
             </button>
           ))}
         </div>
         <p className="note">
-          {popularity.loading && 'Загрузка популярности баз с poe.ninja…'}
-          {popularity.error && <span className="note--error">Популярность баз недоступна: {popularity.error}</span>}
+          {popularity.loading && t('rules.popularityLoading')}
+          {popularity.error && <span className="note--error">{t('rules.popularityError', { error: popularity.error })}</span>}
           {popularity.data &&
-            `Популярность баз — по ${popularity.data.characters.toLocaleString('ru-RU')} персонажам из рейтинга poe.ninja: доля тех, ` +
-              `у кого редкий предмет слота сделан на этой базе. Популярной считается база с долей от ${POPULAR_SHARE * 100}%.`}
+            t('rules.popularityNote', { n: popularity.data.characters.toLocaleString(locale), share: POPULAR_SHARE * 100 })}
         </p>
       </section>
 
@@ -467,28 +452,25 @@ export function BasesView({ config, update, rates }: Props) {
       ))}
 
       <section className="panel">
-        <h2>Остальная экипировка</h2>
+        <h2>{t('rules.rest')}</h2>
         <label className="check">
           <input
             type="checkbox"
             checked={config.gear.hideLowRarity}
             onChange={(e) => update((c) => ({ ...c, gear: { ...c.gear, hideLowRarity: e.target.checked } }))}
           />
-          Скрывать обычные и магические оружие и броню начиная с уровня области
+          {t('rules.restHide')}
           <input
             type="number"
             min={1}
             max={100}
-            aria-label="Уровень области"
+            aria-label={t('rules.areaLevel')}
             disabled={!config.gear.hideLowRarity}
             value={config.gear.areaLevel}
             onChange={(e) => update((c) => ({ ...c, gear: { ...c.gear, areaLevel: Number(e.target.value) } }))}
           />
         </label>
-        <p className="note">
-          Срабатывает после правил выше: то, что они показывают, остаётся видимым. Кольца, амулеты, пояса и все редкие и
-          уникальные предметы не скрываются.
-        </p>
+        <p className="note">{t('rules.restNote')}</p>
       </section>
     </div>
   )

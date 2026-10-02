@@ -5,10 +5,12 @@ import { SectionView } from './components/SectionView'
 import { StylesView } from './components/StylesView'
 import { CURRENCIES } from './defaults'
 import { generateFilter } from './filter'
+import { keyOf, LANGUAGE_TITLES, LANGUAGES, translateOr, type Lang } from './i18n'
+import { I18nProvider, useI18n } from './i18n-react'
 import { SECTIONS } from './sections'
-import { useConfig, useMarket } from './store'
+import { useConfig, useMarket, type UpdateConfig } from './store'
 import { convertCurrency, perDivine } from './tiering'
-import type { Currency } from './types'
+import type { Config, Currency } from './types'
 
 const PAGES = ['bases', 'styles', 'export'] as const
 type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number]
@@ -31,6 +33,15 @@ function useRoute(): Route {
 
 export function App() {
   const [config, update] = useConfig()
+  return (
+    <I18nProvider lang={config.language}>
+      <Shell config={config} update={update} />
+    </I18nProvider>
+  )
+}
+
+function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
+  const { t, locale, name } = useI18n()
   const market = useMarket(config.league, (league) => update((c) => ({ ...c, league })))
   const route = useRoute()
   const { snapshot } = market
@@ -55,37 +66,38 @@ export function App() {
             <path d="M7 17h20" stroke="#f1d892" strokeWidth="0.6" opacity="0.7" />
           </svg>
           <div>
-            <div className="brand-title">Лутфильтр</div>
+            <div className="brand-title">{t('app.brand')}</div>
             <div className="brand-sub">Path of Exile 2</div>
           </div>
         </div>
         <nav>
           {SECTIONS.map((s, i) => (
             <Fragment key={s.id}>
-              {i === 0 && <div className="nav-group">Рынок</div>}
-              {s.unique && !SECTIONS[i - 1]?.unique && <div className="nav-group">Уникальные</div>}
+              {i === 0 && <div className="nav-group">{t('nav.market')}</div>}
+              {s.unique && !SECTIONS[i - 1]?.unique && <div className="nav-group">{t('nav.uniques')}</div>}
               <a
                 href={`#/${s.id}`}
                 className={[route === s.id && 'active', config.disabledSections.includes(s.id) && 'off']
                   .filter(Boolean)
                   .join(' ')}
               >
-                {s.short ?? s.title}
+                {/* Под заголовком своей группы раздел называется коротко: «Оружие», а не «Уники: оружие». */}
+                {translateOr(t, 'sectionShort', s.id, t(keyOf('section', s.id)))}
                 <span className="count">{counts.get(s.id) ?? '—'}</span>
               </a>
             </Fragment>
           ))}
-          <div className="nav-group">Экипировка</div>
+          <div className="nav-group">{t('nav.gear')}</div>
           <a href="#/bases" className={route === 'bases' ? 'active' : ''}>
-            Правила баз
+            {t('nav.bases')}
             <span className="count">{config.baseRules.filter((r) => r.enabled).length}</span>
           </a>
-          <div className="nav-group">Фильтр</div>
+          <div className="nav-group">{t('nav.filter')}</div>
           <a href="#/styles" className={route === 'styles' ? 'active' : ''}>
-            Тиры и стили
+            {t('nav.styles')}
           </a>
           <a href="#/export" className={route === 'export' ? 'active' : ''}>
-            Экспорт
+            {t('nav.export')}
           </a>
         </nav>
       </aside>
@@ -93,7 +105,7 @@ export function App() {
       <div className="content">
         <div className="topbar">
           <label>
-            Лига
+            {t('top.league')}
             <select
               value={config.league ?? ''}
               disabled={market.leagues.length === 0}
@@ -107,43 +119,50 @@ export function App() {
             </select>
           </label>
           <label>
-            Валюта
+            {t('top.currency')}
             <select
               value={config.currency}
               disabled={!snapshot}
-              title="Пороги и минимальные цены пересчитаются по текущему курсу"
+              title={t('top.currencyHint')}
               onChange={(e) => snapshot && update((c) => convertCurrency(c, e.target.value as Currency, snapshot.rates))}
             >
               {(Object.keys(CURRENCIES) as Currency[]).map((id) => (
                 // Без курса пересчитать пороги в эту валюту нельзя.
                 <option key={id} value={id} disabled={!snapshot || !(perDivine(id, snapshot.rates) > 0)}>
-                  {CURRENCIES[id].title}
+                  {name(CURRENCIES[id].title)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t('top.language')}
+            <select value={config.language} onChange={(e) => update((c) => ({ ...c, language: e.target.value as Lang }))}>
+              {LANGUAGES.map((lang) => (
+                <option key={lang} value={lang}>
+                  {LANGUAGE_TITLES[lang]}
                 </option>
               ))}
             </select>
           </label>
           <span className="status">
             {market.loading
-              ? 'Загрузка цен…'
-              : snapshot && `Цены poe.ninja от ${new Date(snapshot.fetchedAt).toLocaleString('ru-RU')}`}
+              ? t('top.loading')
+              : snapshot && t('top.pricesAt', { time: new Date(snapshot.fetchedAt).toLocaleString(locale) })}
           </span>
           <button className="primary" disabled={!snapshot} onClick={() => snapshot && downloadFilter(generateFilter(snapshot, config))}>
-            Скачать .filter
+            {t('top.download')}
           </button>
         </div>
 
         <main>
           {market.error && (
             <p className="note note--error">
-              Не удалось загрузить данные: {market.error}{' '}
-              <button onClick={market.retry}>Повторить</button>
+              {t('error.load', { error: market.error })} <button onClick={market.retry}>{t('action.retry')}</button>
             </p>
           )}
-          {!snapshot && market.loading && <p className="note">Загрузка цен…</p>}
+          {!snapshot && market.loading && <p className="note">{t('top.loading')}</p>}
           {route === 'bases' && <BasesView config={config} update={update} rates={snapshot?.rates ?? null} />}
-          {route === 'styles' && (
-            <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />
-          )}
+          {route === 'styles' && <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />}
           {snapshot && route === 'export' && <ExportView snapshot={snapshot} config={config} />}
           {snapshot && section && <SectionView key={section.id} section={section} snapshot={snapshot} config={config} update={update} />}
         </main>

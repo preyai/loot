@@ -12,6 +12,9 @@ ENV_FILE="$APP_DIR/.env"
 # Пользователь node внутри образа node:alpine.
 CONTAINER_UID=1000
 
+# Временный каталог с присланной сборкой убираем при любом исходе.
+trap 'rm -rf "$SRC"' EXIT
+
 if [ "$(id -u)" = 0 ]; then SUDO=""; else SUDO="sudo"; fi
 
 if ! command -v docker >/dev/null 2>&1; then
@@ -73,14 +76,13 @@ if ! is_healthy; then
     echo "Возвращаю предыдущую версию." >&2
     run_container "$PREVIOUS"
   fi
-  rm -rf "$SRC"
   exit 1
 fi
 
 # Оставляем текущий образ и один предыдущий (на случай ручного отката), остальные удаляем.
-$DOCKER images "$NAME" --format '{{.Tag}}' | grep -vx "$TAG" | tail -n +2 | while read -r old; do
+# grep без совпадений (других образов ещё нет) возвращает 1 — это не ошибка.
+$DOCKER images "$NAME" --format '{{.Tag}}' | { grep -vx "$TAG" || true; } | tail -n +2 | while read -r old; do
   $DOCKER rmi "$NAME:$old" >/dev/null 2>&1 || true
 done
 
-rm -rf "$SRC"
 echo "Готово: контейнер $NAME работает на порту $PORT."

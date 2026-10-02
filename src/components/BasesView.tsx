@@ -12,14 +12,14 @@ import {
   wikiUrl,
   type BaseInfo,
 } from '../bases'
-import { chancingBases, chancingRule, uniquesByBase } from '../chancing'
+import { CHANCING_MIN_DIVINE, chancingBases, chancingRule, uniquesByBase } from '../chancing'
 import { CURRENCIES } from '../defaults'
 import { baseOffers } from '../exceptional'
 import { keyOf, translateOr, type T } from '../i18n'
 import { useI18n } from '../i18n-react'
 import { applyPreset, RULE_PRESETS, type RulePreset } from '../presets'
 import { useExceptionalScan, usePopularity, type UpdateConfig } from '../store'
-import { formatPrice, perDivine } from '../tiering'
+import { formatPrice } from '../tiering'
 import {
   RARITIES,
   TIER_IDS,
@@ -417,13 +417,11 @@ export function BasesView({ config, update, snapshot }: Props) {
     priceOf: (unique) => (rates ? formatPrice(unique.divine, rates, config.currency, t) : ''),
   }
 
-  // Под шансинг годятся базы уников уровня «джекпот»: порог — нижняя граница тира S, как она задана у пользователя.
   const chancing = useMemo(() => {
     if (!snapshot || !rates) return null
-    const minDivine = config.thresholds.S / perDivine(config.currency, rates)
-    const bases = chancingBases(snapshot.items, minDivine)
-    return bases.length ? chancingRule(bases, formatPrice(minDivine, rates, config.currency, t), t) : null
-  }, [snapshot, rates, config.thresholds.S, config.currency, t])
+    const bases = chancingBases(snapshot.items, CHANCING_MIN_DIVINE)
+    return bases.length ? chancingRule(bases, formatPrice(CHANCING_MIN_DIVINE, rates, config.currency, t), t) : null
+  }, [snapshot, rates, config.currency, t])
 
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
   const addRule = (rule: Omit<BaseRule, 'id'>) => setRules((rules) => [...rules, { ...rule, id: crypto.randomUUID() }])

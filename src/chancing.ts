@@ -2,6 +2,12 @@ import { BASE_CLASSES, classesOf, EMPTY_RULE } from './bases'
 import type { T } from './i18n'
 import type { BaseRule, MarketItem, UniqueInfo } from './types'
 
+/**
+ * С какой цены уника его база считается целью для шансинга, в Divine Orb.
+ * Порог высокий намеренно: шанс получить уник мал, и ради дешёвого сфера удачи не окупается.
+ */
+export const CHANCING_MIN_DIVINE = 100
+
 const CATALOG = new Set(BASE_CLASSES.flatMap((c) => c.bases.map((b) => b.name)))
 
 /** Самый дорогой уник базы с надёжной ценой; null — таких нет. */

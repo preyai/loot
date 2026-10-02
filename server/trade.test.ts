@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { listingDivine, median, pacing } from './trade'
+import { describeError, listingDivine, median, pacing } from './trade'
 
 describe('pacing', () => {
   const SEARCH_RULES = '5:10:60,15:60:300,30:300:1800,600:21600:3600'
@@ -40,5 +40,14 @@ describe('цена лота', () => {
     expect(median([3, 1, 2])).toBe(2)
     expect(median([4, 1, 3, 2])).toBe(2.5)
     expect(median([])).toBeNull()
+  })
+})
+
+describe('describeError', () => {
+  it('разворачивает цепочку причин с кодами', () => {
+    const reset = Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })
+    expect(describeError(new TypeError('fetch failed', { cause: reset }))).toBe('fetch failed ← read ECONNRESET [ECONNRESET]')
+    expect(describeError(new Error('просто ошибка'))).toBe('просто ошибка')
+    expect(describeError('строка')).toBe('строка')
   })
 })

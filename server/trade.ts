@@ -119,17 +119,50 @@ class Limiter {
 const searchLimiter = new Limiter(11_000)
 const fetchLimiter = new Limiter(6_600)
 
+/** Паузы перед повторами после разового сбоя: обрыв соединения или ошибка на стороне трейда. */
+const RETRY_DELAYS_MS = [5_000, 20_000, 60_000]
+
+/** Сообщение вместе с цепочкой причин: у сетевых ошибок fetch само сообщение — всегда безликое «fetch failed». */
+export function describeError(error: unknown): string {
+  const parts: string[] = []
+  for (let e = error; e instanceof Error; e = e.cause) {
+    const code = (e as { code?: unknown }).code
+    parts.push(typeof code === 'string' ? `${e.message} [${code}]` : e.message)
+  }
+  return parts.join(' ← ') || String(error)
+}
+
 async function tradeRequest<T>(limiter: Limiter, url: string, init?: RequestInit): Promise<T> {
-  for (let attempt = 0; ; attempt++) {
+  let failures = 0
+  let limited = false
+  // Обновление идёт десятки минут — один сбой не должен обрывать его целиком.
+  const retry = (reason: string) => {
+    if (failures >= RETRY_DELAYS_MS.length) throw new Error(`Трейд недоступен: ${reason}`)
+    console.warn(`Трейд: ${reason}; повтор ${failures + 1} из ${RETRY_DELAYS_MS.length}`)
+    limiter.pause(RETRY_DELAYS_MS[failures++])
+  }
+
+  for (;;) {
     await limiter.wait()
-    const res = await fetch(url, { ...init, headers: HEADERS, signal: AbortSignal.timeout(30_000) })
+    let res: Response
+    try {
+      res = await fetch(url, { ...init, headers: HEADERS, signal: AbortSignal.timeout(30_000) })
+    } catch (e) {
+      retry(describeError(e))
+      continue
+    }
     limiter.observe(res.headers)
     if (res.status === 429) {
       const retryAfter = Number(res.headers.get('retry-after') ?? 60)
-      if (attempt > 0 || retryAfter > 600) {
+      if (limited || retryAfter > 600) {
         throw new Error(`Трейд ограничил запросы, повторите через ${Math.ceil(retryAfter / 60)} мин.`)
       }
+      limited = true
       limiter.pause(retryAfter * 1000)
+      continue
+    }
+    if (res.status >= 500) {
+      retry(`ответ ${res.status}`)
       continue
     }
     if (!res.ok) throw new Error(`Трейд ответил ${res.status}`)
@@ -220,6 +253,7 @@ async function run(league: string, bases: string[]) {
     const isFresh = (base: string) => prices[base] && Date.now() - Date.parse(prices[base].at) < FRESH_MS
     const todo = bases.filter((base) => !isFresh(base))
     job = { ...job, total: todo.length }
+    console.log(`Цены баз: обновление начато, лига ${league}, баз ${todo.length}`)
 
     for (const base of todo) {
       if (stopRequested) break
@@ -230,8 +264,11 @@ async function run(league: string, bases: string[]) {
       await writeStore(store)
     }
   } catch (e) {
+    // В журнал — с причиной и базой, на которой остановились: по одному сообщению в интерфейсе сбой не разобрать.
+    console.error(`Цены баз: остановлено на «${job.current}»: ${describeError(e)}`)
     job = { ...job, error: e instanceof Error ? e.message : String(e) }
   } finally {
     job = { ...job, running: false, current: null, finishedAt: new Date().toISOString() }
+    console.log(`Цены баз: обновление завершено, получено ${job.done} из ${job.total}`)
   }
 }

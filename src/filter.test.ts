@@ -3,7 +3,7 @@ import { DEFAULT_CONFIG } from './defaults'
 import { baseTradeQuery, baseTradeUrl, baseWikiUrl, describeRule, EMPTY_RULE, topBases } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
-import { baseRuleBlock, generateFilter, matchConditions } from './filter'
+import { baseRuleBlock, generateFilter, matchConditions, styleLines } from './filter'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
 import type { BaseRule, Config, ExceptionalScan, MarketItem, MarketSnapshot } from './types'
 
@@ -179,12 +179,13 @@ describe('правила баз', () => {
         '    Class == "Bows"',
         '    Rarity Normal Magic',
         '    ItemLevel >= 82',
-        '    SetFontSize 36',
-        '    SetTextColor 245 220 70 255',
-        '    SetBorderColor 245 220 70 255',
-        '    SetBackgroundColor 40 30 0 235',
-        '    PlayEffect Yellow Temp',
-        '    MinimapIcon 2 Yellow Circle',
+        '    SetFontSize 42',
+        '    SetTextColor 0 0 0 255',
+        '    SetBorderColor 0 0 0 255',
+        '    SetBackgroundColor 245 139 87 255',
+        '    PlayAlertSound 2 300',
+        '    PlayEffect White',
+        '    MinimapIcon 1 Yellow Circle',
       ].join('\n'),
     )
   })
@@ -371,6 +372,31 @@ describe('исключительные вещи с трейда', () => {
   })
 })
 
+describe('оформление тиров по умолчанию', () => {
+  it('тир без фона и звука не пишет эти строки в фильтр', () => {
+    // Тир E у NeverSink — только цвет текста и рамки, временный луч и серая метка.
+    expect(styleLines(DEFAULT_CONFIG.tiers.E)).toEqual([
+      'SetFontSize 40',
+      'SetTextColor 240 207 132 255',
+      'SetBorderColor 240 207 132 255',
+      'PlayEffect White Temp',
+      'MinimapIcon 2 Grey Circle',
+    ])
+  })
+
+  it('высший тир — красный текст на белом, самый заметный звук и звезда на карте', () => {
+    expect(styleLines(DEFAULT_CONFIG.tiers.S)).toEqual([
+      'SetFontSize 45',
+      'SetTextColor 255 0 0 255',
+      'SetBorderColor 255 0 0 255',
+      'SetBackgroundColor 255 255 255 255',
+      'PlayAlertSound 6 300',
+      'PlayEffect Red',
+      'MinimapIcon 0 Red Star',
+    ])
+  })
+})
+
 describe('generateFilter', () => {
   it('раскладывает предметы по тирам согласно порогам в exalted', () => {
     const text = generateFilter(snapshot([mirror, jeweller, scroll]), DEFAULT_CONFIG)
@@ -390,7 +416,7 @@ describe('generateFilter', () => {
     }
     const text = generateFilter(snapshot([mirror, jeweller, scroll]), config)
     const stack = text.indexOf(
-      'Show # Currency / C / stacks of 20+\n    BaseType == "Scroll of Wisdom"\n    StackSize >= 20\n    SetFontSize 36',
+      'Show # Currency / C / stacks of 20+\n    BaseType == "Scroll of Wisdom"\n    StackSize >= 20\n    SetFontSize 42',
     )
     const hide = text.indexOf('Hide # Currency / hidden\n    BaseType == "Mirror of Kalandra" "Scroll of Wisdom"\n')
     expect(stack).toBeGreaterThan(-1)

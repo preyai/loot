@@ -125,6 +125,12 @@ export interface BaseRule {
   minItemLevel: number
   minQuality: number
   minSockets: number
+  /** Гарантированная ступень свойств неопознанной вещи (UnidentifiedItemTier). */
+  minUnidentifiedTier: number
+  /** С какого уровня области правило действует; нужно правилам скрытия, чтобы не мешать прокачке. */
+  minAreaLevel: number
+  /** Не затрагивать осквернённые и отзеркаленные предметы: их нельзя улучшать. */
+  excludeCorrupted: boolean
   /** Тир, чьим стилем оформляется предмет. */
   tier: TierId
 }

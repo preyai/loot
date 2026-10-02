@@ -67,6 +67,9 @@ export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tier
   if (rule.minItemLevel > 0) lines.push(`ItemLevel >= ${rule.minItemLevel}`)
   if (rule.minQuality > 0) lines.push(`Quality >= ${rule.minQuality}`)
   if (rule.minSockets > 0) lines.push(`Sockets >= ${rule.minSockets}`)
+  if (rule.minUnidentifiedTier > 0) lines.push(`UnidentifiedItemTier >= ${rule.minUnidentifiedTier}`)
+  if (rule.excludeCorrupted) lines.push('Corrupted False', 'Mirrored False')
+  if (rule.minAreaLevel > 0) lines.push(`AreaLevel >= ${rule.minAreaLevel}`)
   const show = rule.action === 'show'
   // Название правила в комментарий не идёт: оно может быть не на латинице.
   return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(tiers[rule.tier])] : lines)

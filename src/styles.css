@@ -433,6 +433,55 @@ main {
   margin-left: auto;
 }
 
+.rule-summary {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.rule:not(:has(.rule-row)) header {
+  margin-bottom: 0;
+}
+
+.rule header .ground {
+  min-height: 30px;
+}
+
+.presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.preset {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.preset h3 {
+  margin: 0 0 4px;
+  color: var(--accent);
+  font-size: 15px;
+}
+
+.preset p {
+  margin: 0 0 8px;
+}
+
+.preset ul {
+  flex: 1;
+  margin: 0 0 12px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .rule-name {
   flex: 1;
   min-width: 180px;

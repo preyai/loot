@@ -27,10 +27,16 @@ export const BASE_GROUPS: { id: BaseGroup; title: string }[] = [
   { id: 'jewellery', title: 'Бижутерия' },
 ]
 
-const classNames = (...groups: BaseGroup[]) => BASE_CLASSES.filter((c) => groups.includes(c.group)).map((c) => c.name)
+export const classNames = (...groups: BaseGroup[]) => BASE_CLASSES.filter((c) => groups.includes(c.group)).map((c) => c.name)
 
 /** Оружие и броня — то, что скрывает правило «обычные и магические предметы». */
 export const GEAR_CLASSES = classNames('weapon', 'armour')
+
+/** Классы, к которым относятся перечисленные базы. */
+export function classesOf(bases: string[]): string[] {
+  const wanted = new Set(bases)
+  return BASE_CLASSES.filter((c) => c.bases.some((b) => wanted.has(b.name))).map((c) => c.name)
+}
 
 /** Старшие базы класса: в пределах этого числа уровней выпадения от лучшей. */
 const TOP_BASE_WINDOW = 5
@@ -42,7 +48,7 @@ export function topBases(classes: string[]): string[] {
   })
 }
 
-const EMPTY_RULE: Omit<BaseRule, 'id' | 'name'> = {
+export const EMPTY_RULE: Omit<BaseRule, 'id' | 'name'> = {
   enabled: true,
   action: 'show',
   classes: [],
@@ -51,7 +57,36 @@ const EMPTY_RULE: Omit<BaseRule, 'id' | 'name'> = {
   minItemLevel: 0,
   minQuality: 0,
   minSockets: 0,
+  minUnidentifiedTier: 0,
+  minAreaLevel: 0,
+  excludeCorrupted: false,
   tier: 'C',
+}
+
+const RARITY_WORDS = { Normal: 'обычные', Magic: 'магические', Rare: 'редкие' } as const
+
+/** Правило одной строкой, как его прочёл бы человек. */
+export function describeRule(rule: BaseRule): string {
+  const all = rule.rarities.length === 0 || rule.rarities.length === RARITIES.length
+  const scope = rule.bases.length
+    ? `баз: ${rule.bases.length}`
+    : rule.classes.length === 0
+      ? 'классы не выбраны'
+      : rule.classes.length <= 3
+        ? rule.classes.join(', ')
+        : `классов: ${rule.classes.length}`
+  return [
+    all ? 'любая редкость' : rule.rarities.map((r) => RARITY_WORDS[r]).join(' и '),
+    scope,
+    rule.minItemLevel > 0 && `ур. предмета ${rule.minItemLevel}+`,
+    rule.minQuality > 0 && `качество ${rule.minQuality}%+`,
+    rule.minSockets > 0 && `гнёзд ${rule.minSockets}+`,
+    rule.minUnidentifiedTier > 0 && `ступень свойств ${rule.minUnidentifiedTier}+`,
+    rule.excludeCorrupted && 'не осквернённые',
+    rule.minAreaLevel > 0 && `с уровня области ${rule.minAreaLevel}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 /** Белые базы оцениваются и подсвечиваются с этого уровня предмета: ниже него не выпадают лучшие свойства. */

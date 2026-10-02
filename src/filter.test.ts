@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './defaults'
-import { topBases } from './bases'
+import { describeRule, EMPTY_RULE, topBases } from './bases'
+import { applyPreset, RULE_PRESETS } from './presets'
 import { baseRuleBlock, generateFilter, matchConditions } from './filter'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
 import type { BaseRule, Config, MarketItem, MarketSnapshot } from './types'
@@ -179,6 +180,9 @@ describe('правила баз', () => {
     minItemLevel: 82,
     minQuality: 0,
     minSockets: 0,
+    minUnidentifiedTier: 0,
+    minAreaLevel: 0,
+    excludeCorrupted: false,
     tier: 'C',
   }
   const { tiers } = DEFAULT_CONFIG
@@ -224,10 +228,64 @@ describe('правила баз', () => {
     expect(positions[0]).toBeGreaterThan(-1)
   })
 
+  it('ступень свойств, запрет осквернённых и уровень области попадают в условия', () => {
+    const strict: BaseRule = { ...rule, action: 'hide', rarities: ['Rare'], minItemLevel: 0, minUnidentifiedTier: 3, minAreaLevel: 75, excludeCorrupted: true }
+    expect(baseRuleBlock(strict, 0, tiers)).toBe(
+      [
+        'Hide # Bases / rule 1',
+        '    Class == "Bows"',
+        '    Rarity Rare',
+        '    UnidentifiedItemTier >= 3',
+        '    Corrupted False',
+        '    Mirrored False',
+        '    AreaLevel >= 75',
+      ].join('\n'),
+    )
+  })
+
+  it('описание правила читается одной строкой', () => {
+    expect(describeRule(rule)).toBe('обычные и магические · Bows · ур. предмета 82+')
+    expect(describeRule({ ...rule, rarities: [], bases: ['A', 'B'], minItemLevel: 0, minSockets: 3, excludeCorrupted: true })).toBe(
+      'любая редкость · баз: 2 · гнёзд 3+ · не осквернённые',
+    )
+  })
+
   it('топовые базы — в пределах пяти уровней выпадения от лучшей в классе', () => {
     const bows = topBases(['Bows'])
     expect(bows).toContain('Fanatic Bow')
     expect(bows).not.toContain('Crude Bow')
+  })
+})
+
+describe('готовые наборы', () => {
+  const shares = { 'Obliterator Bow': 0.58, 'Vile Robe': 0.35, 'Crude Bow': 0.001 }
+
+  it('каждый набор даёт правила, которые все попадают в фильтр', () => {
+    for (const preset of RULE_PRESETS) {
+      const config = applyPreset({ ...DEFAULT_CONFIG, baseRules: [{ ...EMPTY_RULE, id: 'old', name: 'старое' }] }, preset, shares)
+      expect(config.baseRules.length).toBeGreaterThan(4)
+      expect(config.baseRules.some((r) => r.id === 'old')).toBe(false)
+      expect(new Set(config.baseRules.map((r) => r.id)).size).toBe(config.baseRules.length)
+      expect(config.gear.hideLowRarity).toBe(preset.hideLowRarity)
+      config.baseRules.forEach((r, i) => expect(baseRuleBlock(r, i, config.tiers), r.name).not.toBeNull())
+    }
+  })
+
+  it('«популярные базы» — это базы с долей от 3%, а без данных о популярности — старшие базы', () => {
+    const balanced = RULE_PRESETS.find((p) => p.id === 'balanced')!
+    const popular = balanced.make(shares).find((r) => r.name.startsWith('Заготовки'))!
+    expect(popular.bases).toEqual(['Obliterator Bow', 'Vile Robe'])
+    expect(popular.classes).toEqual(['Bows', 'Body Armours'])
+    const fallback = balanced.make(null).find((r) => r.name.startsWith('Заготовки'))!
+    expect(fallback.bases).toContain('Fanatic Bow')
+  })
+
+  it('строгий набор скрывает прочие редкие только с высокого уровня области', () => {
+    const strict = RULE_PRESETS.find((p) => p.id === 'strict')!
+    const hide = strict.make(shares).at(-1)!
+    expect(hide.action).toBe('hide')
+    expect(hide.minAreaLevel).toBe(75)
+    expect(hide.rarities).toEqual(['Rare'])
   })
 })
 

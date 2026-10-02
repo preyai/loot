@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { EMPTY_RULE } from './bases'
 import { DEFAULT_CONFIG } from './defaults'
 import type { BasePopularity, BasePriceJob, Config, League, MarketSnapshot } from './types'
 
@@ -16,6 +17,7 @@ function loadConfig(): Config {
       tiers: { ...DEFAULT_CONFIG.tiers, ...stored.tiers },
       visibility: { ...DEFAULT_CONFIG.visibility, ...stored.visibility },
       gear: { ...DEFAULT_CONFIG.gear, ...stored.gear },
+      baseRules: (stored.baseRules ?? []).map((rule) => ({ ...EMPTY_RULE, ...rule })),
     }
   } catch {
     return DEFAULT_CONFIG

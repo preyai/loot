@@ -79,6 +79,16 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
   const needle = query.trim().toLowerCase()
   const matches = (base: BaseInfo) => base.name.toLowerCase().includes(needle) || name(base.name).toLowerCase().includes(needle)
 
+  // Пустой список в правиле значит «любая база выбранных классов» — на экране это все карточки отмеченными.
+  const all = useMemo(() => classes.flatMap((c) => c.bases.map((b) => b.name)), [classes])
+  const selected = useMemo(() => new Set(rule.bases.length ? rule.bases : all), [rule.bases, all])
+  const toggleBase = (base: string) => {
+    const next = all.filter((b) => (b === base ? !selected.has(b) : selected.has(b)))
+    // Правило без единой базы ничего бы не находило, поэтому последнюю снять нельзя.
+    if (next.length === 0) return
+    onChange(next.length === all.length ? [] : next)
+  }
+
   return (
     <div className="base-picker">
       <div className="actions">
@@ -113,7 +123,7 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
           {t('rules.pickPopular')}
         </button>
         <button disabled={rule.bases.length === 0} onClick={() => onChange([])}>
-          {t('rules.clear')}
+          {t('rules.allBases')}
         </button>
       </div>
       {classes.map((c) => {
@@ -124,7 +134,7 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
             <legend>{classTitle(t, c.name)}</legend>
             {bases.map((b) => (
               <label key={b.name} className="base-card">
-                <input type="checkbox" checked={rule.bases.includes(b.name)} onChange={() => onChange(toggle(rule.bases, b.name))} />
+                <input type="checkbox" checked={selected.has(b.name)} onChange={() => toggleBase(b.name)} />
                 <BaseIcon name={b.name} large />
                 <span className="base-card-name">{name(b.name)}</span>
                 <EnglishName name={b.name} />
@@ -185,6 +195,14 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
     onChange({ ...rule, classes, bases: rule.bases.filter((b) => allowed.has(b)) })
   }
 
+  // Что правило охватывает на деле: названные базы либо все базы выбранных классов, популярные — первыми.
+  const covered = useMemo(() => {
+    if (rule.bases.length) return rule.bases
+    const all = BASE_CLASSES.filter((c) => rule.classes.includes(c.name)).flatMap((c) => c.bases.map((b) => b.name))
+    const shares = context.shares
+    return shares ? all.sort((a, b) => (shares[b] ?? 0) - (shares[a] ?? 0)) : all
+  }, [rule.bases, rule.classes, context.shares])
+
   const minField = (
     key: 'minItemLevel' | 'minQuality' | 'minSockets' | 'minUnidentifiedTier' | 'minAreaLevel',
     label: string,
@@ -228,12 +246,12 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
               {rule.name} {rule.source === 'trade' && <span className="badge">{t('rules.fromTrade')}</span>}
             </strong>
             <span className="count">{describeRule(rule, t)}</span>
-            {rule.bases.length > 0 && (
+            {covered.length > 0 && (
               <div className="base-icons">
-                {rule.bases.slice(0, SUMMARY_ICONS).map((base) => (
+                {covered.slice(0, SUMMARY_ICONS).map((base) => (
                   <BaseIcon key={base} name={base} />
                 ))}
-                {rule.bases.length > SUMMARY_ICONS && <span className="count">+{rule.bases.length - SUMMARY_ICONS}</span>}
+                {covered.length > SUMMARY_ICONS && <span className="count">+{covered.length - SUMMARY_ICONS}</span>}
               </div>
             )}
           </div>
@@ -280,7 +298,7 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
                   </select>
                 </label>
                 <div className="ground">
-                  <ItemLabel name={rule.bases[0] ? name(rule.bases[0]) : t('rules.sampleItem')} style={config.tiers[rule.tier]} />
+                  <ItemLabel name={covered[0] ? name(covered[0]) : t('rules.sampleItem')} style={config.tiers[rule.tier]} />
                 </div>
               </>
             )}
@@ -339,7 +357,11 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
             <p className="note note--error">{t('rules.noClasses')}</p>
           ) : (
             <details open={pickerOpen} onToggle={(e) => setPickerOpen(e.currentTarget.open)}>
-              <summary>{rule.bases.length === 0 ? t('rules.basesAny') : t('rules.basesChosen', { n: rule.bases.length })}</summary>
+              <summary>
+                {rule.bases.length === 0
+                  ? t('rules.basesAny', { n: covered.length })
+                  : t('rules.basesChosen', { n: rule.bases.length, total: BASE_CLASSES.filter((c) => rule.classes.includes(c.name)).reduce((n, c) => n + c.bases.length, 0) })}
+              </summary>
               {pickerOpen && <BasePicker rule={rule} context={context} onChange={(bases) => set('bases', bases)} />}
             </details>
           )}

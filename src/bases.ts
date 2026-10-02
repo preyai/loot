@@ -102,6 +102,17 @@ export function topBases(classes: string[]): string[] {
   })
 }
 
+/** Переставляет элемент списка на место перед другим элементом или после него. */
+export function moveItem<Item extends { id: string }>(list: Item[], fromId: string, toId: string, after: boolean): Item[] {
+  const moved = list.find((item) => item.id === fromId)
+  if (!moved || fromId === toId) return list
+  const rest = list.filter((item) => item.id !== fromId)
+  const index = rest.findIndex((item) => item.id === toId)
+  if (index < 0) return list
+  rest.splice(after ? index + 1 : index, 0, moved)
+  return rest
+}
+
 export const EMPTY_RULE: Omit<BaseRule, 'id' | 'name'> = {
   enabled: true,
   action: 'show',

@@ -879,7 +879,38 @@ main {
   opacity: 0.4;
 }
 
-.rule--off .rule-summary {
+.rule--off /* Ручка перетаскивания правила */
+.rule-grip {
+  padding: 2px 4px;
+  color: var(--gold-dim);
+  cursor: grab;
+  font-size: 18px;
+  line-height: 1;
+  user-select: none;
+}
+
+.rule-grip:hover {
+  color: var(--gold-bright);
+}
+
+.rule-grip:active {
+  cursor: grabbing;
+}
+
+.rule--dragging {
+  opacity: 0.35;
+}
+
+/* Золотая линия показывает, куда встанет правило. */
+.rule--drop-before {
+  box-shadow: 0 -4px 0 -1px var(--gold-bright), 0 -10px 18px -8px rgba(241, 216, 146, 0.6);
+}
+
+.rule--drop-after {
+  box-shadow: 0 4px 0 -1px var(--gold-bright), 0 10px 18px -8px rgba(241, 216, 146, 0.6);
+}
+
+.rule-summary {
   opacity: 0.55;
 }
 

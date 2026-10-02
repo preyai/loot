@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   baseIconUrl,
   baseTradeUrl,
   BASE_CLASSES,
   BASE_GROUPS,
   describeRule,
+  moveItem,
   POPULAR_SHARE,
   popularBases,
   popularRule,
@@ -203,10 +204,25 @@ interface CardProps {
   onChange: (rule: BaseRule) => void
   onMove: (delta: number) => void
   onDelete: () => void
+  drag: DragState
 }
 
-function RuleCard({ rule, index, total, config, context, onChange, onMove, onDelete }: CardProps) {
+/** Перетаскивание правил: что тащим, куда собираемся бросить и как об этом сообщить списку. */
+interface DragState {
+  /** id правила, которое сейчас тащат; null — ничего не тащат. */
+  dragging: string | null
+  /** Место вставки: перед каким правилом или после какого. */
+  target: { id: string; after: boolean } | null
+  start: (id: string) => void
+  over: (id: string, after: boolean) => void
+  drop: () => void
+  end: () => void
+}
+
+function RuleCard({ rule, index, total, config, context, onChange, onMove, onDelete, drag }: CardProps) {
   const { t, name } = useI18n()
+  const cardRef = useRef<HTMLElement>(null)
+  const dropSide = drag.target?.id === rule.id && drag.dragging !== rule.id ? (drag.target.after ? 'after' : 'before') : null
   // Свёрнутое правило читается одной строкой; пустое сразу открыто — его всё равно надо заполнять.
   const [open, setOpen] = useState(rule.classes.length === 0)
   // Список баз длинный — рисуем его, только пока он раскрыт.
@@ -246,8 +262,42 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
   )
 
   return (
-    <section className={rule.enabled ? 'panel rule' : 'panel rule rule--off'}>
+    <section
+      ref={cardRef}
+      className={['panel rule', !rule.enabled && 'rule--off', drag.dragging === rule.id && 'rule--dragging', dropSide && `rule--drop-${dropSide}`]
+        .filter(Boolean)
+        .join(' ')}
+      onDragOver={(e) => {
+        if (!drag.dragging) return
+        // Без этого браузер не разрешит бросить сюда.
+        e.preventDefault()
+        const box = e.currentTarget.getBoundingClientRect()
+        // Верхняя половина карточки — вставить перед ней, нижняя — после.
+        drag.over(rule.id, e.clientY > box.top + box.height / 2)
+      }}
+      onDrop={(e) => {
+        e.preventDefault()
+        drag.drop()
+      }}
+    >
       <header>
+        {/* Тащить можно только за ручку: иначе перетаскивание мешало бы выделять текст и двигать ползунки. */}
+        <span
+          className="rule-grip"
+          draggable
+          title={t('rules.drag')}
+          aria-hidden="true"
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = 'move'
+            // Firefox не начнёт перетаскивание без данных.
+            e.dataTransfer.setData('text/plain', rule.name)
+            if (cardRef.current) e.dataTransfer.setDragImage(cardRef.current, 16, 16)
+            drag.start(rule.id)
+          }}
+          onDragEnd={drag.end}
+        >
+          ⠿
+        </span>
         <span className="count">№ {index + 1}</span>
         <input
           type="checkbox"
@@ -441,6 +491,25 @@ export function BasesView({ config, update, snapshot }: Props) {
       return next
     })
 
+  const [dragging, setDragging] = useState<string | null>(null)
+  const [target, setTarget] = useState<DragState['target']>(null)
+  const endDrag = () => {
+    setDragging(null)
+    setTarget(null)
+  }
+  const drag: DragState = {
+    dragging,
+    target,
+    start: setDragging,
+    // dragover приходит десятки раз в секунду — обновляем состояние, только когда место вставки изменилось.
+    over: (id, after) => setTarget((current) => (current?.id === id && current.after === after ? current : { id, after })),
+    drop: () => {
+      if (dragging && target) setRules((rules) => moveItem(rules, dragging, target.id, target.after))
+      endDrag()
+    },
+    end: endDrag,
+  }
+
   return (
     <div>
       <header className="page-header">
@@ -512,6 +581,7 @@ export function BasesView({ config, update, snapshot }: Props) {
           onChange={(next) => setRules((rules) => rules.map((r) => (r.id === next.id ? next : r)))}
           onMove={(delta) => move(index, delta)}
           onDelete={() => setRules((rules) => rules.filter((r) => r.id !== rule.id))}
+          drag={drag}
         />
       ))}
 

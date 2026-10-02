@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { chancingBases, chancingRule, topUnique, uniquesByBase } from './chancing'
 import { DEFAULT_CONFIG } from './defaults'
-import { baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, topBases, wikiUrl } from './bases'
+import { baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, moveItem, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
 import { baseRuleBlock, generateFilter, matchConditions, styleLines } from './filter'
@@ -252,6 +252,25 @@ describe('правила баз', () => {
     const bows = topBases(['Bows'])
     expect(bows).toContain('Fanatic Bow')
     expect(bows).not.toContain('Crude Bow')
+  })
+})
+
+describe('перетаскивание правил', () => {
+  const list = ['a', 'b', 'c', 'd'].map((id) => ({ id }))
+  const order = (items: { id: string }[]) => items.map((item) => item.id).join('')
+
+  it('ставит правило перед целью или после неё, в какую бы сторону его ни тащили', () => {
+    expect(order(moveItem(list, 'a', 'c', false))).toBe('bacd')
+    expect(order(moveItem(list, 'a', 'c', true))).toBe('bcad')
+    expect(order(moveItem(list, 'd', 'b', false))).toBe('adbc')
+    expect(order(moveItem(list, 'd', 'a', false))).toBe('dabc')
+    expect(order(moveItem(list, 'a', 'd', true))).toBe('bcda')
+  })
+
+  it('бросок на себя или на неизвестное правило ничего не меняет', () => {
+    expect(moveItem(list, 'b', 'b', true)).toBe(list)
+    expect(moveItem(list, 'b', 'x', true)).toBe(list)
+    expect(moveItem(list, 'x', 'b', true)).toBe(list)
   })
 })
 

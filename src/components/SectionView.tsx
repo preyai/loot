@@ -1,0 +1,167 @@
+import { useMemo, useState } from 'react'
+import { TIER_TITLES } from '../defaults'
+import type { Section } from '../sections'
+import type { UpdateConfig } from '../store'
+import { formatPrice, itemDisplay, visibilityFor, type Display } from '../tiering'
+import { TIER_IDS, type Config, type MarketItem, type MarketSnapshot, type TierChoice, type Visibility } from '../types'
+import { ItemLabel } from './ItemLabel'
+import { VisibilityFields } from './VisibilityFields'
+
+const CHOICES: TierChoice[] = [...TIER_IDS, 'hide']
+
+const GROUPS = [...TIER_IDS, 'stack', 'hide'] as const
+type GroupId = (typeof GROUPS)[number]
+const GROUP_TITLES: Record<GroupId, string> = { ...TIER_TITLES, stack: 'Только стопками', hide: 'Скрыто' }
+
+interface Row {
+  item: MarketItem
+  display: Display
+}
+
+interface Props {
+  section: Section
+  snapshot: MarketSnapshot
+  config: Config
+  update: UpdateConfig
+}
+
+export function SectionView({ section, snapshot, config, update }: Props) {
+  const [query, setQuery] = useState('')
+  const enabled = !config.disabledSections.includes(section.id)
+  const ownVisibility = config.sectionVisibility[section.id]
+
+  const groups = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    const map = new Map<GroupId, Row[]>()
+    for (const item of snapshot.items) {
+      if (item.section !== section.id) continue
+      if (needle && !item.name.toLowerCase().includes(needle)) continue
+      const display = itemDisplay(item, config, snapshot.rates)
+      const group = display.kind === 'show' ? display.tier : display.kind
+      const list = map.get(group) ?? []
+      list.push({ item, display })
+      map.set(group, list)
+    }
+    for (const list of map.values()) list.sort((a, b) => (b.item.divine ?? -1) - (a.item.divine ?? -1))
+    return map
+  }, [snapshot, section.id, config, query])
+
+  const setTier = (name: string, choice: TierChoice | null) =>
+    update((c) => {
+      const overrides = { ...c.overrides }
+      if (choice === null) delete overrides[name]
+      else overrides[name] = choice
+      return { ...c, overrides }
+    })
+
+  const toggleSection = () =>
+    update((c) => ({
+      ...c,
+      disabledSections: enabled
+        ? [...c.disabledSections, section.id]
+        : c.disabledSections.filter((id) => id !== section.id),
+    }))
+
+  const setVisibility = (value: Visibility | null) =>
+    update((c) => {
+      const sectionVisibility = { ...c.sectionVisibility }
+      if (value) sectionVisibility[section.id] = value
+      else delete sectionVisibility[section.id]
+      return { ...c, sectionVisibility }
+    })
+
+  const failed = snapshot.failed.includes(section.id)
+
+  return (
+    <div className={enabled ? 'section' : 'section section--disabled'}>
+      <header className="page-header">
+        <h1>{section.title}</h1>
+        <input
+          className="search"
+          type="search"
+          placeholder="Поиск предмета…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <label className="check">
+          <input type="checkbox" checked={enabled} onChange={toggleSection} />
+          Включить раздел в фильтр
+        </label>
+      </header>
+
+      <section className="panel">
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={ownVisibility !== undefined}
+            onChange={(e) => setVisibility(e.target.checked ? config.visibility : null)}
+          />
+          Свои настройки показа для этого раздела
+        </label>
+        <VisibilityFields
+          value={visibilityFor(config, section.id)}
+          thresholds={config.thresholds}
+          onChange={setVisibility}
+          disabled={ownVisibility === undefined}
+          unstackable={section.unstackable}
+        />
+        {ownVisibility === undefined && (
+          <p className="note">
+            Действуют общие настройки — они меняются на странице <a href="#/styles">«Тиры и стили»</a>.
+          </p>
+        )}
+      </section>
+
+      {!enabled && <p className="note">Раздел выключен: игра покажет эти предметы как обычно, без правил фильтра.</p>}
+      {failed && <p className="note note--error">Не удалось загрузить цены этого раздела. Попробуйте обновить цены.</p>}
+      {!failed && groups.size === 0 && <p className="note">{query ? 'Ничего не найдено.' : 'В этой лиге предметов нет.'}</p>}
+
+      {GROUPS.map((group) => {
+        const rows = groups.get(group)
+        if (!rows) return null
+        return (
+          <section key={group} className="tier-group">
+            <h2>
+              {GROUP_TITLES[group]}
+              <span className="count">{rows.length}</span>
+            </h2>
+            <ul className="items">
+              {rows.map(({ item, display }) => {
+                const override = config.overrides[item.name]
+                return (
+                  <li key={item.name} className="item">
+                    <img src={item.icon} alt="" loading="lazy" width={32} height={32} />
+                    <div className="ground">
+                      <ItemLabel name={item.name} style={display.kind === 'hide' ? null : config.tiers[display.tier]} />
+                      {display.kind === 'stack' && <span className="stack">от {display.stackSize} шт.</span>}
+                    </div>
+                    <span className="price">{formatPrice(item.divine, snapshot.rates)}</span>
+                    <div className="tier-picker" role="group" aria-label={`Тир для ${item.name}`}>
+                      <button
+                        className={override === undefined ? 'active' : ''}
+                        title="Тир по цене"
+                        onClick={() => setTier(item.name, null)}
+                      >
+                        Авто
+                      </button>
+                      {CHOICES.map((c) => (
+                        <button
+                          key={c}
+                          className={override === c ? 'active' : ''}
+                          title={c === 'hide' ? 'Скрыть предмет' : TIER_TITLES[c]}
+                          onClick={() => setTier(item.name, c)}
+                        >
+                          {c === 'hide' ? '✕' : c}
+                        </button>
+                      ))}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        )
+      })}
+    </div>
+  )
+}

@@ -25,7 +25,7 @@ export const TIER_TITLES: Record<TierId, string> = {
   B: 'B — ценное',
   C: 'C — полезное',
   D: 'D — мелочь',
-  E: 'E — почти мусор',
+  E: 'E — мусор',
 }
 
 const rgba = (r: number, g: number, b: number, a = 255): Rgba => ({ r, g, b, a })

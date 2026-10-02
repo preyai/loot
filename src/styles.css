@@ -1295,3 +1295,8 @@ main {
 .unique-card-note {
   margin: 8px 18px 0;
 }
+
+.tier-picker svg {
+  display: block;
+  margin: 2px auto;
+}

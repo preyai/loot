@@ -23,6 +23,15 @@ const CHOICES: TierChoice[] = [...TIER_IDS, 'hide']
 const GROUPS = [...TIER_IDS, 'stack', 'hide'] as const
 type GroupId = (typeof GROUPS)[number]
 
+/** Корзина на кнопке «скрыть предмет»: крестик читался как «закрыть», а не как «выбросить из показа». */
+function TrashIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9.5h6.6L12 4M6.6 6.8v4M9.4 6.8v4" />
+    </svg>
+  )
+}
+
 interface Row {
   item: MarketItem
   display: Display
@@ -184,7 +193,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                           title={c === 'hide' ? t('items.hide') : t(keyOf('tier', c))}
                           onClick={() => setTier(key, c)}
                         >
-                          {c === 'hide' ? '✕' : c}
+                          {c === 'hide' ? <TrashIcon /> : c}
                         </button>
                       ))}
                     </div>

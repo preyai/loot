@@ -175,6 +175,8 @@ export interface BaseRule {
   excludeCorrupted: boolean
   /** Тир, чьим стилем оформляется предмет. */
   tier: TierId
+  /** Своё оформление правила; если задано, тир не используется. */
+  style?: TierStyle
   /** Правило создано опросом трейда и будет заменено следующим опросом. */
   source?: 'trade'
 }

@@ -910,6 +910,19 @@ main {
   box-shadow: 0 4px 0 -1px var(--gold-bright), 0 10px 18px -8px rgba(241, 216, 146, 0.6);
 }
 
+/* Своё оформление правила: те же поля, что у тира, в две колонки, чтобы карточка не вытягивалась. */
+.rule-style {
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.rule-style .fields {
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 8px 24px;
+}
+
 .rule-summary {
   opacity: 0.55;
 }

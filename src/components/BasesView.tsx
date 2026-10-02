@@ -9,6 +9,7 @@ import {
   POPULAR_SHARE,
   popularBases,
   popularRule,
+  ruleStyle,
   RULE_TEMPLATES,
   wikiUrl,
   type BaseInfo,
@@ -33,6 +34,7 @@ import {
 } from '../types'
 import { ExceptionalPanel } from './ExceptionalPanel'
 import { ItemLabel } from './ItemLabel'
+import { StyleFields } from './StyleFields'
 import { EnglishName } from './ItemName'
 
 const toggle = <V,>(list: V[], value: V) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
@@ -43,6 +45,9 @@ const describe = (base: BaseInfo, t: T) =>
 const classTitle = (t: T, name: string) => translateOr(t, 'class', name, name)
 
 type Shares = Record<string, number>
+
+/** Значение в списке «в стиле тира», означающее своё оформление правила. */
+const CUSTOM = 'custom'
 
 /** Сколько иконок баз показывать в свёрнутом правиле; остальные сворачиваются в «+N». */
 const SUMMARY_ICONS = 12
@@ -333,7 +338,7 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
         {!open &&
           (rule.action === 'show' ? (
             <div className="ground">
-              <ItemLabel name={t('tier.label', { tier: rule.tier })} style={config.tiers[rule.tier]} />
+              <ItemLabel name={rule.style ? t('rules.customLabel') : t('tier.label', { tier: rule.tier })} style={ruleStyle(rule, config.tiers)} />
             </div>
           ) : (
             <span className="badge">{t('rules.hideBadge')}</span>
@@ -363,20 +368,35 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
               <>
                 <label className="check">
                   {t('rules.inTier')}
-                  <select value={rule.tier} onChange={(e) => set('tier', e.target.value as TierId)}>
+                  <select
+                    value={rule.style ? CUSTOM : rule.tier}
+                    onChange={(e) => {
+                      const { style: _own, ...rest } = rule
+                      // Своё оформление начинается с копии стиля текущего тира: править проще, чем собирать с нуля.
+                      if (e.target.value === CUSTOM) onChange({ ...rule, style: structuredClone(config.tiers[rule.tier]) })
+                      else onChange({ ...rest, tier: e.target.value as TierId })
+                    }}
+                  >
                     {TIER_IDS.map((tier) => (
                       <option key={tier} value={tier}>
                         {t(keyOf('tier', tier))}
                       </option>
                     ))}
+                    <option value={CUSTOM}>{t('rules.customStyle')}</option>
                   </select>
                 </label>
                 <div className="ground">
-                  <ItemLabel name={covered[0] ? name(covered[0]) : t('rules.sampleItem')} style={config.tiers[rule.tier]} />
+                  <ItemLabel name={covered[0] ? name(covered[0]) : t('rules.sampleItem')} style={ruleStyle(rule, config.tiers)} />
                 </div>
               </>
             )}
           </div>
+
+          {rule.action === 'show' && rule.style && (
+            <div className="rule-style">
+              <StyleFields id={rule.id} style={rule.style} onChange={(style) => onChange({ ...rule, style })} />
+            </div>
+          )}
 
           <div className="rule-row">
             {RARITIES.map((r) => (

@@ -1,4 +1,4 @@
-import { GEAR_CLASSES } from './bases'
+import { GEAR_CLASSES, ruleStyle } from './bases'
 import { SECTIONS } from './sections'
 import { itemDisplay } from './tiering'
 import { RARITIES, TIER_IDS, type BaseRule, type Config, type MarketItem, type MarketSnapshot, type Rgba, type TierId, type TierStyle } from './types'
@@ -76,7 +76,7 @@ export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tier
   if (rule.minAreaLevel > 0) lines.push(`AreaLevel >= ${rule.minAreaLevel}`)
   const show = rule.action === 'show'
   // Название правила в комментарий не идёт: оно может быть не на латинице.
-  return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(tiers[rule.tier])] : lines)
+  return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(ruleStyle(rule, tiers))] : lines)
 }
 
 function push<K, V>(map: Map<K, V[]>, key: K, value: V) {

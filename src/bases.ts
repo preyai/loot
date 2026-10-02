@@ -1,6 +1,6 @@
 import catalog from './data/bases.json'
 import { keyOf, type Lang, type T } from './i18n'
-import { RARITIES, type BaseRule } from './types'
+import { RARITIES, type BaseRule, type TierId, type TierStyle } from './types'
 
 export type BaseGroup = 'weapon' | 'armour' | 'jewellery'
 
@@ -102,6 +102,9 @@ export function topBases(classes: string[]): string[] {
   })
 }
 
+/** Оформление правила: своё, если оно задано, иначе — тира, на который правило ссылается. */
+export const ruleStyle = (rule: BaseRule, tiers: Record<TierId, TierStyle>): TierStyle => rule.style ?? tiers[rule.tier]
+
 /** Переставляет элемент списка на место перед другим элементом или после него. */
 export function moveItem<Item extends { id: string }>(list: Item[], fromId: string, toId: string, after: boolean): Item[] {
   const moved = list.find((item) => item.id === fromId)
@@ -147,6 +150,7 @@ export function describeRule(rule: BaseRule, t: T): string {
     rule.minUnidentifiedTier > 0 && t('desc.unidentified', { n: rule.minUnidentifiedTier }),
     rule.excludeCorrupted && t('desc.notCorrupted'),
     rule.minAreaLevel > 0 && t('desc.area', { n: rule.minAreaLevel }),
+    rule.action === 'show' && rule.style && t('desc.customStyle'),
   ]
     .filter(Boolean)
     .join(' · ')

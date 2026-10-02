@@ -208,6 +208,20 @@ describe('правила баз', () => {
     )
   })
 
+  it('своё оформление правила важнее тира; у правила скрытия оно не пишется', () => {
+    const style = { ...tiers.E, fontSize: 30, sound: { id: 9, volume: 150 }, background: { r: 1, g: 2, b: 3, a: 255 } }
+    const custom: BaseRule = { ...rule, tier: 'S', style }
+    const text = baseRuleBlock(custom, 0, tiers)!
+    expect(text).toContain('SetFontSize 30')
+    expect(text).toContain('SetBackgroundColor 1 2 3 255')
+    expect(text).toContain('PlayAlertSound 9 150')
+    // Ни одной строки из стиля тира S, на который правило формально ссылается.
+    expect(text).not.toContain('SetFontSize 45')
+    expect(text).not.toContain('MinimapIcon 0 Red Star')
+    expect(baseRuleBlock({ ...custom, action: 'hide' }, 0, tiers)).not.toContain('SetFontSize')
+    expect(describeRule(custom, t)).toContain('своё оформление')
+  })
+
   it('выключенное правило и правило без классов пропускаются', () => {
     expect(baseRuleBlock({ ...rule, enabled: false }, 0, tiers)).toBeNull()
     expect(baseRuleBlock({ ...rule, classes: [] }, 0, tiers)).toBeNull()

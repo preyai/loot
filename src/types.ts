@@ -85,10 +85,7 @@ export interface ExceptionalGroup {
 export interface ExceptionalScan {
   league: string
   at: string
-  /** Порог цены, как его задал пользователь. */
-  minPrice: number
-  currency: Currency
-  /** Тот же порог в exalted — в таком виде он ушёл на трейд. */
+  /** Нижняя граница цены в exalted. */
   minExalted: number
   groups: ExceptionalGroup[]
 }
@@ -177,6 +174,4 @@ export interface Config {
   /** Разделы со своими настройками показа вместо общих. */
   sectionVisibility: Partial<Record<SectionId, Visibility>>
   gear: { hideLowRarity: boolean; areaLevel: number }
-  /** Опрос трейда на исключительные вещи: нижняя граница цены в основной валюте. */
-  exceptional: { minPrice: number }
 }

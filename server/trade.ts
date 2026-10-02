@@ -1,8 +1,6 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import path from 'node:path'
 import { EXCEPTIONAL_KINDS, EXCEPTIONAL_QUERIES, type ExceptionalQuery } from '../src/exceptional'
-import type { Currency, ExceptionalGroup, ExceptionalScan, TradeJob } from '../src/types'
-import { getSnapshot } from './market'
+import type { ExceptionalGroup, ExceptionalScan, TradeJob } from '../src/types'
+import { readData, writeData } from './storage'
 
 const TRADE = 'https://www.pathofexile.com/api/trade2'
 const HEADERS = {
@@ -10,7 +8,7 @@ const HEADERS = {
   Accept: 'application/json',
   'Content-Type': 'application/json',
 }
-const STORE_FILE = path.resolve(process.env.DATA_DIR ?? 'data', 'exceptional.json')
+const STORE_FILE = 'exceptional.json'
 /** Сколько лотов из каждого поиска разбираем по базам. Поиск отдаёт до 100, но каждые 10 — отдельный запрос. */
 const SAMPLE = 40
 const FETCH_BATCH = 10
@@ -19,22 +17,17 @@ const PACING_WINDOW_S = 300
 
 type Store = Record<string, ExceptionalScan>
 
-async function readStore(): Promise<Store> {
-  try {
-    return JSON.parse(await readFile(STORE_FILE, 'utf8')) as Store
-  } catch {
-    return {}
-  }
-}
-
-async function writeStore(store: Store) {
-  await mkdir(path.dirname(STORE_FILE), { recursive: true })
-  await writeFile(STORE_FILE, JSON.stringify(store, null, 1))
-}
+const readStore = async () => (await readData<Store>(STORE_FILE)) ?? {}
 
 /** Последний сохранённый опрос лиги; null — опроса ещё не было. */
 export async function getExceptionalScan(league: string): Promise<ExceptionalScan | null> {
   return (await readStore())[league] ?? null
+}
+
+/** Сколько прошло с последнего опроса лиги; бесконечность, если опроса не было. */
+export async function scanAgeMs(league: string): Promise<number> {
+  const scan = await getExceptionalScan(league)
+  return scan ? Date.now() - Date.parse(scan.at) : Infinity
 }
 
 export interface Pacing {
@@ -235,21 +228,16 @@ export function stopExceptionalScan() {
   return job
 }
 
-export function startExceptionalScan(league: string, minPrice: number, currency: Currency): TradeJob {
+export function startExceptionalScan(league: string, minExalted: number): TradeJob {
   if (job.running) throw new Error('Опрос трейда уже идёт')
   stopRequested = false
   job = { ...IDLE, running: true, league, total: EXCEPTIONAL_QUERIES.length }
-  void run(league, minPrice, currency)
+  void run(league, minExalted)
   return job
 }
 
-async function run(league: string, minPrice: number, currency: Currency) {
+async function run(league: string, minExalted: number) {
   try {
-    const { rates } = await getSnapshot(league)
-    const perDivine = currency === 'divine' ? 1 : rates[currency]
-    if (!(perDivine > 0) || !(rates.exalted > 0)) throw new Error('Нет курса валют для пересчёта порога цены')
-    // Трейд принимает порог только в exalted.
-    const minExalted = Math.max(1, Math.round((minPrice / perDivine) * rates.exalted))
     console.log(`Исключительные: опрос начат, лига ${league}, порог ${minExalted} ex, запросов ${EXCEPTIONAL_QUERIES.length}`)
 
     const groups: ExceptionalGroup[] = []
@@ -262,11 +250,11 @@ async function run(league: string, minPrice: number, currency: Currency) {
     // Прерванный опрос не сохраняем: неполный результат выдал бы себя за полный и затёр прежний.
     if (!stopRequested) {
       const store = await readStore()
-      store[league] = { league, at: new Date().toISOString(), minPrice, currency, minExalted, groups }
-      await writeStore(store)
+      store[league] = { league, at: new Date().toISOString(), minExalted, groups }
+      await writeData(STORE_FILE, store)
     }
   } catch (e) {
-    // В журнал — с причиной и шагом, на котором остановились: по одному сообщению в интерфейсе сбой не разобрать.
+    // В журнал — с причиной и шагом, на котором остановились.
     console.error(`Исключительные: остановлено на «${job.current}»: ${describeError(e)}`)
     job = { ...job, error: e instanceof Error ? e.message : String(e) }
   } finally {

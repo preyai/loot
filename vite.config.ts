@@ -4,6 +4,8 @@ import { handleApi } from './server/api'
 
 // poe.ninja и трейд не отдают CORS-заголовки, поэтому данные забирает сервер, а не браузер.
 // В разработке API живёт внутри dev-сервера Vite, в продакшене — в server/index.ts.
+// Расписание сбора данных (server/scheduler.ts) в разработке не запускается: данные читаются с диска
+// или подтягиваются при первом запросе, а трейд опрашивается только служебным запросом с ADMIN_TOKEN.
 function marketApi(): Plugin {
   const handler: Connect.NextHandleFunction = async (req, res, next) => {
     if (!(await handleApi(req, res))) next()
@@ -17,6 +19,6 @@ function marketApi(): Plugin {
 
 export default defineConfig({
   plugins: [react(), marketApi()],
-  // Файл с ценами баз переписывается во время обновления — это не повод перезагружать страницу.
-  server: { watch: { ignored: ['**/data/base-prices.json'] } },
+  // Сохранённые данные переписываются сервером — это не повод перезагружать страницу.
+  server: { watch: { ignored: ['**/data/**'] } },
 })

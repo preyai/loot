@@ -6,6 +6,7 @@ import { stat } from 'node:fs/promises'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import path from 'node:path'
 import { handleApi } from './api'
+import { startScheduler } from './scheduler'
 
 const PORT = Number(process.env.PORT ?? 8080)
 // По умолчанию слушаем только локальный интерфейс: наружу сервер выставляют осознанно.
@@ -107,8 +108,9 @@ if (process.env.VITEST === undefined) {
   server.listen(PORT, HOST, () => {
     console.log(`Редактор лутфильтра: http://${HOST}:${PORT}`)
     if (!AUTH_PASSWORD && HOST !== '127.0.0.1' && HOST !== 'localhost') {
-      console.warn('ВНИМАНИЕ: пароль не задан (AUTH_PASSWORD) — редактор и запросы к трейду доступны всем, кто знает адрес.')
+      console.warn('ВНИМАНИЕ: пароль не задан (AUTH_PASSWORD) — редактор доступен всем, кто знает адрес.')
     }
+    if (process.env.SCHEDULER !== 'off') startScheduler()
   })
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => server.close(() => process.exit(0)))
 }

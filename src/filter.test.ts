@@ -277,8 +277,6 @@ describe('исключительные вещи с трейда', () => {
   const scan: ExceptionalScan = {
     league: 'Test',
     at: '2026-10-02T00:00:00.000Z',
-    minPrice: 100,
-    currency: 'exalted',
     minExalted: 100,
     groups: [
       { kind: 'sockets3', title: 'Body Armours', total: 263, sampled: 40, bases: { 'Vile Robe': 5, 'Death Mail': 1, 'Не база': 9 } },
@@ -319,10 +317,6 @@ describe('исключительные вещи с трейда', () => {
     const afterPreset = applyPreset({ ...DEFAULT_CONFIG, baseRules: rules }, RULE_PRESETS[0], null).baseRules
     expect(afterPreset.slice(0, 2).every((r) => r.source === 'trade')).toBe(true)
     expect(afterPreset.some((r) => r.id === 'manual')).toBe(false)
-  })
-
-  it('смена валюты пересчитывает порог опроса', () => {
-    expect(convertCurrency(DEFAULT_CONFIG, 'divine', rates).exceptional.minPrice).toBe(1)
   })
 })
 

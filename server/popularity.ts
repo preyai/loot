@@ -1,5 +1,6 @@
 import type { BasePopularity } from '../src/types'
 import { API, HEADERS } from './market'
+import { storedResource } from './storage'
 
 // Снимок билдов на poe.ninja обновляется несколько раз в сутки.
 const TTL_MS = 3 * 60 * 60 * 1000
@@ -109,12 +110,7 @@ interface IndexState {
   snapshotVersions: { url: string; version: string; snapshotName: string }[]
 }
 
-const cache = new Map<string, { at: number; value: BasePopularity }>()
-
-export async function getPopularity(league: string, force = false): Promise<BasePopularity> {
-  const cached = cache.get(league)
-  if (!force && cached && Date.now() - cached.at < TTL_MS) return cached.value
-
+async function loadPopularity(league: string): Promise<BasePopularity> {
   const stateRes = await fetch(`${API}/data/index-state`, { headers: HEADERS, signal: AbortSignal.timeout(20_000) })
   if (!stateRes.ok) throw new Error(`poe.ninja ответил ${stateRes.status}`)
   const state = (await stateRes.json()) as IndexState
@@ -153,7 +149,10 @@ export async function getPopularity(league: string, force = false): Promise<Base
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker))
 
-  const value: BasePopularity = { league, fetchedAt: new Date().toISOString(), characters: overall.total, shares }
-  cache.set(league, { at: Date.now(), value })
-  return value
+  return { league, fetchedAt: new Date().toISOString(), characters: overall.total, shares }
 }
+
+/** Популярность баз по лигам: хранится на диске и обновляется не чаще раза в TTL. */
+export const popularity = storedResource('popularity', TTL_MS, loadPopularity)
+
+export const getPopularity = (league: string) => popularity.get(league)

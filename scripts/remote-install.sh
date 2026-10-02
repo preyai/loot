@@ -35,7 +35,13 @@ $SUDO mkdir -p "$APP_DIR/data"
 $SUDO chown -R "$CONTAINER_UID:$CONTAINER_UID" "$APP_DIR/data"
 
 write_env() {
-  printf 'AUTH_USER=loot\nAUTH_PASSWORD=%s\n' "$1" | $SUDO tee "$ENV_FILE" >/dev/null
+  # Меняем только логин и пароль: прочие настройки, вписанные в файл вручную, остаются.
+  local rest=""
+  if [ -f "$ENV_FILE" ]; then rest=$($SUDO grep -vE '^(AUTH_USER|AUTH_PASSWORD)=' "$ENV_FILE" || true); fi
+  {
+    printf 'AUTH_USER=loot\nAUTH_PASSWORD=%s\n' "$1"
+    if [ -n "$rest" ]; then printf '%s\n' "$rest"; fi
+  } | $SUDO tee "$ENV_FILE" >/dev/null
   # Файл читает docker-клиент от имени того, кто деплоит, поэтому владелец — он.
   $SUDO chown "$(id -u):$(id -g)" "$ENV_FILE"
   $SUDO chmod 600 "$ENV_FILE"

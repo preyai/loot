@@ -96,5 +96,4 @@ export const DEFAULT_CONFIG: Config = {
   visibility: { minTier: 'E', minPrice: 0, stacks: true },
   sectionVisibility: {},
   gear: { hideLowRarity: false, areaLevel: 65 },
-  exceptional: { minPrice: 100 },
 }

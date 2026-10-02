@@ -1,5 +1,6 @@
 import { SECTIONS, type Section } from '../src/sections'
 import type { League, MarketItem, MarketSnapshot, SectionId, UniqueInfo } from '../src/types'
+import { storedResource } from './storage'
 
 export const API = 'https://poe.ninja/poe2/api'
 const ICON_HOST = 'https://web.poecdn.com'
@@ -25,9 +26,16 @@ async function getJson<T>(url: string): Promise<T> {
   return (await res.json()) as T
 }
 
-export async function getLeagues(): Promise<League[]> {
+const LEAGUES_TTL_MS = 60 * 60 * 1000
+
+const leagueList = storedResource('leagues', LEAGUES_TTL_MS, async () => {
   const state = await getJson<{ economyLeagues: { name: string; hardcore: boolean }[] }>(`${API}/data/index-state`)
-  return state.economyLeagues.map(({ name, hardcore }) => ({ name, hardcore }))
+  const leagues: League[] = state.economyLeagues.map(({ name, hardcore }) => ({ name, hardcore }))
+  return { fetchedAt: new Date().toISOString(), leagues }
+})
+
+export async function getLeagues(): Promise<League[]> {
+  return (await leagueList.get('all')).leagues
 }
 
 /**
@@ -65,12 +73,7 @@ function exchangeItems(overview: ExchangeOverview, section: SectionId, seen: Set
   return items
 }
 
-const cache = new Map<string, { at: number; snapshot: MarketSnapshot }>()
-
-export async function getSnapshot(league: string, force = false): Promise<MarketSnapshot> {
-  const cached = cache.get(league)
-  if (!force && cached && Date.now() - cached.at < TTL_MS) return cached.snapshot
-
+async function loadSnapshot(league: string): Promise<MarketSnapshot> {
   const load = (section: Section) => {
     const path = section.unique ? 'stash/current/item' : 'exchange/current'
     return Promise.all(
@@ -107,7 +110,10 @@ export async function getSnapshot(league: string, force = false): Promise<Market
 
   if (failed.length === SECTIONS.length) throw new Error('poe.ninja недоступен')
 
-  const snapshot: MarketSnapshot = { league, fetchedAt: new Date().toISOString(), rates, items, failed }
-  cache.set(league, { at: Date.now(), snapshot })
-  return snapshot
+  return { league, fetchedAt: new Date().toISOString(), rates, items, failed }
 }
+
+/** Снимки цен по лигам: хранятся на диске и обновляются не чаще раза в TTL. */
+export const snapshots = storedResource('market', TTL_MS, loadSnapshot)
+
+export const getSnapshot = (league: string) => snapshots.get(league)

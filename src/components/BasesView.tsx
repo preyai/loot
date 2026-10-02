@@ -12,7 +12,7 @@ import {
 import { TIER_TITLES } from '../defaults'
 import { applyPreset, RULE_PRESETS } from '../presets'
 import { usePopularity, type UpdateConfig } from '../store'
-import { RARITIES, TIER_IDS, type BaseRule, type Config, type Rarity, type TierId } from '../types'
+import { RARITIES, TIER_IDS, type BaseRule, type Config, type MarketSnapshot, type Rarity, type TierId } from '../types'
 import { ExceptionalPanel } from './ExceptionalPanel'
 import { ItemLabel } from './ItemLabel'
 
@@ -285,7 +285,14 @@ function RuleCard({ rule, index, total, config, shares, onChange, onMove, onDele
   )
 }
 
-export function BasesView({ config, update }: { config: Config; update: UpdateConfig }) {
+interface Props {
+  config: Config
+  update: UpdateConfig
+  /** null, пока цены не загружены. */
+  rates: MarketSnapshot['rates'] | null
+}
+
+export function BasesView({ config, update, rates }: Props) {
   const popularity = usePopularity(config.league)
   const shares = popularity.data?.shares ?? null
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
@@ -342,7 +349,7 @@ export function BasesView({ config, update }: { config: Config; update: UpdateCo
         </p>
       </section>
 
-      <ExceptionalPanel config={config} update={update} />
+      <ExceptionalPanel config={config} update={update} rates={rates} />
 
       <section className="panel">
         <h2>Добавить отдельное правило</h2>

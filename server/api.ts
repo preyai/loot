@@ -1,47 +1,63 @@
+import { timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { Currency } from '../src/types'
 import { getLeagues, getSnapshot } from './market'
 import { getPopularity } from './popularity'
 import { getExceptionalScan, getTradeJob, startExceptionalScan, stopExceptionalScan } from './trade'
 
-const CURRENCIES: Currency[] = ['exalted', 'chaos', 'divine']
+/** Ключ владельца сервера для служебных запросов; пока не задан, они отключены. */
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? ''
+const DEFAULT_MIN_EXALTED = Number(process.env.EXCEPTIONAL_MIN_EXALTED ?? 100)
 
-async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
-  const chunks: Buffer[] = []
-  for await (const chunk of req) chunks.push(chunk as Buffer)
-  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}') as Record<string, unknown>
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message)
+  }
 }
 
-class BadRequest extends Error {}
-
-function requireLeague(value: unknown): string {
-  if (typeof value !== 'string' || !value) throw new BadRequest('Не указана лига')
+/** Данные собираются только для лиг, которые знает poe.ninja: иначе любой запрос плодил бы файлы и походы к источнику. */
+async function knownLeague(value: unknown): Promise<string> {
+  if (typeof value !== 'string' || !value) throw new HttpError(400, 'Не указана лига')
+  if (!(await getLeagues()).some((l) => l.name === value)) throw new HttpError(400, 'Неизвестная лига')
   return value
 }
 
+function requireAdmin(req: IncomingMessage) {
+  const given = Buffer.from(String(req.headers['x-admin-token'] ?? ''))
+  const expected = Buffer.from(ADMIN_TOKEN)
+  if (!ADMIN_TOKEN || given.length !== expected.length || !timingSafeEqual(given, expected)) {
+    throw new HttpError(403, 'Нужен ключ администратора')
+  }
+}
+
 async function route(req: IncomingMessage, url: URL): Promise<unknown> {
-  const force = url.searchParams.has('force')
-  const league = () => requireLeague(url.searchParams.get('league'))
+  const league = () => knownLeague(url.searchParams.get('league'))
   switch (`${req.method} ${url.pathname}`) {
+    // Пользователям — только чтение сохранённого. Сбор данных запускает расписание (server/scheduler.ts).
     case 'GET /api/leagues':
       return getLeagues()
     case 'GET /api/market':
-      return getSnapshot(league(), force)
+      return getSnapshot(await league())
     case 'GET /api/popularity':
-      return getPopularity(league(), force)
+      return getPopularity(await league())
     case 'GET /api/exceptional':
-      return getExceptionalScan(league())
-    case 'GET /api/exceptional/status':
+      return getExceptionalScan(await league())
+
+    // Владельцу сервера: посмотреть ход опроса трейда, запустить его вне расписания или остановить.
+    case 'GET /api/admin/scan':
+      requireAdmin(req)
       return getTradeJob()
-    case 'POST /api/exceptional/stop':
-      return stopExceptionalScan()
-    case 'POST /api/exceptional/scan': {
-      const body = await readJson(req)
-      const currency = CURRENCIES.find((c) => c === body.currency)
-      const minPrice = Number(body.minPrice)
-      if (!currency || !(minPrice > 0)) throw new BadRequest('Не задана цена')
-      return startExceptionalScan(requireLeague(body.league), minPrice, currency)
+    case 'POST /api/admin/scan': {
+      requireAdmin(req)
+      const minExalted = Number(url.searchParams.get('min') ?? DEFAULT_MIN_EXALTED)
+      if (!(minExalted > 0)) throw new HttpError(400, 'Не задана цена')
+      return startExceptionalScan(await league(), minExalted)
     }
+    case 'POST /api/admin/scan/stop':
+      requireAdmin(req)
+      return stopExceptionalScan()
     default:
       return undefined
   }
@@ -59,11 +75,11 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse): Prom
   res.setHeader('Cache-Control', 'no-store')
   try {
     const result = await route(req, url)
-    // null — законный ответ («опроса ещё не было»), не найденным считается только undefined.
+    // null — законный ответ («данных ещё нет»), не найденным считается только undefined.
     if (result === undefined) res.statusCode = 404
     res.end(JSON.stringify(result === undefined ? { error: 'Not found' } : result))
   } catch (e) {
-    res.statusCode = e instanceof BadRequest ? 400 : 502
+    res.statusCode = e instanceof HttpError ? e.status : 502
     res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }))
   }
   return true

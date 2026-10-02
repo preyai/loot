@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EMPTY_RULE } from './bases'
 import { DEFAULT_CONFIG } from './defaults'
-import type { BasePopularity, Config, Currency, ExceptionalScan, League, MarketSnapshot, TradeJob } from './types'
+import type { BasePopularity, Config, ExceptionalScan, League, MarketSnapshot } from './types'
 
 const CONFIG_KEY = 'loot-filter-editor:config'
 
@@ -67,68 +67,22 @@ export function usePopularity(league: string | null): Popularity {
   return state
 }
 
-const JOB_POLL_MS = 3000
-
-/** Опрос трейда на исключительные вещи: запуск, остановка, слежение за ходом и последний результат. */
-export function useExceptionalScan(league: string | null, onFinished: (scan: ExceptionalScan) => void) {
-  const [job, setJob] = useState<TradeJob | null>(null)
-  const [scan, setScan] = useState<ExceptionalScan | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const finished = useRef(onFinished)
-  finished.current = onFinished
-
-  // Опрос мог быть запущен до открытия страницы.
+/** Последний сохранённый на сервере опрос трейда для лиги; null — опроса ещё не было. */
+export function useExceptionalScan(league: string | null) {
+  const [state, setState] = useState<{ scan: ExceptionalScan | null; loading: boolean }>({ scan: null, loading: false })
   useEffect(() => {
-    api<TradeJob>('/api/exceptional/status').then(setJob, () => {})
-  }, [])
-
-  useEffect(() => {
-    setScan(null)
     if (!league) return
     let stale = false
+    setState({ scan: null, loading: true })
     api<ExceptionalScan | null>(`/api/exceptional?league=${encodeURIComponent(league)}`).then(
-      (saved) => !stale && setScan(saved),
-      () => {},
+      (scan) => !stale && setState({ scan, loading: false }),
+      () => !stale && setState({ scan: null, loading: false }),
     )
     return () => {
       stale = true
     }
   }, [league])
-
-  const running = job?.running ?? false
-  useEffect(() => {
-    if (!running) return
-    const timer = setInterval(() => {
-      api<TradeJob>('/api/exceptional/status').then(
-        (next) => {
-          setJob(next)
-          // Остановленный или упавший опрос результата не оставляет.
-          if (next.running || next.error || next.done < next.total || !next.league) return
-          api<ExceptionalScan | null>(`/api/exceptional?league=${encodeURIComponent(next.league)}`).then((saved) => {
-            if (!saved) return
-            setScan(saved)
-            finished.current(saved)
-          })
-        },
-        (e: Error) => setError(e.message),
-      )
-    }, JOB_POLL_MS)
-    return () => clearInterval(timer)
-  }, [running])
-
-  const post = (path: string, body: unknown = {}) => {
-    setError(null)
-    api<TradeJob>(path, { method: 'POST', body: JSON.stringify(body) }).then(setJob, (e: Error) => setError(e.message))
-  }
-
-  return {
-    job,
-    scan,
-    error,
-    start: (scanLeague: string, minPrice: number, currency: Currency) =>
-      post('/api/exceptional/scan', { league: scanLeague, minPrice, currency }),
-    stop: () => post('/api/exceptional/stop'),
-  }
+  return state
 }
 
 export interface Market {
@@ -136,7 +90,8 @@ export interface Market {
   snapshot: MarketSnapshot | null
   loading: boolean
   error: string | null
-  refresh: () => void
+  /** Повторить загрузку после ошибки. */
+  retry: () => void
 }
 
 export function useMarket(league: string | null, onDefaultLeague: (name: string) => void): Market {
@@ -144,8 +99,7 @@ export function useMarket(league: string | null, onDefaultLeague: (name: string)
   const [snapshot, setSnapshot] = useState<MarketSnapshot | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [refreshCount, setRefreshCount] = useState(0)
-  const force = useRef(false)
+  const [attempt, setAttempt] = useState(0)
 
   // Список лиг нужен один раз при запуске.
   useEffect(() => {
@@ -166,24 +120,20 @@ export function useMarket(league: string | null, onDefaultLeague: (name: string)
     let stale = false
     setLoading(true)
     setError(null)
-    api<MarketSnapshot>(`/api/market?league=${encodeURIComponent(league)}${force.current ? '&force' : ''}`)
+    api<MarketSnapshot>(`/api/market?league=${encodeURIComponent(league)}`)
       .then((s) => !stale && setSnapshot(s))
       .catch((e: Error) => !stale && setError(e.message))
       .finally(() => !stale && setLoading(false))
-    force.current = false
     return () => {
       stale = true
     }
-  }, [league, refreshCount])
+  }, [league, attempt])
 
   return {
     leagues,
     snapshot,
     loading,
     error,
-    refresh: () => {
-      force.current = true
-      setRefreshCount((n) => n + 1)
-    },
+    retry: () => setAttempt((n) => n + 1),
   }
 }

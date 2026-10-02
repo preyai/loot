@@ -97,7 +97,6 @@ export function convertCurrency(config: Config, to: Currency, rates: Rates): Con
     currency: to,
     thresholds: convertThresholds(config.thresholds, config.currency, to, rates),
     visibility: visibility(config.visibility),
-    exceptional: { minPrice: convertPrice(config.exceptional.minPrice, config.currency, to, rates) },
     sectionVisibility: Object.fromEntries(
       Object.entries(config.sectionVisibility).map(([id, v]) => [id, visibility(v)]),
     ),

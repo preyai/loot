@@ -113,9 +113,6 @@ export function App() {
               ? 'Загрузка цен…'
               : snapshot && `Цены poe.ninja от ${new Date(snapshot.fetchedAt).toLocaleString('ru-RU')}`}
           </span>
-          <button onClick={market.refresh} disabled={market.loading || !config.league}>
-            Обновить цены
-          </button>
           <button className="primary" disabled={!snapshot} onClick={() => snapshot && downloadFilter(generateFilter(snapshot, config))}>
             Скачать .filter
           </button>
@@ -125,11 +122,11 @@ export function App() {
           {market.error && (
             <p className="note note--error">
               Не удалось загрузить данные: {market.error}{' '}
-              <button onClick={market.refresh}>Повторить</button>
+              <button onClick={market.retry}>Повторить</button>
             </p>
           )}
           {!snapshot && market.loading && <p className="note">Загрузка цен…</p>}
-          {route === 'bases' && <BasesView config={config} update={update} />}
+          {route === 'bases' && <BasesView config={config} update={update} rates={snapshot?.rates ?? null} />}
           {route === 'styles' && (
             <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />
           )}

@@ -5,7 +5,18 @@ import { writeFile } from 'node:fs/promises'
 const SOURCE = 'https://repoe-fork.github.io/poe2'
 const OUTPUT = new URL('../src/data/bases.json', import.meta.url)
 const JEWELLERY = new Set(['Amulet', 'Ring', 'Belt'])
-const SKIPPED_CLASSES = new Set(['HiddenItem', 'FishingRod'])
+const SKIPPED_CLASSES = new Set([
+  'HiddenItem',
+  'FishingRod',
+  // Классы оружия, которыми в игре пока нельзя пользоваться: на poe.ninja нет ни одного персонажа с таким оружием.
+  // Когда класс выпустят, строку отсюда нужно убрать.
+  'Dagger',
+  'Flail',
+  'One Hand Axe',
+  'One Hand Sword',
+  'Two Hand Axe',
+  'Two Hand Sword',
+])
 
 const load = async (file) => {
   const res = await fetch(`${SOURCE}/${file}`)
@@ -15,11 +26,20 @@ const load = async (file) => {
 
 const [items, itemClasses] = await Promise.all([load('base_items.min.json'), load('item_classes.min.json')])
 
+// В игровых данных есть базы, которые ещё не выпадают: целые классы вроде мечей и кинжалов и отдельные заготовки.
+// Выпущенными считаем те, что знает официальный трейд.
+const tradeRes = await fetch('https://www.pathofexile.com/api/trade2/data/items', {
+  headers: { 'User-Agent': 'loot-filter-editor/0.1 (personal project)' },
+})
+if (!tradeRes.ok) throw new Error(`трейд: HTTP ${tradeRes.status}`)
+const tradeable = new Set((await tradeRes.json()).result.flatMap((group) => group.entries.map((entry) => entry.type)))
+
 const classes = new Map()
 for (const [id, item] of Object.entries(items)) {
   if (item.domain !== 'item' || item.release_state !== 'released' || SKIPPED_CLASSES.has(item.item_class)) continue
   // Базы, которые существуют только под уникальные предметы.
   if (id.includes('Unique')) continue
+  if (!tradeable.has(item.name)) continue
 
   // В фильтре класс называется так же, как в игре («Quarterstaves»), а не по внутреннему id («Warstaff»).
   const className = itemClasses[item.item_class]?.name

@@ -28,13 +28,15 @@ for (const [id, item] of Object.entries(items)) {
   const group = JEWELLERY.has(item.item_class) ? 'jewellery' : item.tags.includes('armour') ? 'armour' : 'weapon'
   // a — броня, e — уклонение, s — энергощит
   const defence = (props.armour ? 'a' : '') + (props.evasion ? 'e' : '') + (props.energy_shield ? 's' : '')
+  // Путь к иконке без общего начала и расширения: так справочник заметно меньше.
+  const icon = item.visual_identity?.dds_file?.replace('Art/2DItems/', '').replace('.dds', '')
 
   const entry = classes.get(className) ?? { name: className, group, bases: new Map() }
   classes.set(className, entry)
   const known = entry.bases.get(item.name)
   // Одно имя встречается у нескольких записей — берём вариант с наибольшим уровнем выпадения.
   if (!known || item.drop_level > known.drop) {
-    entry.bases.set(item.name, { name: item.name, drop: item.drop_level, ...(defence && { defence }) })
+    entry.bases.set(item.name, { name: item.name, drop: item.drop_level, ...(defence && { defence }), ...(icon && { icon }) })
   }
 }
 

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
+  baseIconUrl,
   BASE_CLASSES,
   BASE_GROUPS,
   describeRule,
@@ -25,6 +26,25 @@ const describe = (base: BaseInfo) =>
   [`ур. ${base.drop}`, ...(base.defence ?? '').split('').map((d) => DEFENCE_TITLES[d])].join(', ')
 
 type Shares = Record<string, number>
+
+/** Сколько иконок баз показывать в свёрнутом правиле; остальные сворачиваются в «+N». */
+const SUMMARY_ICONS = 12
+
+function BaseIcon({ name }: { name: string }) {
+  const url = baseIconUrl(name)
+  // Пустое место того же размера держит строки списка ровными, когда иконки нет или она не загрузилась.
+  if (!url) return <span className="base-icon" />
+  return (
+    <img
+      className="base-icon"
+      src={url}
+      alt=""
+      title={name}
+      loading="lazy"
+      onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
+    />
+  )
+}
 
 function BasePicker({ rule, shares, onChange }: { rule: BaseRule; shares: Shares | null; onChange: (bases: string[]) => void }) {
   const [query, setQuery] = useState('')
@@ -87,6 +107,7 @@ function BasePicker({ rule, shares, onChange }: { rule: BaseRule; shares: Shares
             {bases.map((b) => (
               <label key={b.name} className="check">
                 <input type="checkbox" checked={rule.bases.includes(b.name)} onChange={() => onChange(toggle(rule.bases, b.name))} />
+                <BaseIcon name={b.name} />
                 {b.name} <span className="count">{describe(b)}</span>
                 {shares?.[b.name] !== undefined && <span className="share">{percent(shares[b.name])}</span>}
               </label>
@@ -165,6 +186,14 @@ function RuleCard({ rule, index, total, config, shares, onChange, onMove, onDele
               {rule.name} {rule.source === 'trade' && <span className="badge">с трейда</span>}
             </strong>
             <span className="count">{describeRule(rule)}</span>
+            {rule.bases.length > 0 && (
+              <div className="base-icons">
+                {rule.bases.slice(0, SUMMARY_ICONS).map((name) => (
+                  <BaseIcon key={name} name={name} />
+                ))}
+                {rule.bases.length > SUMMARY_ICONS && <span className="count">+{rule.bases.length - SUMMARY_ICONS}</span>}
+              </div>
+            )}
           </div>
         )}
         {!open &&

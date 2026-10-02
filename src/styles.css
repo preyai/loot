@@ -1000,3 +1000,34 @@ main {
     transition: none !important;
   }
 }
+
+/* Иконки баз */
+
+.base-icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8));
+}
+
+.base-icons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.base-icons .base-icon {
+  padding: 2px;
+  border: 1px solid var(--line);
+  background: var(--inset);
+  width: 36px;
+  height: 36px;
+}
+
+.base-picker label {
+  flex-wrap: nowrap;
+  min-height: 34px;
+}

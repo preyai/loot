@@ -9,6 +9,8 @@ export interface BaseInfo {
   drop: number
   /** Защита базы: a — броня, e — уклонение, s — энергощит. */
   defence?: string
+  /** Путь к иконке в игровых файлах, без «Art/2DItems/» и расширения. */
+  icon?: string
 }
 
 export interface BaseClass {
@@ -20,6 +22,17 @@ export interface BaseClass {
 
 /** Справочник собирается скриптом scripts/update-bases.mjs. */
 export const BASE_CLASSES = catalog as BaseClass[]
+
+const BASE_BY_NAME = new Map(BASE_CLASSES.flatMap((c) => c.bases.map((b) => [b.name, b] as const)))
+
+/** Иконки лежат там же, откуда собран справочник, — в выгрузке игровых данных RePoE. */
+const ICON_HOST = 'https://repoe-fork.github.io/poe2/Art/2DItems'
+
+/** Адрес иконки базы; null — база неизвестна справочнику или у неё нет иконки. */
+export function baseIconUrl(name: string): string | null {
+  const icon = BASE_BY_NAME.get(name)?.icon
+  return icon ? `${ICON_HOST}/${icon}.webp` : null
+}
 
 export const BASE_GROUPS: { id: BaseGroup; title: string }[] = [
   { id: 'weapon', title: 'Оружие' },

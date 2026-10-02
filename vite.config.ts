@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Connect, type Plugin } from 'vite'
 import { handleApi } from './server/api'
+import { DATA_DIR } from './server/storage'
 
 // poe.ninja и трейд не отдают CORS-заголовки, поэтому данные забирает сервер, а не браузер.
 // В разработке API живёт внутри dev-сервера Vite, в продакшене — в server/index.ts.
@@ -20,5 +21,6 @@ function marketApi(): Plugin {
 export default defineConfig({
   plugins: [react(), marketApi()],
   // Сохранённые данные переписываются сервером — это не повод перезагружать страницу.
-  server: { watch: { ignored: ['**/data/**'] } },
+  // Только каталог в корне проекта: шаблон «**/data/**» задел бы и src/data со справочником баз.
+  server: { watch: { ignored: [`${DATA_DIR.replaceAll('\\', '/')}/**`] } },
 })

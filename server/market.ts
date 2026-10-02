@@ -1,6 +1,6 @@
 import { SECTIONS, type Section } from '../src/sections'
 import type { League, MarketItem, MarketSnapshot, ModLine, SectionId, UniqueInfo } from '../src/types'
-import { storedResource } from './storage'
+import { readData, storedResource, writeData } from './storage'
 
 export const API = 'https://poe.ninja/poe2/api'
 const ICON_HOST = 'https://web.poecdn.com'
@@ -12,7 +12,7 @@ const MIN_LISTINGS = 5
 
 interface ExchangeOverview {
   core?: { rates?: { exalted?: number; chaos?: number } }
-  items?: { id: string; name: string; image: string }[]
+  items?: { id: string; name: string; image?: string }[]
   lines?: { id: string; primaryValue: number }[]
 }
 
@@ -112,9 +112,44 @@ function exchangeItems(overview: ExchangeOverview, section: SectionId, seen: Set
     // Один и тот же предмет встречается в нескольких типах (идолы — ещё и в «Ритуале»).
     if (seen.has(it.name)) continue
     seen.add(it.name)
-    items.push({ name: it.name, icon: ICON_HOST + it.image, section, divine: prices.get(it.id) ?? null })
+    // У новинок лиги poe.ninja картинку не отдаёт: оставляем пусто, недостающие иконки добирает fillMissingIcons.
+    items.push({ name: it.name, icon: it.image ? ICON_HOST + it.image : '', section, divine: prices.get(it.id) ?? null })
   }
   return items
+}
+
+const ICONS_FILE = 'icons.json'
+
+/** Иконка предмета со страницы poe2db; null — страницы или картинки нет. */
+async function wikiIcon(name: string): Promise<string | null> {
+  const res = await fetch(`https://poe2db.tw/us/${encodeURIComponent(name.replaceAll(' ', '_'))}`, {
+    headers: { 'User-Agent': HEADERS['User-Agent'] },
+    signal: AbortSignal.timeout(20_000),
+  })
+  if (!res.ok) return null
+  return /property="og:image" content="(https:\/\/cdn\.poe2db\.tw\/image\/[^"]+)"/.exec(await res.text())?.[1] ?? null
+}
+
+/**
+ * Проставляет иконки предметам, у которых poe.ninja её не дал. Найденное запоминается на диске,
+ * чтобы не ходить на poe2db при каждом обновлении цен; ненайденное пробуем снова в следующий раз.
+ */
+async function fillMissingIcons(items: MarketItem[]): Promise<void> {
+  const missing = items.filter((item) => !item.icon)
+  if (missing.length === 0) return
+  const known = (await readData<Record<string, string>>(ICONS_FILE)) ?? {}
+  let found = false
+  for (const item of missing) {
+    if (!known[item.name]) {
+      const icon = await wikiIcon(item.name).catch(() => null)
+      if (icon) {
+        known[item.name] = icon
+        found = true
+      }
+    }
+    item.icon = known[item.name] ?? ''
+  }
+  if (found) await writeData(ICONS_FILE, known)
 }
 
 async function loadSnapshot(league: string): Promise<MarketSnapshot> {
@@ -153,6 +188,7 @@ async function loadSnapshot(league: string): Promise<MarketSnapshot> {
   })
 
   if (failed.length === SECTIONS.length) throw new Error('poe.ninja недоступен')
+  await fillMissingIcons(items)
 
   return { league, fetchedAt: new Date().toISOString(), rates, items, failed }
 }

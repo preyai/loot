@@ -157,7 +157,19 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                 const override = config.overrides[key]
                 return (
                   <li key={key} className="item">
-                    <img src={item.icon} alt="" loading="lazy" width={32} height={32} />
+                    {/* Без иконки или с недоступной — пустое место того же размера вместо значка «битой картинки». */}
+                    {item.icon ? (
+                      <img
+                        src={item.icon}
+                        alt=""
+                        loading="lazy"
+                        width={32}
+                        height={32}
+                        onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
+                      />
+                    ) : (
+                      <span />
+                    )}
                     <div>
                       <div className="ground">
                         <ItemLabel name={name(item.name)} style={display.kind === 'hide' ? null : config.tiers[display.tier]} />

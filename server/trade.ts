@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { BASE_PRICE_ILVL } from '../src/bases'
-import type { BasePriceJob, MarketItem, MarketSnapshot } from '../src/types'
+import { EXCEPTIONAL_KINDS, EXCEPTIONAL_QUERIES, type ExceptionalQuery } from '../src/exceptional'
+import type { Currency, ExceptionalGroup, ExceptionalScan, TradeJob } from '../src/types'
 import { getSnapshot } from './market'
 
 const TRADE = 'https://www.pathofexile.com/api/trade2'
@@ -10,23 +10,14 @@ const HEADERS = {
   Accept: 'application/json',
   'Content-Type': 'application/json',
 }
-const STORE_FILE = path.resolve(process.env.DATA_DIR ?? 'data', 'base-prices.json')
-/** Сколько самых дешёвых лотов идёт в медиану. */
-const SAMPLE = 10
-/** Меньше лотов на рынке — цена ненадёжна. */
-const MIN_LISTINGS = 5
-/** Свежие цены при повторном запуске не перезапрашиваются: так обновление можно продолжить после остановки. */
-const FRESH_MS = 6 * 60 * 60 * 1000
+const STORE_FILE = path.resolve(process.env.DATA_DIR ?? 'data', 'exceptional.json')
+/** Сколько лотов из каждого поиска разбираем по базам. Поиск отдаёт до 100, но каждые 10 — отдельный запрос. */
+const SAMPLE = 40
+const FETCH_BATCH = 10
 /** Окна лимитов длиннее этого не задают темп, а работают как общий бюджет. */
 const PACING_WINDOW_S = 300
 
-interface StoredPrice {
-  divine: number | null
-  listings: number
-  icon: string | null
-  at: string
-}
-type Store = Record<string, Record<string, StoredPrice>>
+type Store = Record<string, ExceptionalScan>
 
 async function readStore(): Promise<Store> {
   try {
@@ -41,22 +32,9 @@ async function writeStore(store: Store) {
   await writeFile(STORE_FILE, JSON.stringify(store, null, 1))
 }
 
-/** Сохранённые цены белых баз в виде предметов раздела. */
-export async function basePriceItems(league: string): Promise<MarketItem[]> {
-  const prices = (await readStore())[league] ?? {}
-  return Object.entries(prices).map(([name, p]) => ({
-    name,
-    icon: p.icon ?? '',
-    section: 'white-bases',
-    divine: p.divine,
-    listings: p.listings,
-  }))
-}
-
-/** Снимок poe.ninja вместе с сохранёнными ценами белых баз. */
-export async function getFullSnapshot(league: string, force = false): Promise<MarketSnapshot> {
-  const [snapshot, bases] = await Promise.all([getSnapshot(league, force), basePriceItems(league)])
-  return { ...snapshot, items: [...snapshot.items, ...bases] }
+/** Последний сохранённый опрос лиги; null — опроса ещё не было. */
+export async function getExceptionalScan(league: string): Promise<ExceptionalScan | null> {
+  return (await readStore())[league] ?? null
 }
 
 export interface Pacing {
@@ -84,7 +62,7 @@ export function pacing(rulesHeader: string | null, stateHeader: string | null): 
       result.spacingMs = Math.max(result.spacingMs, (period / max) * 1100)
       if (current >= max) result.pauseMs = Math.max(result.pauseMs, period * 1000)
     } else if (current >= max) {
-      result.exhausted = `Лимит трейда исчерпан: ${max} запросов за ${Math.round(period / 3600)} ч. Продолжить можно позже — уже полученные цены сохранены.`
+      result.exhausted = `Лимит трейда исчерпан: ${max} запросов за ${Math.round(period / 3600)} ч. Повторите позже.`
     }
   })
   return result
@@ -119,6 +97,14 @@ class Limiter {
 const searchLimiter = new Limiter(11_000)
 const fetchLimiter = new Limiter(6_600)
 
+/**
+ * Сколько раз один запрос готов переждать ограничение трейда. Кроме лимитов из заголовков у трейда есть
+ * скрытые: на широких поисках по категории он отвечает 429 после пяти-шести запросов подряд.
+ */
+const MAX_LIMIT_WAITS = 3
+/** Дольше этого не ждём — проще повторить опрос позже. */
+const MAX_LIMIT_WAIT_S = 900
+
 /** Паузы перед повторами после разового сбоя: обрыв соединения или ошибка на стороне трейда. */
 const RETRY_DELAYS_MS = [5_000, 20_000, 60_000]
 
@@ -134,8 +120,8 @@ export function describeError(error: unknown): string {
 
 async function tradeRequest<T>(limiter: Limiter, url: string, init?: RequestInit): Promise<T> {
   let failures = 0
-  let limited = false
-  // Обновление идёт десятки минут — один сбой не должен обрывать его целиком.
+  let limitWaits = 0
+  // Опрос идёт несколько минут — один сбой не должен обрывать его целиком.
   const retry = (reason: string) => {
     if (failures >= RETRY_DELAYS_MS.length) throw new Error(`Трейд недоступен: ${reason}`)
     console.warn(`Трейд: ${reason}; повтор ${failures + 1} из ${RETRY_DELAYS_MS.length}`)
@@ -154,11 +140,15 @@ async function tradeRequest<T>(limiter: Limiter, url: string, init?: RequestInit
     limiter.observe(res.headers)
     if (res.status === 429) {
       const retryAfter = Number(res.headers.get('retry-after') ?? 60)
-      if (limited || retryAfter > 600) {
+      if (limitWaits >= MAX_LIMIT_WAITS || retryAfter > MAX_LIMIT_WAIT_S) {
         throw new Error(`Трейд ограничил запросы, повторите через ${Math.ceil(retryAfter / 60)} мин.`)
       }
-      limited = true
-      limiter.pause(retryAfter * 1000)
+      limitWaits++
+      console.warn(`Трейд: ограничение запросов, ждём ${retryAfter} с (состояние: ${res.headers.get('x-rate-limit-ip-state')})`)
+      // Пара секунд сверху: повтор ровно в момент снятия ограничения трейд часто отклоняет снова.
+      const waitMs = (retryAfter + 2) * 1000
+      job = { ...job, waitingUntil: new Date(Date.now() + waitMs).toISOString() }
+      limiter.pause(waitMs)
       continue
     }
     if (res.status >= 500) {
@@ -166,109 +156,121 @@ async function tradeRequest<T>(limiter: Limiter, url: string, init?: RequestInit
       continue
     }
     if (!res.ok) throw new Error(`Трейд ответил ${res.status}`)
+    if (job.waitingUntil) job = { ...job, waitingUntil: null }
     return (await res.json()) as T
   }
 }
 
-interface TradeListing {
-  listing: { price?: { amount: number; currency: string } }
-  item: { icon?: string }
-}
-
-/** Цена лота в Divine; null — валюта, для которой у нас нет курса. */
-export function listingDivine(price: { amount: number; currency: string } | undefined, rates: MarketSnapshot['rates']) {
-  if (!price) return null
-  if (price.currency === 'divine') return price.amount
-  if (price.currency === 'exalted' && rates.exalted > 0) return price.amount / rates.exalted
-  if (price.currency === 'chaos' && rates.chaos > 0) return price.amount / rates.chaos
-  return null
-}
-
-export function median(values: number[]): number | null {
-  if (values.length === 0) return null
-  const sorted = [...values].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
-}
-
-async function priceBase(league: string, base: string, rates: MarketSnapshot['rates']): Promise<StoredPrice> {
-  const search = await tradeRequest<{ id: string; result: string[]; total: number }>(
-    searchLimiter,
-    `${TRADE}/search/poe2/${encodeURIComponent(league)}`,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        query: {
-          // Только лоты с мгновенным выкупом: у них цена настоящая, а не приглашение поторговаться.
-          status: { option: 'securable' },
-          type: base,
-          filters: { type_filters: { filters: { rarity: { option: 'normal' }, ilvl: { min: BASE_PRICE_ILVL } } } },
-        },
-        sort: { price: 'asc' },
-      }),
-    },
-  )
-  const at = new Date().toISOString()
-  if (search.result.length === 0) return { divine: null, listings: 0, icon: null, at }
-
-  const ids = search.result.slice(0, SAMPLE).join(',')
-  const fetched = await tradeRequest<{ result: (TradeListing | null)[] }>(
-    fetchLimiter,
-    `${TRADE}/fetch/${ids}?query=${search.id}&realm=poe2`,
-  )
-  const listings = fetched.result.filter((l): l is TradeListing => l !== null)
-  const prices = listings.map((l) => listingDivine(l.listing.price, rates)).filter((p): p is number => p !== null)
+/** Тело поиска: обычные предметы категории с лишними гнёздами или качеством, не дешевле порога. */
+export function searchBody(query: ExceptionalQuery, minExalted: number) {
+  const { sockets, quality } = EXCEPTIONAL_KINDS[query.kind]
   return {
-    divine: search.total >= MIN_LISTINGS ? median(prices) : null,
-    listings: search.total,
-    icon: listings.find((l) => l.item.icon)?.item.icon ?? null,
-    at,
+    query: {
+      // Только лоты с мгновенным выкупом: у них цена настоящая, а не приглашение поторговаться.
+      status: { option: 'securable' },
+      filters: {
+        type_filters: {
+          filters: {
+            // Редкие и магические не берём: у них цену задают свойства, и готовых вещей с гнёздами тысячи.
+            rarity: { option: 'normal' },
+            category: { option: query.category },
+            ...(quality > 0 && { quality: { min: quality } }),
+          },
+        },
+        ...(sockets > 0 && { equipment_filters: { filters: { rune_sockets: { min: sockets } } } }),
+        // Цена без указания валюты считается в эквиваленте exalted и включает лоты в любой валюте.
+        // collapse оставляет по одному лоту на продавца — счётчик баз превращается в число продавцов.
+        trade_filters: { filters: { price: { min: minExalted }, collapse: { option: 'true' } } },
+        misc_filters: { filters: { corrupted: { option: 'false' }, mirrored: { option: 'false' } } },
+      },
+    },
+    sort: { price: 'asc' },
   }
 }
 
-const IDLE: BasePriceJob = { running: false, league: null, done: 0, total: 0, current: null, error: null, finishedAt: null }
-let job: BasePriceJob = IDLE
+interface TradeListing {
+  item: { baseType?: string; typeLine?: string }
+}
+
+async function runQuery(league: string, query: ExceptionalQuery, minExalted: number): Promise<ExceptionalGroup> {
+  const search = await tradeRequest<{ id: string; result: string[]; total: number }>(
+    searchLimiter,
+    `${TRADE}/search/poe2/${encodeURIComponent(league)}`,
+    { method: 'POST', body: JSON.stringify(searchBody(query, minExalted)) },
+  )
+  const group: ExceptionalGroup = { kind: query.kind, title: query.title, total: search.total, sampled: 0, bases: {} }
+  const ids = search.result.slice(0, SAMPLE)
+  for (let from = 0; from < ids.length && !stopRequested; from += FETCH_BATCH) {
+    const fetched = await tradeRequest<{ result: (TradeListing | null)[] }>(
+      fetchLimiter,
+      `${TRADE}/fetch/${ids.slice(from, from + FETCH_BATCH).join(',')}?query=${search.id}&realm=poe2`,
+    )
+    for (const listing of fetched.result) {
+      const base = listing?.item.baseType ?? listing?.item.typeLine
+      if (!base) continue
+      group.sampled++
+      group.bases[base] = (group.bases[base] ?? 0) + 1
+    }
+  }
+  return group
+}
+
+const IDLE: TradeJob = {
+  running: false,
+  league: null,
+  done: 0,
+  total: 0,
+  current: null,
+  waitingUntil: null,
+  error: null,
+  finishedAt: null,
+}
+let job: TradeJob = IDLE
 let stopRequested = false
 
-export const getBasePriceJob = () => job
+export const getTradeJob = () => job
 
-export function stopBasePriceUpdate() {
+export function stopExceptionalScan() {
   stopRequested = true
   return job
 }
 
-export function startBasePriceUpdate(league: string, bases: string[]): BasePriceJob {
-  if (job.running) throw new Error('Обновление цен уже идёт')
+export function startExceptionalScan(league: string, minPrice: number, currency: Currency): TradeJob {
+  if (job.running) throw new Error('Опрос трейда уже идёт')
   stopRequested = false
-  job = { ...IDLE, running: true, league, total: bases.length }
-  void run(league, bases)
+  job = { ...IDLE, running: true, league, total: EXCEPTIONAL_QUERIES.length }
+  void run(league, minPrice, currency)
   return job
 }
 
-async function run(league: string, bases: string[]) {
+async function run(league: string, minPrice: number, currency: Currency) {
   try {
     const { rates } = await getSnapshot(league)
-    const store = await readStore()
-    const prices = (store[league] ??= {})
-    const isFresh = (base: string) => prices[base] && Date.now() - Date.parse(prices[base].at) < FRESH_MS
-    const todo = bases.filter((base) => !isFresh(base))
-    job = { ...job, total: todo.length }
-    console.log(`Цены баз: обновление начато, лига ${league}, баз ${todo.length}`)
+    const perDivine = currency === 'divine' ? 1 : rates[currency]
+    if (!(perDivine > 0) || !(rates.exalted > 0)) throw new Error('Нет курса валют для пересчёта порога цены')
+    // Трейд принимает порог только в exalted.
+    const minExalted = Math.max(1, Math.round((minPrice / perDivine) * rates.exalted))
+    console.log(`Исключительные: опрос начат, лига ${league}, порог ${minExalted} ex, запросов ${EXCEPTIONAL_QUERIES.length}`)
 
-    for (const base of todo) {
+    const groups: ExceptionalGroup[] = []
+    for (const query of EXCEPTIONAL_QUERIES) {
       if (stopRequested) break
-      job = { ...job, current: base }
-      prices[base] = await priceBase(league, base, rates)
+      job = { ...job, current: query.title }
+      groups.push(await runQuery(league, query, minExalted))
       job = { ...job, done: job.done + 1 }
-      // Пишем после каждой базы: обновление долгое, и прерывание не должно терять результат.
+    }
+    // Прерванный опрос не сохраняем: неполный результат выдал бы себя за полный и затёр прежний.
+    if (!stopRequested) {
+      const store = await readStore()
+      store[league] = { league, at: new Date().toISOString(), minPrice, currency, minExalted, groups }
       await writeStore(store)
     }
   } catch (e) {
-    // В журнал — с причиной и базой, на которой остановились: по одному сообщению в интерфейсе сбой не разобрать.
-    console.error(`Цены баз: остановлено на «${job.current}»: ${describeError(e)}`)
+    // В журнал — с причиной и шагом, на котором остановились: по одному сообщению в интерфейсе сбой не разобрать.
+    console.error(`Исключительные: остановлено на «${job.current}»: ${describeError(e)}`)
     job = { ...job, error: e instanceof Error ? e.message : String(e) }
   } finally {
-    job = { ...job, running: false, current: null, finishedAt: new Date().toISOString() }
-    console.log(`Цены баз: обновление завершено, получено ${job.done} из ${job.total}`)
+    job = { ...job, running: false, current: null, waitingUntil: null, finishedAt: new Date().toISOString() }
+    console.log(`Исключительные: опрос завершён, выполнено ${job.done} из ${job.total}`)
   }
 }

@@ -13,6 +13,7 @@ import { TIER_TITLES } from '../defaults'
 import { applyPreset, RULE_PRESETS } from '../presets'
 import { usePopularity, type UpdateConfig } from '../store'
 import { RARITIES, TIER_IDS, type BaseRule, type Config, type Rarity, type TierId } from '../types'
+import { ExceptionalPanel } from './ExceptionalPanel'
 import { ItemLabel } from './ItemLabel'
 
 const RARITY_TITLES: Record<Rarity, string> = { Normal: 'Обычные', Magic: 'Магические', Rare: 'Редкие' }
@@ -160,7 +161,9 @@ function RuleCard({ rule, index, total, config, shares, onChange, onMove, onDele
           />
         ) : (
           <div className="rule-summary">
-            <strong>{rule.name}</strong>
+            <strong>
+              {rule.name} {rule.source === 'trade' && <span className="badge">с трейда</span>}
+            </strong>
             <span className="count">{describeRule(rule)}</span>
           </div>
         )}
@@ -288,7 +291,8 @@ export function BasesView({ config, update }: { config: Config; update: UpdateCo
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
 
   const choosePreset = (preset: (typeof RULE_PRESETS)[number]) => {
-    const count = config.baseRules.length
+    // Правила из опроса трейда набор не трогает — они остаются первыми.
+    const count = config.baseRules.filter((r) => r.source !== 'trade').length
     if (count > 0 && !confirm(`Набор «${preset.title}» заменит текущие правила (${count}). Продолжить?`)) return
     update((c) => applyPreset(c, preset, shares))
   }
@@ -334,10 +338,11 @@ export function BasesView({ config, update }: { config: Config; update: UpdateCo
           ))}
         </div>
         <p className="note">
-          Белые базы с ценой с трейда оформляются по цене в разделе <a href="#/white-bases">«Белые базы»</a> — он главнее этих правил.
           Списки популярных баз фиксируются в момент применения; чтобы обновить их, примените набор заново.
         </p>
       </section>
+
+      <ExceptionalPanel config={config} update={update} />
 
       <section className="panel">
         <h2>Добавить отдельное правило</h2>

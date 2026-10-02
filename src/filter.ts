@@ -1,4 +1,4 @@
-import { BASE_PRICE_ILVL, GEAR_CLASSES } from './bases'
+import { GEAR_CLASSES } from './bases'
 import { SECTIONS } from './sections'
 import { itemDisplay } from './tiering'
 import { RARITIES, TIER_IDS, type BaseRule, type Config, type MarketItem, type MarketSnapshot, type Rgba, type TierId, type TierStyle } from './types'
@@ -111,12 +111,8 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
       }
     }
 
-    // База уника и белая база совпадают по имени с другими предметами — уточняем редкость.
-    const rarity = section.unique
-      ? ['Rarity Unique']
-      : section.whiteBases
-        ? ['Rarity Normal', `ItemLevel >= ${BASE_PRICE_ILVL}`]
-        : []
+    // Без этого условия правило для базы уника задело бы и обычные предметы на той же базе.
+    const rarity = section.unique ? ['Rarity Unique'] : []
 
     for (const tier of TIER_IDS) {
       for (const conditions of matchConditions(shown.get(tier) ?? [])) {

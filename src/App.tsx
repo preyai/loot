@@ -134,14 +134,7 @@ export function App() {
             <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />
           )}
           {snapshot && route === 'export' && <ExportView snapshot={snapshot} config={config} />}
-          {snapshot && section && <SectionView
-              key={section.id}
-              section={section}
-              snapshot={snapshot}
-              config={config}
-              update={update}
-              refreshMarket={market.refresh}
-            />}
+          {snapshot && section && <SectionView key={section.id} section={section} snapshot={snapshot} config={config} update={update} />}
         </main>
       </div>
     </div>

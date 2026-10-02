@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { describeError, listingDivine, median, pacing } from './trade'
+import { describeError, pacing, searchBody } from './trade'
 
 describe('pacing', () => {
   const SEARCH_RULES = '5:10:60,15:60:300,30:300:1800,600:21600:3600'
@@ -25,21 +25,23 @@ describe('pacing', () => {
   })
 })
 
-describe('цена лота', () => {
-  const rates = { exalted: 700, chaos: 10 }
-
-  it('переводит exalted и chaos в divine, прочие валюты пропускает', () => {
-    expect(listingDivine({ amount: 2, currency: 'divine' }, rates)).toBe(2)
-    expect(listingDivine({ amount: 350, currency: 'exalted' }, rates)).toBe(0.5)
-    expect(listingDivine({ amount: 3, currency: 'chaos' }, rates)).toBe(0.3)
-    expect(listingDivine({ amount: 5, currency: 'vaal' }, rates)).toBeNull()
-    expect(listingDivine(undefined, rates)).toBeNull()
+describe('searchBody', () => {
+  it('ищет обычные не осквернённые предметы категории с лишними гнёздами, по одному лоту на продавца', () => {
+    const body = searchBody({ kind: 'sockets3', category: 'armour.chest', title: '' }, 100)
+    expect(body.query.filters).toEqual({
+      type_filters: { filters: { rarity: { option: 'normal' }, category: { option: 'armour.chest' } } },
+      equipment_filters: { filters: { rune_sockets: { min: 3 } } },
+      trade_filters: { filters: { price: { min: 100 }, collapse: { option: 'true' } } },
+      misc_filters: { filters: { corrupted: { option: 'false' }, mirrored: { option: 'false' } } },
+    })
+    expect(body.sort).toEqual({ price: 'asc' })
   })
 
-  it('медиана', () => {
-    expect(median([3, 1, 2])).toBe(2)
-    expect(median([4, 1, 3, 2])).toBe(2.5)
-    expect(median([])).toBeNull()
+  it('для качества ставит нижнюю границу качества и не трогает гнёзда', () => {
+    const { filters } = searchBody({ kind: 'quality', category: 'weapon', title: '' }, 250).query
+    expect(filters.type_filters.filters).toEqual({ rarity: { option: 'normal' }, category: { option: 'weapon' }, quality: { min: 21 } })
+    expect(filters).not.toHaveProperty('equipment_filters')
+    expect(filters.trade_filters.filters.price).toEqual({ min: 250 })
   })
 })
 

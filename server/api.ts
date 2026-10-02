@@ -1,7 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { getLeagues } from './market'
+import type { Currency } from '../src/types'
+import { getLeagues, getSnapshot } from './market'
 import { getPopularity } from './popularity'
-import { getBasePriceJob, getFullSnapshot, startBasePriceUpdate, stopBasePriceUpdate } from './trade'
+import { getExceptionalScan, getTradeJob, startExceptionalScan, stopExceptionalScan } from './trade'
+
+const CURRENCIES: Currency[] = ['exalted', 'chaos', 'divine']
 
 async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = []
@@ -23,18 +26,21 @@ async function route(req: IncomingMessage, url: URL): Promise<unknown> {
     case 'GET /api/leagues':
       return getLeagues()
     case 'GET /api/market':
-      return getFullSnapshot(league(), force)
+      return getSnapshot(league(), force)
     case 'GET /api/popularity':
       return getPopularity(league(), force)
-    case 'GET /api/base-prices/status':
-      return getBasePriceJob()
-    case 'POST /api/base-prices/stop':
-      return stopBasePriceUpdate()
-    case 'POST /api/base-prices/update': {
+    case 'GET /api/exceptional':
+      return getExceptionalScan(league())
+    case 'GET /api/exceptional/status':
+      return getTradeJob()
+    case 'POST /api/exceptional/stop':
+      return stopExceptionalScan()
+    case 'POST /api/exceptional/scan': {
       const body = await readJson(req)
-      const bases = Array.isArray(body.bases) ? body.bases.filter((b): b is string => typeof b === 'string') : []
-      if (bases.length === 0) throw new BadRequest('Не выбраны базы')
-      return startBasePriceUpdate(requireLeague(body.league), bases)
+      const currency = CURRENCIES.find((c) => c === body.currency)
+      const minPrice = Number(body.minPrice)
+      if (!currency || !(minPrice > 0)) throw new BadRequest('Не задана цена')
+      return startExceptionalScan(requireLeague(body.league), minPrice, currency)
     }
     default:
       return undefined
@@ -53,8 +59,9 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse): Prom
   res.setHeader('Cache-Control', 'no-store')
   try {
     const result = await route(req, url)
+    // null — законный ответ («опроса ещё не было»), не найденным считается только undefined.
     if (result === undefined) res.statusCode = 404
-    res.end(JSON.stringify(result ?? { error: 'Not found' }))
+    res.end(JSON.stringify(result === undefined ? { error: 'Not found' } : result))
   } catch (e) {
     res.statusCode = e instanceof BadRequest ? 400 : 502
     res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }))

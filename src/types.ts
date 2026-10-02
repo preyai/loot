@@ -16,7 +16,6 @@ export type SectionId =
   | 'uq-armour'
   | 'uq-accessories'
   | 'uq-other'
-  | 'white-bases'
 
 export interface UniqueInfo {
   name: string
@@ -32,8 +31,6 @@ export interface MarketItem {
   divine: number | null
   /** Только в разделах уников: name — базовый тип, здесь — уникальные предметы на этой базе. */
   uniques?: UniqueInfo[]
-  /** Только у белых баз: сколько лотов нашлось на трейде. */
-  listings?: number
 }
 
 export interface MarketSnapshot {
@@ -56,16 +53,44 @@ export interface BasePopularity {
   shares: Record<string, number>
 }
 
-/** Состояние фонового обновления цен белых баз с трейда. */
-export interface BasePriceJob {
+/** Состояние фонового опроса трейда. */
+export interface TradeJob {
   running: boolean
   league: string | null
   done: number
   total: number
-  /** База, которая запрашивается сейчас. */
+  /** Запрос, который выполняется сейчас. */
   current: string | null
+  /** Трейд временно ограничил запросы: опрос ждёт до этого времени и продолжит сам. */
+  waitingUntil: string | null
   error: string | null
   finishedAt: string | null
+}
+
+/** Чем предмет исключителен: лишними гнёздами (сверх обычных двух или одного) или качеством. */
+export type ExceptionalKind = 'sockets3' | 'sockets2' | 'quality'
+
+export interface ExceptionalGroup {
+  kind: ExceptionalKind
+  title: string
+  /** Сколько всего лотов нашёл трейд. */
+  total: number
+  /** Сколько из них разобрано по базам. */
+  sampled: number
+  /** База → число продавцов среди разобранных лотов. */
+  bases: Record<string, number>
+}
+
+/** Результат опроса трейда: какие исключительные обычные предметы продают не дешевле порога. */
+export interface ExceptionalScan {
+  league: string
+  at: string
+  /** Порог цены, как его задал пользователь. */
+  minPrice: number
+  currency: Currency
+  /** Тот же порог в exalted — в таком виде он ушёл на трейд. */
+  minExalted: number
+  groups: ExceptionalGroup[]
 }
 
 export interface League {
@@ -133,6 +158,8 @@ export interface BaseRule {
   excludeCorrupted: boolean
   /** Тир, чьим стилем оформляется предмет. */
   tier: TierId
+  /** Правило создано опросом трейда и будет заменено следующим опросом. */
+  source?: 'trade'
 }
 
 export interface Config {
@@ -150,6 +177,6 @@ export interface Config {
   /** Разделы со своими настройками показа вместо общих. */
   sectionVisibility: Partial<Record<SectionId, Visibility>>
   gear: { hideLowRarity: boolean; areaLevel: number }
-  /** Для каких баз запрашивать цены на трейде: доля персонажей не меньше minShare (0–1). */
-  basePricing: { minShare: number }
+  /** Опрос трейда на исключительные вещи: нижняя граница цены в основной валюте. */
+  exceptional: { minPrice: number }
 }

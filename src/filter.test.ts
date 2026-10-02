@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './defaults'
 import { describeRule, EMPTY_RULE, topBases } from './bases'
+import { exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
 import { baseRuleBlock, generateFilter, matchConditions } from './filter'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
-import type { BaseRule, Config, MarketItem, MarketSnapshot } from './types'
+import type { BaseRule, Config, ExceptionalScan, MarketItem, MarketSnapshot } from './types'
 
 const item = (name: string, divine: number | null, section: MarketItem['section'] = 'currency'): MarketItem => ({
   name,
@@ -151,23 +152,6 @@ describe('уники', () => {
   })
 })
 
-describe('белые базы', () => {
-  const gloves = item('Sirenscale Gloves', 0.5, 'white-bases') // 50 ex → A
-
-  it('правило ограничено обычной редкостью и уровнем предмета 82+', () => {
-    const text = generateFilter(snapshot([gloves]), DEFAULT_CONFIG)
-    expect(text).toContain(
-      'Show # White Bases / A\n    Rarity Normal\n    ItemLevel >= 82\n    BaseType == "Sirenscale Gloves"\n    SetFontSize 42',
-    )
-  })
-
-  it('ручной тир хранится отдельно от уника на той же базе', () => {
-    const config: Config = { ...DEFAULT_CONFIG, overrides: { 'base:Sirenscale Gloves': 'hide' } }
-    expect(itemDisplay(gloves, config, rates)).toEqual({ kind: 'hide' })
-    expect(itemDisplay({ ...gloves, section: 'uq-armour', uniques: [] }, config, rates)).toEqual({ kind: 'show', tier: 'A' })
-  })
-})
-
 describe('правила баз', () => {
   const rule: BaseRule = {
     id: '1',
@@ -286,6 +270,59 @@ describe('готовые наборы', () => {
     expect(hide.action).toBe('hide')
     expect(hide.minAreaLevel).toBe(75)
     expect(hide.rarities).toEqual(['Rare'])
+  })
+})
+
+describe('исключительные вещи с трейда', () => {
+  const scan: ExceptionalScan = {
+    league: 'Test',
+    at: '2026-10-02T00:00:00.000Z',
+    minPrice: 100,
+    currency: 'exalted',
+    minExalted: 100,
+    groups: [
+      { kind: 'sockets3', title: 'Body Armours', total: 263, sampled: 40, bases: { 'Vile Robe': 5, 'Death Mail': 1, 'Не база': 9 } },
+      { kind: 'sockets3', title: 'Bows', total: 12, sampled: 12, bases: { 'Obliterator Bow': 2, 'Death Mail': 1 } },
+      { kind: 'sockets2', title: 'Gloves', total: 3, sampled: 3, bases: { 'Sirenscale Gloves': 1 } },
+      { kind: 'quality', title: 'Armour', total: 80, sampled: 40, bases: { 'Vile Robe': 3 } },
+    ],
+  }
+
+  it('в правило идут базы от двух продавцов, известные справочнику; продавцы суммируются по запросам', () => {
+    expect(exceptionalBases(scan)).toEqual({
+      sockets3: ['Death Mail', 'Obliterator Bow', 'Vile Robe'],
+      sockets2: [],
+      quality: ['Vile Robe'],
+    })
+  })
+
+  it('на каждый вид с базами — правило для обычных не осквернённых предметов', () => {
+    const rules = exceptionalRules(scan, '100 ex', 'A')
+    expect(rules.map((r) => r.name)).toEqual(['Исключительные от 100 ex: 3+ гнезда', 'Исключительные от 100 ex: качество 21%+'])
+    expect(rules[0]).toMatchObject({ source: 'trade', rarities: ['Normal'], minSockets: 3, minQuality: 0, excludeCorrupted: true, tier: 'A' })
+    expect(rules[0].classes).toEqual(['Bows', 'Body Armours'])
+    expect(rules[1]).toMatchObject({ minSockets: 0, minQuality: 21, bases: ['Vile Robe'] })
+    expect(baseRuleBlock({ ...rules[0], id: '1' }, 0, DEFAULT_CONFIG.tiers)).toContain(
+      'BaseType == "Death Mail" "Obliterator Bow" "Vile Robe"\n    Rarity Normal\n    Sockets >= 3\n    Corrupted False',
+    )
+  })
+
+  it('новый опрос заменяет прежние правила с трейда и не трогает ручные; наборы их сохраняют', () => {
+    const manual: BaseRule = { ...EMPTY_RULE, id: 'manual', name: 'ручное' }
+    const old: BaseRule = { ...EMPTY_RULE, id: 'old', name: 'старое с трейда', source: 'trade' }
+    const rules = withExceptionalRules([manual, old], exceptionalRules(scan, '100 ex', 'A'))
+    expect(rules.map((r) => r.name)).toEqual([
+      'Исключительные от 100 ex: 3+ гнезда',
+      'Исключительные от 100 ex: качество 21%+',
+      'ручное',
+    ])
+    const afterPreset = applyPreset({ ...DEFAULT_CONFIG, baseRules: rules }, RULE_PRESETS[0], null).baseRules
+    expect(afterPreset.slice(0, 2).every((r) => r.source === 'trade')).toBe(true)
+    expect(afterPreset.some((r) => r.id === 'manual')).toBe(false)
+  })
+
+  it('смена валюты пересчитывает порог опроса', () => {
+    expect(convertCurrency(DEFAULT_CONFIG, 'divine', rates).exceptional.minPrice).toBe(1)
   })
 })
 

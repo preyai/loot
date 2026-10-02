@@ -161,11 +161,17 @@ export const RULE_PRESETS: RulePreset[] = [
   },
 ]
 
-/** Заменяет правила баз набором; уровень области для скрытия остаётся тем, что выбрал пользователь. */
+/**
+ * Заменяет правила баз набором; уровень области для скрытия остаётся тем, что выбрал пользователь.
+ * Правила, созданные опросом трейда, сохраняются и остаются первыми.
+ */
 export function applyPreset(config: Config, preset: RulePreset, shares: Record<string, number> | null): Config {
   return {
     ...config,
-    baseRules: preset.make(shares).map((rule) => ({ ...rule, id: crypto.randomUUID() })),
+    baseRules: [
+      ...config.baseRules.filter((rule) => rule.source === 'trade'),
+      ...preset.make(shares).map((rule) => ({ ...rule, id: crypto.randomUUID() })),
+    ],
     gear: { ...config.gear, hideLowRarity: preset.hideLowRarity },
   }
 }

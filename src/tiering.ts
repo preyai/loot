@@ -18,9 +18,8 @@ const UNPRICED_TIER: TierId = 'C'
 
 const UNSTACKABLE = new Set(SECTIONS.filter((s) => s.unstackable).map((s) => s.id))
 
-/** Ключ для ручного выбора тира: база уника, белая база и обычный предмет с одним именем — разные строки. */
-export const itemKey = (item: MarketItem) =>
-  item.uniques ? `unique:${item.name}` : item.section === 'white-bases' ? `base:${item.name}` : item.name
+/** Ключ для ручного выбора тира: базы уников не должны совпасть с одноимённым обычным предметом. */
+export const itemKey = (item: MarketItem) => (item.uniques ? `unique:${item.name}` : item.name)
 
 const rank = (tier: TierId) => TIER_IDS.indexOf(tier)
 
@@ -98,6 +97,7 @@ export function convertCurrency(config: Config, to: Currency, rates: Rates): Con
     currency: to,
     thresholds: convertThresholds(config.thresholds, config.currency, to, rates),
     visibility: visibility(config.visibility),
+    exceptional: { minPrice: convertPrice(config.exceptional.minPrice, config.currency, to, rates) },
     sectionVisibility: Object.fromEntries(
       Object.entries(config.sectionVisibility).map(([id, v]) => [id, visibility(v)]),
     ),

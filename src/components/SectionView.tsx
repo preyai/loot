@@ -4,7 +4,6 @@ import type { Section } from '../sections'
 import type { UpdateConfig } from '../store'
 import { formatPrice, itemDisplay, itemKey, visibilityFor, type Display } from '../tiering'
 import { TIER_IDS, type Config, type MarketItem, type MarketSnapshot, type TierChoice, type Visibility } from '../types'
-import { BasePricesPanel } from './BasePricesPanel'
 import { ItemLabel } from './ItemLabel'
 import { VisibilityFields } from './VisibilityFields'
 
@@ -24,11 +23,9 @@ interface Props {
   snapshot: MarketSnapshot
   config: Config
   update: UpdateConfig
-  /** Перечитать цены с сервера. */
-  refreshMarket: () => void
 }
 
-export function SectionView({ section, snapshot, config, update, refreshMarket }: Props) {
+export function SectionView({ section, snapshot, config, update }: Props) {
   const [query, setQuery] = useState('')
   const enabled = !config.disabledSections.includes(section.id)
   const ownVisibility = config.sectionVisibility[section.id]
@@ -93,8 +90,6 @@ export function SectionView({ section, snapshot, config, update, refreshMarket }
         </label>
       </header>
 
-      {section.whiteBases && <BasePricesPanel config={config} update={update} onUpdated={refreshMarket} />}
-
       <section className="panel">
         <label className="check">
           <input
@@ -127,11 +122,7 @@ export function SectionView({ section, snapshot, config, update, refreshMarket }
       )}
       {!enabled && <p className="note">Раздел выключен: игра покажет эти предметы как обычно, без правил фильтра.</p>}
       {failed && <p className="note note--error">Не удалось загрузить цены этого раздела. Попробуйте обновить цены.</p>}
-      {!failed && groups.size === 0 && (
-        <p className="note">
-          {query ? 'Ничего не найдено.' : section.whiteBases ? 'Цен пока нет — запустите обновление выше.' : 'В этой лиге предметов нет.'}
-        </p>
-      )}
+      {!failed && groups.size === 0 && <p className="note">{query ? 'Ничего не найдено.' : 'В этой лиге предметов нет.'}</p>}
 
       {GROUPS.map((group) => {
         const rows = groups.get(group)
@@ -148,23 +139,12 @@ export function SectionView({ section, snapshot, config, update, refreshMarket }
                 const override = config.overrides[key]
                 return (
                   <li key={key} className="item">
-                    {item.icon ? <img src={item.icon} alt="" loading="lazy" width={32} height={32} /> : <span />}
+                    <img src={item.icon} alt="" loading="lazy" width={32} height={32} />
                     <div>
                       <div className="ground">
                         <ItemLabel name={item.name} style={display.kind === 'hide' ? null : config.tiers[display.tier]} />
                         {display.kind === 'stack' && <span className="stack">от {display.stackSize} шт.</span>}
                       </div>
-                      {item.listings !== undefined && (
-                        <ul className="uniques">
-                          <li>
-                            <span>
-                              {item.listings < 5
-                                ? `лотов на трейде: ${item.listings} — мало, цене нельзя верить`
-                                : `лотов на трейде: ${item.listings}`}
-                            </span>
-                          </li>
-                        </ul>
-                      )}
                       {item.uniques && (
                         <ul className="uniques">
                           {item.uniques.map((u) => (

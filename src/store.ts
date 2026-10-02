@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { EMPTY_RULE } from './bases'
 import { DEFAULT_CONFIG } from './defaults'
-import type { BasePopularity, BasePriceJob, Config, League, MarketSnapshot } from './types'
+import type { BasePopularity, Config, Currency, ExceptionalScan, League, MarketSnapshot, TradeJob } from './types'
 
 const CONFIG_KEY = 'loot-filter-editor:config'
 
@@ -69,26 +69,46 @@ export function usePopularity(league: string | null): Popularity {
 
 const JOB_POLL_MS = 3000
 
-/** Фоновое обновление цен белых баз: запуск, остановка и слежение за ходом. */
-export function useBasePriceJob(onFinished: () => void) {
-  const [job, setJob] = useState<BasePriceJob | null>(null)
+/** Опрос трейда на исключительные вещи: запуск, остановка, слежение за ходом и последний результат. */
+export function useExceptionalScan(league: string | null, onFinished: (scan: ExceptionalScan) => void) {
+  const [job, setJob] = useState<TradeJob | null>(null)
+  const [scan, setScan] = useState<ExceptionalScan | null>(null)
   const [error, setError] = useState<string | null>(null)
   const finished = useRef(onFinished)
   finished.current = onFinished
 
-  // Обновление могло быть запущено до открытия страницы.
+  // Опрос мог быть запущен до открытия страницы.
   useEffect(() => {
-    api<BasePriceJob>('/api/base-prices/status').then(setJob, () => {})
+    api<TradeJob>('/api/exceptional/status').then(setJob, () => {})
   }, [])
+
+  useEffect(() => {
+    setScan(null)
+    if (!league) return
+    let stale = false
+    api<ExceptionalScan | null>(`/api/exceptional?league=${encodeURIComponent(league)}`).then(
+      (saved) => !stale && setScan(saved),
+      () => {},
+    )
+    return () => {
+      stale = true
+    }
+  }, [league])
 
   const running = job?.running ?? false
   useEffect(() => {
     if (!running) return
     const timer = setInterval(() => {
-      api<BasePriceJob>('/api/base-prices/status').then(
+      api<TradeJob>('/api/exceptional/status').then(
         (next) => {
           setJob(next)
-          if (!next.running) finished.current()
+          // Остановленный или упавший опрос результата не оставляет.
+          if (next.running || next.error || next.done < next.total || !next.league) return
+          api<ExceptionalScan | null>(`/api/exceptional?league=${encodeURIComponent(next.league)}`).then((saved) => {
+            if (!saved) return
+            setScan(saved)
+            finished.current(saved)
+          })
         },
         (e: Error) => setError(e.message),
       )
@@ -98,14 +118,16 @@ export function useBasePriceJob(onFinished: () => void) {
 
   const post = (path: string, body: unknown = {}) => {
     setError(null)
-    api<BasePriceJob>(path, { method: 'POST', body: JSON.stringify(body) }).then(setJob, (e: Error) => setError(e.message))
+    api<TradeJob>(path, { method: 'POST', body: JSON.stringify(body) }).then(setJob, (e: Error) => setError(e.message))
   }
 
   return {
     job,
+    scan,
     error,
-    start: (league: string, bases: string[]) => post('/api/base-prices/update', { league, bases }),
-    stop: () => post('/api/base-prices/stop'),
+    start: (scanLeague: string, minPrice: number, currency: Currency) =>
+      post('/api/exceptional/scan', { league: scanLeague, minPrice, currency }),
+    stop: () => post('/api/exceptional/stop'),
   }
 }
 

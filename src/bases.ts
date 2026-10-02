@@ -89,9 +89,6 @@ export function describeRule(rule: BaseRule): string {
     .join(' · ')
 }
 
-/** Белые базы оцениваются и подсвечиваются с этого уровня предмета: ниже него не выпадают лучшие свойства. */
-export const BASE_PRICE_ILVL = 82
-
 /** С какой доли персонажей база считается популярной. */
 export const POPULAR_SHARE = 0.03
 

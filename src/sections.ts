@@ -9,8 +9,6 @@ export interface Section {
   ninja: string[]
   /** Раздел уникальных предметов: строка раздела — базовый тип, а не отдельный предмет. */
   unique?: true
-  /** Раздел белых баз с ценами трейда: данные приходят не с poe.ninja. */
-  whiteBases?: true
   /** Предметы раздела не складываются в стопки, правило «показывать стопками» к ним неприменимо. */
   unstackable?: true
 }
@@ -47,5 +45,4 @@ export const SECTIONS: Section[] = [
     unique: true,
     unstackable: true,
   },
-  { id: 'white-bases', title: 'Белые базы', label: 'White Bases', ninja: [], whiteBases: true, unstackable: true },
 ]

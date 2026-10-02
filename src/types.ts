@@ -36,6 +36,9 @@ export interface League {
   hardcore: boolean
 }
 
+/** Валюта, в которой задаются пороги и показываются цены. */
+export type Currency = 'exalted' | 'chaos' | 'divine'
+
 export const TIER_IDS = ['S', 'A', 'B', 'C', 'D', 'E'] as const
 export type TierId = (typeof TIER_IDS)[number]
 export type TierChoice = TierId | 'hide'
@@ -50,7 +53,7 @@ export interface Rgba {
 export interface Visibility {
   /** Тиры ниже этого не показываются. */
   minTier: TierId
-  /** Минимальная цена в Exalted Orb; 0 — без ограничения. */
+  /** Минимальная цена в основной валюте; 0 — без ограничения. */
   minPrice: number
   /** Показывать то, что не прошло, стопками на сумму не меньше порога. */
   stacks: boolean
@@ -68,7 +71,8 @@ export interface TierStyle {
 
 export interface Config {
   league: string | null
-  /** Нижняя граница тира в Exalted Orb; всё, что дешевле D, попадает в E. */
+  currency: Currency
+  /** Нижняя граница тира в основной валюте; всё, что дешевле D, попадает в E. */
   thresholds: Record<Exclude<TierId, 'E'>, number>
   tiers: Record<TierId, TierStyle>
   /** Ручной выбор тира по имени предмета. */

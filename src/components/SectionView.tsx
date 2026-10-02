@@ -101,6 +101,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         <VisibilityFields
           value={visibilityFor(config, section.id)}
           thresholds={config.thresholds}
+          currency={config.currency}
           onChange={setVisibility}
           disabled={ownVisibility === undefined}
           unstackable={section.unstackable}
@@ -135,7 +136,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                       <ItemLabel name={item.name} style={display.kind === 'hide' ? null : config.tiers[display.tier]} />
                       {display.kind === 'stack' && <span className="stack">от {display.stackSize} шт.</span>}
                     </div>
-                    <span className="price">{formatPrice(item.divine, snapshot.rates)}</span>
+                    <span className="price">{formatPrice(item.divine, snapshot.rates, config.currency)}</span>
                     <div className="tier-picker" role="group" aria-label={`Тир для ${item.name}`}>
                       <button
                         className={override === undefined ? 'active' : ''}

@@ -1,4 +1,10 @@
-import type { Config, Rgba, TierId } from './types'
+import type { Config, Currency, Rgba, TierId } from './types'
+
+export const CURRENCIES: Record<Currency, { short: string; title: string }> = {
+  exalted: { short: 'ex', title: 'Exalted Orb' },
+  chaos: { short: 'c', title: 'Chaos Orb' },
+  divine: { short: 'div', title: 'Divine Orb' },
+}
 
 export const EFFECT_COLORS = [
   'Red', 'Green', 'Blue', 'Brown', 'White', 'Yellow', 'Cyan', 'Grey', 'Orange', 'Pink', 'Purple',
@@ -33,6 +39,7 @@ const rgba = (r: number, g: number, b: number, a = 255): Rgba => ({ r, g, b, a }
 
 export const DEFAULT_CONFIG: Config = {
   league: null,
+  currency: 'exalted',
   thresholds: { S: 500, A: 50, B: 10, C: 2, D: 0.5 },
   tiers: {
     S: {

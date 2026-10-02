@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { downloadFilter, ExportView } from './components/ExportView'
 import { SectionView } from './components/SectionView'
 import { StylesView } from './components/StylesView'
+import { CURRENCIES } from './defaults'
 import { generateFilter } from './filter'
 import { SECTIONS } from './sections'
 import { useConfig, useMarket } from './store'
+import { convertCurrency, perDivine } from './tiering'
+import type { Currency } from './types'
 
 const PAGES = ['styles', 'export'] as const
 type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number]
@@ -82,6 +85,22 @@ export function App() {
               ))}
             </select>
           </label>
+          <label>
+            Валюта
+            <select
+              value={config.currency}
+              disabled={!snapshot}
+              title="Пороги и минимальные цены пересчитаются по текущему курсу"
+              onChange={(e) => snapshot && update((c) => convertCurrency(c, e.target.value as Currency, snapshot.rates))}
+            >
+              {(Object.keys(CURRENCIES) as Currency[]).map((id) => (
+                // Без курса пересчитать пороги в эту валюту нельзя.
+                <option key={id} value={id} disabled={!snapshot || !(perDivine(id, snapshot.rates) > 0)}>
+                  {CURRENCIES[id].title}
+                </option>
+              ))}
+            </select>
+          </label>
           <span className="status">
             {market.loading
               ? 'Загрузка цен…'
@@ -104,7 +123,7 @@ export function App() {
           )}
           {!snapshot && market.loading && <p className="note">Загрузка цен…</p>}
           {route === 'styles' && (
-            <StylesView config={config} update={update} exaltedPerDivine={snapshot?.rates.exalted ?? 0} />
+            <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />
           )}
           {snapshot && route === 'export' && <ExportView snapshot={snapshot} config={config} />}
           {snapshot && section && <SectionView key={section.id} section={section} snapshot={snapshot} config={config} update={update} />}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './defaults'
 import { generateFilter, matchConditions } from './filter'
-import { itemDisplay } from './tiering'
+import { convertCurrency, formatPrice, itemDisplay } from './tiering'
 import type { Config, MarketItem, MarketSnapshot } from './types'
 
 const item = (name: string, divine: number | null, section: MarketItem['section'] = 'currency'): MarketItem => ({
@@ -11,7 +11,7 @@ const item = (name: string, divine: number | null, section: MarketItem['section'
   divine,
 })
 
-// 1 div = 100 ex
+// 1 div = 100 ex = 10 chaos
 const rates = { exalted: 100, chaos: 10 }
 
 const snapshot = (items: MarketItem[]): MarketSnapshot => ({
@@ -80,6 +80,42 @@ describe('itemDisplay', () => {
   it('предмет без цены показывается всегда', () => {
     const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'S', minPrice: 1000, stacks: false } }
     expect(itemDisplay(item('New Thing', null), config, rates)).toEqual({ kind: 'show', tier: 'C' })
+  })
+})
+
+describe('основная валюта', () => {
+  it('пороги трактуются в выбранной валюте', () => {
+    // 3 ex = 0.3 chaos = 0.03 div
+    const inChaos: Config = { ...DEFAULT_CONFIG, currency: 'chaos', thresholds: { S: 50, A: 5, B: 1, C: 0.2, D: 0.05 } }
+    expect(itemDisplay(jeweller, inChaos, rates)).toEqual({ kind: 'show', tier: 'C' })
+    const inDivine: Config = { ...DEFAULT_CONFIG, currency: 'divine', thresholds: { S: 5, A: 0.5, B: 0.1, C: 0.02, D: 0.005 } }
+    expect(itemDisplay(jeweller, inDivine, rates)).toEqual({ kind: 'show', tier: 'C' })
+    expect(itemDisplay(mirror, inDivine, rates)).toEqual({ kind: 'show', tier: 'S' })
+  })
+
+  it('смена валюты пересчитывает пороги и мин. цены, не меняя результат', () => {
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      visibility: { minTier: 'E', minPrice: 12, stacks: true },
+      sectionVisibility: { ritual: { minTier: 'A', minPrice: 40, stacks: false } },
+    }
+    const inDivine = convertCurrency(config, 'divine', rates)
+    expect(inDivine.currency).toBe('divine')
+    expect(inDivine.thresholds).toEqual({ S: 5, A: 0.5, B: 0.1, C: 0.02, D: 0.005 })
+    expect(inDivine.visibility.minPrice).toBe(0.12)
+    expect(inDivine.sectionVisibility.ritual?.minPrice).toBe(0.4)
+    for (const it of [mirror, jeweller, scroll]) {
+      expect(itemDisplay(it, inDivine, rates)).toEqual(itemDisplay(it, config, rates))
+    }
+    expect(convertCurrency(inDivine, 'exalted', rates).thresholds).toEqual(DEFAULT_CONFIG.thresholds)
+  })
+
+  it('цена показывается в основной валюте, дорогое — в divine', () => {
+    expect(formatPrice(0.03, rates, 'exalted')).toBe('3.00 ex')
+    expect(formatPrice(0.03, rates, 'chaos')).toBe('0.3 c')
+    expect(formatPrice(0.03, rates, 'divine')).toBe('0.03 div')
+    expect(formatPrice(10, rates, 'chaos')).toBe('10.0 div')
+    expect(formatPrice(null, rates, 'chaos')).toBe('нет цены')
   })
 })
 

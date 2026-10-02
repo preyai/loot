@@ -1,10 +1,11 @@
-import { TIER_TITLES } from '../defaults'
+import { CURRENCIES, TIER_TITLES } from '../defaults'
 import { cutoffPrice } from '../tiering'
-import { TIER_IDS, type Config, type TierId, type Visibility } from '../types'
+import { TIER_IDS, type Config, type Currency, type TierId, type Visibility } from '../types'
 
 interface Props {
   value: Visibility
   thresholds: Config['thresholds']
+  currency: Currency
   onChange: (value: Visibility) => void
   disabled?: boolean
   /** Раздел с нескладываемыми предметами: настройка стопок не показывается. */
@@ -12,8 +13,9 @@ interface Props {
 }
 
 /** Настройки «что показывать»: общие или для одного раздела. */
-export function VisibilityFields({ value, thresholds, onChange, disabled, unstackable }: Props) {
+export function VisibilityFields({ value, thresholds, currency, onChange, disabled, unstackable }: Props) {
   const cutoff = cutoffPrice(value, thresholds)
+  const unit = CURRENCIES[currency].short
   return (
     <fieldset className="visibility" disabled={disabled}>
       <label>
@@ -35,14 +37,14 @@ export function VisibilityFields({ value, thresholds, onChange, disabled, unstac
           value={value.minPrice}
           onChange={(e) => onChange({ ...value, minPrice: Math.max(0, Number(e.target.value)) })}
         />
-        ex
+        {unit}
       </label>
       {unstackable ? (
         <span className="note">Остальное скрывается: эти предметы не складываются в стопки.</span>
       ) : (
         <label className="check">
           <input type="checkbox" checked={value.stacks} onChange={(e) => onChange({ ...value, stacks: e.target.checked })} />
-          Остальное показывать стопками{cutoff > 0 && ` на сумму от ${cutoff} ex`}
+          Остальное показывать стопками{cutoff > 0 && ` на сумму от ${cutoff} ${unit}`}
         </label>
       )}
     </fieldset>

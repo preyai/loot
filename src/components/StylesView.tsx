@@ -1,4 +1,5 @@
 import {
+  CURRENCIES,
   DEFAULT_CONFIG,
   EFFECT_COLORS,
   FONT_SIZE,
@@ -8,7 +9,8 @@ import {
   TIER_TITLES,
 } from '../defaults'
 import type { UpdateConfig } from '../store'
-import { TIER_IDS, type Config, type Rgba, type TierId, type TierStyle } from '../types'
+import { convertThresholds, perDivine } from '../tiering'
+import { TIER_IDS, type Config, type MarketSnapshot, type Rgba, type TierId, type TierStyle } from '../types'
 import { ItemLabel } from './ItemLabel'
 import { VisibilityFields } from './VisibilityFields'
 
@@ -208,7 +210,15 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
   )
 }
 
-export function StylesView({ config, update, exaltedPerDivine }: { config: Config; update: UpdateConfig; exaltedPerDivine: number }) {
+interface Props {
+  config: Config
+  update: UpdateConfig
+  /** null, пока цены не загружены. */
+  rates: MarketSnapshot['rates'] | null
+}
+
+export function StylesView({ config, update, rates }: Props) {
+  const unit = CURRENCIES[config.currency].short
   const thresholdTiers = TIER_IDS.filter((t): t is Exclude<TierId, 'E'> => t !== 'E')
   const overrideCount = Object.keys(config.overrides).length
 
@@ -221,8 +231,9 @@ export function StylesView({ config, update, exaltedPerDivine }: { config: Confi
       <section className="panel">
         <h2>Пороги цен</h2>
         <p className="note">
-          Предмет попадает в тир, если стоит не меньше порога. Цены — в Exalted Orb
-          {exaltedPerDivine > 0 && ` (сейчас 1 Divine ≈ ${Math.round(exaltedPerDivine)} ex)`}. Всё, что дешевле D, уходит в E.
+          Предмет попадает в тир, если стоит не меньше порога. Цены — в {CURRENCIES[config.currency].title}
+          {rates && config.currency !== 'divine' && ` (сейчас 1 Divine ≈ ${Math.round(perDivine(config.currency, rates))} ${unit})`}.
+          Валюта выбирается вверху страницы. Всё, что дешевле D, уходит в E.
         </p>
         <div className="thresholds">
           {thresholdTiers.map((t) => (
@@ -237,7 +248,7 @@ export function StylesView({ config, update, exaltedPerDivine }: { config: Confi
                   update((c) => ({ ...c, thresholds: { ...c.thresholds, [t]: Math.max(0, Number(e.target.value)) } }))
                 }
               />
-              ex
+              {unit}
             </label>
           ))}
         </div>
@@ -252,6 +263,7 @@ export function StylesView({ config, update, exaltedPerDivine }: { config: Confi
         <VisibilityFields
           value={config.visibility}
           thresholds={config.thresholds}
+          currency={config.currency}
           onChange={(visibility) => update((c) => ({ ...c, visibility }))}
         />
       </section>
@@ -299,9 +311,16 @@ export function StylesView({ config, update, exaltedPerDivine }: { config: Confi
             Сбросить ручные тиры ({overrideCount})
           </button>
           <button
+            disabled={!rates}
             onClick={() =>
+              rates &&
               confirm('Вернуть стили и пороги по умолчанию?') &&
-              update((c) => ({ ...c, tiers: DEFAULT_CONFIG.tiers, thresholds: DEFAULT_CONFIG.thresholds }))
+              update((c) => ({
+                ...c,
+                tiers: DEFAULT_CONFIG.tiers,
+                // Пороги по умолчанию заданы в exalted — переводим в выбранную валюту.
+                thresholds: convertThresholds(DEFAULT_CONFIG.thresholds, DEFAULT_CONFIG.currency, c.currency, rates),
+              }))
             }
           >
             Стили и пороги по умолчанию

@@ -1,5 +1,15 @@
+import { CURRENCIES } from './defaults'
 import { SECTIONS } from './sections'
-import { TIER_IDS, type Config, type MarketItem, type MarketSnapshot, type SectionId, type TierId, type Visibility } from './types'
+import {
+  TIER_IDS,
+  type Config,
+  type Currency,
+  type MarketItem,
+  type MarketSnapshot,
+  type SectionId,
+  type TierId,
+  type Visibility,
+} from './types'
 
 type Rates = MarketSnapshot['rates']
 
@@ -10,18 +20,23 @@ const UNSTACKABLE = new Set(SECTIONS.filter((s) => s.unstackable).map((s) => s.i
 
 const rank = (tier: TierId) => TIER_IDS.indexOf(tier)
 
-export function tierByValue(exalted: number, thresholds: Config['thresholds']): TierId {
-  if (exalted >= thresholds.S) return 'S'
-  if (exalted >= thresholds.A) return 'A'
-  if (exalted >= thresholds.B) return 'B'
-  if (exalted >= thresholds.C) return 'C'
-  if (exalted >= thresholds.D) return 'D'
+/** Сколько единиц валюты дают за 1 Divine. */
+export function perDivine(currency: Currency, rates: Rates): number {
+  return currency === 'divine' ? 1 : rates[currency]
+}
+
+export function tierByValue(value: number, thresholds: Config['thresholds']): TierId {
+  if (value >= thresholds.S) return 'S'
+  if (value >= thresholds.A) return 'A'
+  if (value >= thresholds.B) return 'B'
+  if (value >= thresholds.C) return 'C'
+  if (value >= thresholds.D) return 'D'
   return 'E'
 }
 
 export function autoTier(item: MarketItem, config: Config, rates: Rates): TierId {
   if (item.divine === null) return UNPRICED_TIER
-  return tierByValue(item.divine * rates.exalted, config.thresholds)
+  return tierByValue(item.divine * perDivine(config.currency, rates), config.thresholds)
 }
 
 export function visibilityFor(config: Config, section: SectionId): Visibility {
@@ -47,7 +62,7 @@ export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Dis
   if (item.divine === null) return { kind: 'show', tier }
 
   const visibility = visibilityFor(config, item.section)
-  const price = item.divine * rates.exalted
+  const price = item.divine * perDivine(config.currency, rates)
   // Ручной тир важнее мин. цены: предмет, поднятый вручную, показывается, даже если он дешёвый.
   const passes = rank(tier) <= rank(visibility.minTier) && (override !== undefined || price >= visibility.minPrice)
   if (passes) return { kind: 'show', tier }
@@ -58,8 +73,38 @@ export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Dis
   return { kind: 'stack', tier: tierByValue(stackSize * price, config.thresholds), stackSize }
 }
 
-export function formatPrice(divine: number | null, rates: Rates): string {
+const convertPrice = (value: number, from: Currency, to: Currency, rates: Rates) =>
+  Number(((value * perDivine(to, rates)) / perDivine(from, rates)).toPrecision(3))
+
+export function convertThresholds(
+  thresholds: Config['thresholds'],
+  from: Currency,
+  to: Currency,
+  rates: Rates,
+): Config['thresholds'] {
+  const convert = (v: number) => convertPrice(v, from, to, rates)
+  return { S: convert(thresholds.S), A: convert(thresholds.A), B: convert(thresholds.B), C: convert(thresholds.C), D: convert(thresholds.D) }
+}
+
+/** Смена основной валюты: пороги и мин. цены пересчитываются по курсу, чтобы тиры остались теми же. */
+export function convertCurrency(config: Config, to: Currency, rates: Rates): Config {
+  const visibility = (v: Visibility): Visibility => ({ ...v, minPrice: convertPrice(v.minPrice, config.currency, to, rates) })
+  return {
+    ...config,
+    currency: to,
+    thresholds: convertThresholds(config.thresholds, config.currency, to, rates),
+    visibility: visibility(config.visibility),
+    sectionVisibility: Object.fromEntries(
+      Object.entries(config.sectionVisibility).map(([id, v]) => [id, visibility(v)]),
+    ),
+  }
+}
+
+export function formatPrice(divine: number | null, rates: Rates, currency: Currency): string {
   if (divine === null) return 'нет цены'
-  const round = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2))
-  return divine >= 1 ? `${round(divine)} div` : `${round(divine * rates.exalted)} ex`
+  const round = (v: number) =>
+    v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : String(Number(v.toPrecision(2)))
+  // Дорогое нагляднее в divine, какой бы ни была основная валюта.
+  if (divine >= 1) return `${round(divine)} ${CURRENCIES.divine.short}`
+  return `${round(divine * perDivine(currency, rates))} ${CURRENCIES[currency].short}`
 }

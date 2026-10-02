@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './defaults'
-import { describeRule, EMPTY_RULE, topBases } from './bases'
-import { exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
+import { baseTradeUrl, baseWikiUrl, describeRule, EMPTY_RULE, topBases } from './bases'
+import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
 import { baseRuleBlock, generateFilter, matchConditions } from './filter'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
@@ -291,6 +291,27 @@ describe('исключительные вещи с трейда', () => {
       sockets3: ['Death Mail', 'Obliterator Bow', 'Vile Robe'],
       sockets2: [],
       quality: ['Vile Robe'],
+    })
+  })
+
+  it('по базе видно, в каких видах её продают и сколько продавцов — включая одиночные лоты', () => {
+    const offers = baseOffers(scan)
+    expect(offers.get('Vile Robe')).toEqual([
+      { kind: 'sockets3', sellers: 5 },
+      { kind: 'quality', sellers: 3 },
+    ])
+    expect(offers.get('Death Mail')).toEqual([{ kind: 'sockets3', sellers: 2 }])
+    expect(offers.get('Sirenscale Gloves')).toEqual([{ kind: 'sockets2', sellers: 1 }])
+    expect(offers.has('Crude Bow')).toBe(false)
+  })
+
+  it('ссылки на базу: страница poe2db и поиск на трейде в выбранной лиге', () => {
+    expect(baseWikiUrl("Adherent's Raiment")).toBe("https://poe2db.tw/ru/Adherent's_Raiment")
+    const url = new URL(baseTradeUrl('Vile Robe', 'Forbidden Rites'))
+    expect(url.pathname).toBe('/trade2/search/poe2/Forbidden%20Rites')
+    expect(JSON.parse(url.searchParams.get('q')!)).toEqual({
+      query: { type: 'Vile Robe', status: { option: 'securable' } },
+      sort: { price: 'asc' },
     })
   })
 

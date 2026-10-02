@@ -879,8 +879,8 @@ main {
 
 .base-picker fieldset {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 2px 14px;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: 10px;
   margin: 10px 0 0;
   padding: 8px 12px;
   border: 1px solid var(--line);
@@ -1027,7 +1027,68 @@ main {
   height: 36px;
 }
 
-.base-picker label {
-  flex-wrap: nowrap;
-  min-height: 34px;
+.base-icon--large {
+  width: 78px;
+  height: 78px;
+}
+
+/* Карточка базы: вся карточка — одна большая галочка. */
+.base-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 8px 8px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #1f1810 0%, #120e09 100%);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.base-card:hover {
+  border-color: var(--bronze);
+}
+
+.base-card:has(input:checked) {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #33260f 0%, #1a130a 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 164, 92, 0.3),
+    0 0 12px rgba(201, 164, 92, 0.18);
+}
+
+.base-card input {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  margin: 0;
+}
+
+.base-card-name {
+  color: var(--text);
+  font-family: var(--font-item);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.base-card:has(input:checked) .base-card-name {
+  color: var(--gold-bright);
+}
+
+.base-card-price {
+  color: var(--gold);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.base-card-links {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 12px;
 }

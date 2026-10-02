@@ -51,19 +51,42 @@ export const MIN_SELLERS = 2
 
 const KNOWN_BASES = new Set(BASE_CLASSES.flatMap((c) => c.bases.map((b) => b.name)))
 
+/** Сколько продавцов выставили базу в каждом виде исключительности (один вид может идти несколькими запросами). */
+function sellersByKind(scan: ExceptionalScan): Record<ExceptionalKind, Map<string, number>> {
+  const result: Record<ExceptionalKind, Map<string, number>> = { sockets3: new Map(), sockets2: new Map(), quality: new Map() }
+  for (const group of scan.groups) {
+    const sellers = result[group.kind]
+    for (const [base, count] of Object.entries(group.bases)) sellers.set(base, (sellers.get(base) ?? 0) + count)
+  }
+  return result
+}
+
 /** Базы каждого вида исключительности, подтверждённые достаточным числом продавцов. */
 export function exceptionalBases(scan: ExceptionalScan): Record<ExceptionalKind, string[]> {
-  const result: Record<ExceptionalKind, string[]> = { sockets3: [], sockets2: [], quality: [] }
-  for (const kind of Object.keys(result) as ExceptionalKind[]) {
-    const sellers = new Map<string, number>()
-    for (const group of scan.groups) {
-      if (group.kind !== kind) continue
-      for (const [base, count] of Object.entries(group.bases)) sellers.set(base, (sellers.get(base) ?? 0) + count)
-    }
-    result[kind] = [...sellers]
+  const sellers = sellersByKind(scan)
+  const pick = (kind: ExceptionalKind) =>
+    [...sellers[kind]]
       .filter(([base, count]) => count >= MIN_SELLERS && KNOWN_BASES.has(base))
       .map(([base]) => base)
       .sort()
+  return { sockets3: pick('sockets3'), sockets2: pick('sockets2'), quality: pick('quality') }
+}
+
+export interface BaseOffer {
+  kind: ExceptionalKind
+  sellers: number
+}
+
+/** Что опрос трейда знает о каждой базе: в каком виде её продают не дешевле порога и сколько продавцов. */
+export function baseOffers(scan: ExceptionalScan): Map<string, BaseOffer[]> {
+  const result = new Map<string, BaseOffer[]>()
+  const sellers = sellersByKind(scan)
+  for (const kind of Object.keys(sellers) as ExceptionalKind[]) {
+    for (const [base, count] of sellers[kind]) {
+      const offers = result.get(base) ?? []
+      offers.push({ kind, sellers: count })
+      result.set(base, offers)
+    }
   }
   return result
 }

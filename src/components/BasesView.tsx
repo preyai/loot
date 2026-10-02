@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import {
   baseIconUrl,
+  baseTradeUrl,
+  baseWikiUrl,
   BASE_CLASSES,
   BASE_GROUPS,
   describeRule,
@@ -10,10 +12,20 @@ import {
   RULE_TEMPLATES,
   type BaseInfo,
 } from '../bases'
-import { TIER_TITLES } from '../defaults'
+import { CURRENCIES, TIER_TITLES } from '../defaults'
+import { baseOffers, EXCEPTIONAL_KINDS } from '../exceptional'
 import { applyPreset, RULE_PRESETS } from '../presets'
-import { usePopularity, type UpdateConfig } from '../store'
-import { RARITIES, TIER_IDS, type BaseRule, type Config, type MarketSnapshot, type Rarity, type TierId } from '../types'
+import { useExceptionalScan, usePopularity, type UpdateConfig } from '../store'
+import {
+  RARITIES,
+  TIER_IDS,
+  type BaseRule,
+  type Config,
+  type ExceptionalScan,
+  type MarketSnapshot,
+  type Rarity,
+  type TierId,
+} from '../types'
 import { ExceptionalPanel } from './ExceptionalPanel'
 import { ItemLabel } from './ItemLabel'
 
@@ -30,13 +42,14 @@ type Shares = Record<string, number>
 /** Сколько иконок баз показывать в свёрнутом правиле; остальные сворачиваются в «+N». */
 const SUMMARY_ICONS = 12
 
-function BaseIcon({ name }: { name: string }) {
+function BaseIcon({ name, large }: { name: string; large?: boolean }) {
   const url = baseIconUrl(name)
-  // Пустое место того же размера держит строки списка ровными, когда иконки нет или она не загрузилась.
-  if (!url) return <span className="base-icon" />
+  const className = large ? 'base-icon base-icon--large' : 'base-icon'
+  // Пустое место того же размера держит сетку ровной, когда иконки нет или она не загрузилась.
+  if (!url) return <span className={className} />
   return (
     <img
-      className="base-icon"
+      className={className}
       src={url}
       alt=""
       title={name}
@@ -46,7 +59,16 @@ function BaseIcon({ name }: { name: string }) {
   )
 }
 
-function BasePicker({ rule, shares, onChange }: { rule: BaseRule; shares: Shares | null; onChange: (bases: string[]) => void }) {
+/** Данные о базах со стороны: популярность, опрос трейда и лига для ссылок. */
+interface BaseContext {
+  shares: Shares | null
+  scan: ExceptionalScan | null
+  league: string | null
+}
+
+function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: BaseContext; onChange: (bases: string[]) => void }) {
+  const { shares, scan, league } = context
+  const offers = useMemo(() => (scan ? baseOffers(scan) : null), [scan])
   const [query, setQuery] = useState('')
   const [minDrop, setMinDrop] = useState(65)
   const [minShare, setMinShare] = useState(POPULAR_SHARE * 100)
@@ -105,11 +127,30 @@ function BasePicker({ rule, shares, onChange }: { rule: BaseRule; shares: Shares
           <fieldset key={c.name}>
             <legend>{c.name}</legend>
             {bases.map((b) => (
-              <label key={b.name} className="check">
+              <label key={b.name} className="base-card">
                 <input type="checkbox" checked={rule.bases.includes(b.name)} onChange={() => onChange(toggle(rule.bases, b.name))} />
-                <BaseIcon name={b.name} />
-                {b.name} <span className="count">{describe(b)}</span>
-                {shares?.[b.name] !== undefined && <span className="share">{percent(shares[b.name])}</span>}
+                <BaseIcon name={b.name} large />
+                <span className="base-card-name">{b.name}</span>
+                <span className="count">{describe(b)}</span>
+                {shares?.[b.name] !== undefined && <span className="share">носят {percent(shares[b.name])}</span>}
+                {scan &&
+                  offers?.get(b.name)?.map((offer) => (
+                    <span key={offer.kind} className="base-card-price" title="Обычные предметы на трейде, по одному лоту на продавца">
+                      {EXCEPTIONAL_KINDS[offer.kind].title}: от {scan.minExalted} {CURRENCIES.exalted.short}
+                      <span className="count"> · продавцов: {offer.sellers}</span>
+                    </span>
+                  ))}
+                {/* Ссылка внутри label не переключает галочку: браузер отдаёт клик самой ссылке. */}
+                <span className="base-card-links">
+                  <a href={baseWikiUrl(b.name)} target="_blank" rel="noreferrer">
+                    poe2db
+                  </a>
+                  {league && (
+                    <a href={baseTradeUrl(b.name, league)} target="_blank" rel="noreferrer">
+                      трейд
+                    </a>
+                  )}
+                </span>
               </label>
             ))}
           </fieldset>
@@ -124,13 +165,13 @@ interface CardProps {
   index: number
   total: number
   config: Config
-  shares: Shares | null
+  context: BaseContext
   onChange: (rule: BaseRule) => void
   onMove: (delta: number) => void
   onDelete: () => void
 }
 
-function RuleCard({ rule, index, total, config, shares, onChange, onMove, onDelete }: CardProps) {
+function RuleCard({ rule, index, total, config, context, onChange, onMove, onDelete }: CardProps) {
   // Свёрнутое правило читается одной строкой; пустое сразу открыто — его всё равно надо заполнять.
   const [open, setOpen] = useState(rule.classes.length === 0)
   // Список баз длинный — рисуем его, только пока он раскрыт.
@@ -305,7 +346,7 @@ function RuleCard({ rule, index, total, config, shares, onChange, onMove, onDele
               <summary>
                 {rule.bases.length === 0 ? 'Базы: любые из выбранных классов' : `Базы: выбрано ${rule.bases.length}`}
               </summary>
-              {pickerOpen && <BasePicker rule={rule} shares={shares} onChange={(bases) => set('bases', bases)} />}
+              {pickerOpen && <BasePicker rule={rule} context={context} onChange={(bases) => set('bases', bases)} />}
             </details>
           )}
         </>
@@ -324,6 +365,8 @@ interface Props {
 export function BasesView({ config, update, rates }: Props) {
   const popularity = usePopularity(config.league)
   const shares = popularity.data?.shares ?? null
+  const exceptional = useExceptionalScan(config.league)
+  const context: BaseContext = { shares, scan: exceptional.scan, league: config.league }
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
 
   const choosePreset = (preset: (typeof RULE_PRESETS)[number]) => {
@@ -378,7 +421,7 @@ export function BasesView({ config, update, rates }: Props) {
         </p>
       </section>
 
-      <ExceptionalPanel config={config} update={update} rates={rates} />
+      <ExceptionalPanel config={config} update={update} rates={rates} scan={exceptional.scan} loading={exceptional.loading} />
 
       <section className="panel">
         <h2>Добавить отдельное правило</h2>
@@ -411,7 +454,7 @@ export function BasesView({ config, update, rates }: Props) {
           index={index}
           total={config.baseRules.length}
           config={config}
-          shares={shares}
+          context={context}
           onChange={(next) => setRules((rules) => rules.map((r) => (r.id === next.id ? next : r)))}
           onMove={(delta) => move(index, delta)}
           onDelete={() => setRules((rules) => rules.filter((r) => r.id !== rule.id))}

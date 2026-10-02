@@ -34,6 +34,15 @@ export function baseIconUrl(name: string): string | null {
   return icon ? `${ICON_HOST}/${icon}.webp` : null
 }
 
+/** Страница базы в справочнике poe2db. */
+export const baseWikiUrl = (name: string) => `https://poe2db.tw/ru/${encodeURIComponent(name.replaceAll(' ', '_'))}`
+
+/** Поиск базы на официальном трейде: лоты с мгновенным выкупом, от дешёвых. */
+export function baseTradeUrl(name: string, league: string): string {
+  const query = { query: { type: name, status: { option: 'securable' } }, sort: { price: 'asc' } }
+  return `https://www.pathofexile.com/trade2/search/poe2/${encodeURIComponent(league)}?q=${encodeURIComponent(JSON.stringify(query))}`
+}
+
 export const BASE_GROUPS: { id: BaseGroup; title: string }[] = [
   { id: 'weapon', title: 'Оружие' },
   { id: 'armour', title: 'Броня' },

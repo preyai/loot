@@ -10,6 +10,7 @@ param(
   [string]$AppDir,
   [string]$Service,
   [int]$Port,
+  [string]$Domain,
   [switch]$SkipTests,
   [switch]$DryRun
 )
@@ -19,11 +20,14 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
 # Параметры командной строки важнее файла настроек, файл важнее значений по умолчанию.
-# service — имя контейнера и образа на сервере.
-$config = @{ server = ''; appDir = '/opt/loot-filter'; service = 'loot-filter'; port = 8080 }
+#   service  — имя контейнера и образа на сервере;
+#   domain   — если задан, редактор отдаётся по HTTPS на этом домене (ставится Caddy);
+#   password — пароль входа; пусто — оставить тот, что уже на сервере (при первом деплое создаётся случайный).
+$config = @{ server = ''; appDir = '/opt/loot-filter'; service = 'loot-filter'; port = 8080; domain = ''; password = '' }
 $configFile = Join-Path $root 'deploy.config.json'
 if (Test-Path $configFile) {
-  $saved = Get-Content $configFile -Raw | ConvertFrom-Json
+  # Без явной кодировки Windows PowerShell прочитает файл как ANSI и испортит пароль не на латинице.
+  $saved = Get-Content $configFile -Raw -Encoding UTF8 | ConvertFrom-Json
   foreach ($key in @($config.Keys)) {
     if ($null -ne $saved.$key -and "$($saved.$key)" -ne '') { $config[$key] = $saved.$key }
   }
@@ -32,6 +36,9 @@ if ($Server) { $config.server = $Server }
 if ($AppDir) { $config.appDir = $AppDir }
 if ($Service) { $config.service = $Service }
 if ($Port) { $config.port = $Port }
+if ($Domain) { $config.domain = $Domain }
+$config.domain = "$($config.domain)".Trim().ToLower()
+$config.password = "$($config.password)"
 
 if (-not $DryRun -and -not $config.server) {
   throw 'Не указан сервер. Передайте -Server user@host или создайте deploy.config.json по образцу deploy.config.example.json.'
@@ -39,6 +46,10 @@ if (-not $DryRun -and -not $config.server) {
 # Эти значения попадают в команды на сервере, поэтому допускаем только безопасные символы.
 if ($config.appDir -notmatch '^/[A-Za-z0-9_./-]+$') { throw "Недопустимый каталог приложения: $($config.appDir)" }
 if ($config.service -notmatch '^[a-z][a-z0-9_-]*$') { throw "Недопустимое имя контейнера: $($config.service)" }
+if ($config.domain -and $config.domain -notmatch '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$') {
+  throw "Недопустимый домен: $($config.domain). Нужно имя вида loot.example.com, без https:// и пути."
+}
+if ($config.password -match '[\r\n]') { throw 'Пароль не должен содержать переводов строки.' }
 
 function Invoke-Step([string]$Title, [scriptblock]$Action) {
   Write-Host ''
@@ -63,28 +74,42 @@ Write-Host "Архив: $archive ($sizeMb МБ), коммит $commit"
 
 if ($DryRun) {
   Write-Host ''
+  if ($config.domain) { Write-Host "Домен: $($config.domain)" } else { Write-Host 'Домен не задан: редактор будет доступен по HTTP на порту.' }
+  if ($config.password) { Write-Host 'Пароль: будет взят из deploy.config.json.' } else { Write-Host 'Пароль: останется тот, что на сервере.' }
   Write-Host 'Пробный запуск: на сервер ничего не отправлено.' -ForegroundColor Yellow
   exit 0
 }
 
 $target = $config.server
 $remoteTmp = '/tmp/loot-deploy-' + (Get-Date -Format 'yyyyMMddHHmmss')
-$installer = Join-Path $PSScriptRoot 'remote-install.sh'
-$dockerfile = Join-Path $PSScriptRoot 'release.Dockerfile'
+$uploads = @($archive, (Join-Path $PSScriptRoot 'remote-install.sh'), (Join-Path $PSScriptRoot 'release.Dockerfile'))
 # Метка образа: по ней на сервере видно, какой коммит и когда выложен.
 $tag = "$commit-" + (Get-Date -Format 'yyyyMMddHHmmss')
 
-Invoke-Step "Отправка на $target" {
-  ssh $target "mkdir -p $remoteTmp"
-  if ($LASTEXITCODE -ne 0) { return }
-  scp $archive "${target}:$remoteTmp/release.tar.gz"
-  if ($LASTEXITCODE -ne 0) { return }
-  scp $installer $dockerfile "${target}:$remoteTmp/"
+# Пароль едет файлом, а не аргументом команды: аргументы видны на сервере в списке процессов.
+$passwordFile = Join-Path ([IO.Path]::GetTempPath()) 'password.txt'
+if ($config.password) {
+  [IO.File]::WriteAllText($passwordFile, $config.password, (New-Object Text.UTF8Encoding($false)))
+  $uploads += $passwordFile
 }
 
+try {
+  Invoke-Step "Отправка на $target" {
+    # Каталог доступен только владельцу: в нём на время установки лежит пароль.
+    ssh $target "mkdir -m 700 $remoteTmp"
+    if ($LASTEXITCODE -ne 0) { return }
+    scp $uploads "${target}:$remoteTmp/"
+    if ($LASTEXITCODE -ne 0) { return }
+    ssh $target "mv $remoteTmp/loot-filter-release.tar.gz $remoteTmp/release.tar.gz"
+  }
+} finally {
+  Remove-Item $passwordFile -ErrorAction SilentlyContinue
+}
+
+$domainArg = if ($config.domain) { $config.domain } else { '-' }
 # -t нужен, чтобы sudo на сервере мог спросить пароль.
 Invoke-Step 'Установка на сервере' {
-  ssh -t $target "bash $remoteTmp/remote-install.sh $($config.appDir) $($config.service) $($config.port) $tag"
+  ssh -t $target "bash $remoteTmp/remote-install.sh $($config.appDir) $($config.service) $($config.port) $tag $domainArg"
 }
 
 Remove-Item $archive -ErrorAction SilentlyContinue

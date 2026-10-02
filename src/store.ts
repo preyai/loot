@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { DEFAULT_CONFIG } from './defaults'
-import type { Config, League, MarketSnapshot } from './types'
+import type { BasePopularity, Config, League, MarketSnapshot } from './types'
 
 const CONFIG_KEY = 'loot-filter-editor:config'
 
@@ -41,6 +41,28 @@ async function api<T>(path: string): Promise<T> {
   const body = (await res.json()) as T | { error: string }
   if (!res.ok) throw new Error((body as { error: string }).error ?? `Ошибка ${res.status}`)
   return body as T
+}
+
+export interface Popularity {
+  data: BasePopularity | null
+  loading: boolean
+  error: string | null
+}
+
+export function usePopularity(league: string | null): Popularity {
+  const [state, setState] = useState<Popularity>({ data: null, loading: false, error: null })
+  useEffect(() => {
+    if (!league) return
+    let stale = false
+    setState({ data: null, loading: true, error: null })
+    api<BasePopularity>(`/api/popularity?league=${encodeURIComponent(league)}`)
+      .then((data) => !stale && setState({ data, loading: false, error: null }))
+      .catch((e: Error) => !stale && setState({ data: null, loading: false, error: e.message }))
+    return () => {
+      stale = true
+    }
+  }, [league])
+  return state
 }
 
 export interface Market {

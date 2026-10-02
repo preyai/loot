@@ -493,6 +493,12 @@ main {
   border-radius: 4px;
 }
 
+.share {
+  color: var(--accent);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 .base-picker legend {
   padding: 0 6px;
   color: var(--muted);

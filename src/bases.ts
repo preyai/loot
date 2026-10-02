@@ -54,6 +54,27 @@ const EMPTY_RULE: Omit<BaseRule, 'id' | 'name'> = {
   tier: 'C',
 }
 
+/** С какой доли персонажей база считается популярной. */
+export const POPULAR_SHARE = 0.03
+
+export function popularBases(classes: string[], shares: Record<string, number>, minShare: number): string[] {
+  return BASE_CLASSES.filter((c) => classes.includes(c.name)).flatMap((c) =>
+    c.bases.filter((b) => (shares[b.name] ?? 0) >= minShare).map((b) => b.name),
+  )
+}
+
+export function popularRule(shares: Record<string, number>): Omit<BaseRule, 'id'> {
+  const classes = BASE_CLASSES.filter((c) => c.bases.some((b) => (shares[b.name] ?? 0) >= POPULAR_SHARE)).map((c) => c.name)
+  return {
+    ...EMPTY_RULE,
+    name: 'Популярные базы, ур. предмета 82+',
+    classes,
+    bases: popularBases(classes, shares, POPULAR_SHARE),
+    rarities: ['Normal', 'Magic'],
+    minItemLevel: 82,
+  }
+}
+
 export const RULE_TEMPLATES: { title: string; make: () => Omit<BaseRule, 'id'> }[] = [
   {
     title: 'Топовые базы, ур. предмета 82+',

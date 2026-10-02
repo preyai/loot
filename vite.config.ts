@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Connect, type Plugin } from 'vite'
 import { getLeagues, getSnapshot } from './server/market'
+import { getPopularity } from './server/popularity'
 
 // poe.ninja не отдаёт CORS-заголовки, поэтому цены забирает dev-сервер, а не браузер.
 function marketApi(): Plugin {
@@ -10,16 +11,17 @@ function marketApi(): Plugin {
 
     res.setHeader('Content-Type', 'application/json; charset=utf-8')
     try {
+      const perLeague = { '/api/market': getSnapshot, '/api/popularity': getPopularity }[url.pathname]
       if (url.pathname === '/api/leagues') {
         res.end(JSON.stringify(await getLeagues()))
-      } else if (url.pathname === '/api/market') {
+      } else if (perLeague) {
         const league = url.searchParams.get('league')
         if (!league) {
           res.statusCode = 400
           res.end(JSON.stringify({ error: 'Не указана лига' }))
           return
         }
-        res.end(JSON.stringify(await getSnapshot(league, url.searchParams.has('force'))))
+        res.end(JSON.stringify(await perLeague(league, url.searchParams.has('force'))))
       } else {
         res.statusCode = 404
         res.end(JSON.stringify({ error: 'Not found' }))

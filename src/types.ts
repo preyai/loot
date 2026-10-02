@@ -43,6 +43,16 @@ export interface MarketSnapshot {
   failed: SectionId[]
 }
 
+/** Какие базы носят персонажи из рейтинга poe.ninja. */
+export interface BasePopularity {
+  league: string
+  fetchedAt: string
+  /** Сколько персонажей в выборке. */
+  characters: number
+  /** База → доля персонажей с редким предметом этого слота, у которых он на этой базе (0–1). */
+  shares: Record<string, number>
+}
+
 export interface League {
   name: string
   hardcore: boolean

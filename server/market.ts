@@ -1,9 +1,9 @@
 import { SECTIONS, type Section } from '../src/sections'
 import type { League, MarketItem, MarketSnapshot, SectionId, UniqueInfo } from '../src/types'
 
-const API = 'https://poe.ninja/poe2/api'
+export const API = 'https://poe.ninja/poe2/api'
 const ICON_HOST = 'https://web.poecdn.com'
-const HEADERS = { 'User-Agent': 'loot-filter-editor/0.1 (personal project)', Accept: 'application/json' }
+export const HEADERS = { 'User-Agent': 'loot-filter-editor/0.1 (personal project)', Accept: 'application/json' }
 // poe.ninja сам кэширует ответы на 30 минут, чаще спрашивать бессмысленно.
 const TTL_MS = 30 * 60 * 1000
 /** Меньше лотов — цена ненадёжна: пара выставленных «за миллион» даёт абсурдное среднее. */

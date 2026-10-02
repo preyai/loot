@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { BASE_CLASSES, BASE_GROUPS, RULE_TEMPLATES, type BaseInfo } from '../bases'
+import { BASE_CLASSES, BASE_GROUPS, POPULAR_SHARE, popularBases, popularRule, RULE_TEMPLATES, type BaseInfo } from '../bases'
 import { TIER_TITLES } from '../defaults'
-import type { UpdateConfig } from '../store'
+import { usePopularity, type UpdateConfig } from '../store'
 import { RARITIES, TIER_IDS, type BaseRule, type Config, type Rarity, type TierId } from '../types'
 import { ItemLabel } from './ItemLabel'
 
@@ -9,13 +9,25 @@ const RARITY_TITLES: Record<Rarity, string> = { Normal: 'Обычные', Magic:
 const DEFENCE_TITLES: Record<string, string> = { a: 'броня', e: 'уклонение', s: 'энергощит' }
 
 const toggle = <T,>(list: T[], value: T) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
+const percent = (share: number) => `${(share * 100).toFixed(1)}%`
 const describe = (base: BaseInfo) =>
   [`ур. ${base.drop}`, ...(base.defence ?? '').split('').map((d) => DEFENCE_TITLES[d])].join(', ')
 
-function BasePicker({ rule, onChange }: { rule: BaseRule; onChange: (bases: string[]) => void }) {
+type Shares = Record<string, number>
+
+function BasePicker({ rule, shares, onChange }: { rule: BaseRule; shares: Shares | null; onChange: (bases: string[]) => void }) {
   const [query, setQuery] = useState('')
   const [minDrop, setMinDrop] = useState(65)
-  const classes = useMemo(() => BASE_CLASSES.filter((c) => rule.classes.includes(c.name)), [rule.classes])
+  const [minShare, setMinShare] = useState(POPULAR_SHARE * 100)
+  const classes = useMemo(
+    () =>
+      BASE_CLASSES.filter((c) => rule.classes.includes(c.name)).map((c) => ({
+        ...c,
+        // Популярные — наверх; у остальных сохраняется порядок справочника (по уровню выпадения).
+        bases: shares ? [...c.bases].sort((a, b) => (shares[b.name] ?? 0) - (shares[a.name] ?? 0)) : c.bases,
+      })),
+    [rule.classes, shares],
+  )
   const needle = query.trim().toLowerCase()
 
   return (
@@ -35,6 +47,22 @@ function BasePicker({ rule, onChange }: { rule: BaseRule; onChange: (bases: stri
         <button onClick={() => onChange(classes.flatMap((c) => c.bases.filter((b) => b.drop >= minDrop).map((b) => b.name)))}>
           Выбрать такие
         </button>
+        <label className="check">
+          Популярность от
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step="any"
+            disabled={!shares}
+            value={minShare}
+            onChange={(e) => setMinShare(Number(e.target.value))}
+          />
+          %
+        </label>
+        <button disabled={!shares} onClick={() => shares && onChange(popularBases(rule.classes, shares, minShare / 100))}>
+          Выбрать популярные
+        </button>
         <button disabled={rule.bases.length === 0} onClick={() => onChange([])}>
           Очистить
         </button>
@@ -49,6 +77,7 @@ function BasePicker({ rule, onChange }: { rule: BaseRule; onChange: (bases: stri
               <label key={b.name} className="check">
                 <input type="checkbox" checked={rule.bases.includes(b.name)} onChange={() => onChange(toggle(rule.bases, b.name))} />
                 {b.name} <span className="count">{describe(b)}</span>
+                {shares?.[b.name] !== undefined && <span className="share">{percent(shares[b.name])}</span>}
               </label>
             ))}
           </fieldset>
@@ -63,12 +92,13 @@ interface CardProps {
   index: number
   total: number
   config: Config
+  shares: Shares | null
   onChange: (rule: BaseRule) => void
   onMove: (delta: number) => void
   onDelete: () => void
 }
 
-function RuleCard({ rule, index, total, config, onChange, onMove, onDelete }: CardProps) {
+function RuleCard({ rule, index, total, config, shares, onChange, onMove, onDelete }: CardProps) {
   // Список баз длинный — рисуем его, только пока он раскрыт.
   const [pickerOpen, setPickerOpen] = useState(false)
   const set = <K extends keyof BaseRule>(key: K, value: BaseRule[K]) => onChange({ ...rule, [key]: value })
@@ -189,7 +219,7 @@ function RuleCard({ rule, index, total, config, onChange, onMove, onDelete }: Ca
           <summary>
             {rule.bases.length === 0 ? 'Базы: любые из выбранных классов' : `Базы: выбрано ${rule.bases.length}`}
           </summary>
-          {pickerOpen && <BasePicker rule={rule} onChange={(bases) => set('bases', bases)} />}
+          {pickerOpen && <BasePicker rule={rule} shares={shares} onChange={(bases) => set('bases', bases)} />}
         </details>
       )}
     </section>
@@ -197,6 +227,8 @@ function RuleCard({ rule, index, total, config, onChange, onMove, onDelete }: Ca
 }
 
 export function BasesView({ config, update }: { config: Config; update: UpdateConfig }) {
+  const popularity = usePopularity(config.league)
+  const shares = popularity.data?.shares ?? null
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
 
   const move = (index: number, delta: number) =>
@@ -220,12 +252,25 @@ export function BasesView({ config, update }: { config: Config; update: UpdateCo
       <section className="panel">
         <h2>Добавить правило</h2>
         <div className="actions">
+          <button
+            disabled={!shares}
+            onClick={() => shares && setRules((rules) => [...rules, { ...popularRule(shares), id: crypto.randomUUID() }])}
+          >
+            Популярные базы, ур. предмета 82+
+          </button>
           {RULE_TEMPLATES.map((template) => (
             <button key={template.title} onClick={() => setRules((rules) => [...rules, { ...template.make(), id: crypto.randomUUID() }])}>
               {template.title}
             </button>
           ))}
         </div>
+        <p className="note">
+          {popularity.loading && 'Загрузка популярности баз с poe.ninja…'}
+          {popularity.error && <span className="note--error">Популярность баз недоступна: {popularity.error}</span>}
+          {popularity.data &&
+            `Популярность баз — по ${popularity.data.characters.toLocaleString('ru-RU')} персонажам из рейтинга poe.ninja: доля тех, ` +
+              `у кого редкий предмет слота сделан на этой базе. Популярной считается база с долей от ${POPULAR_SHARE * 100}%.`}
+        </p>
       </section>
 
       {config.baseRules.map((rule, index) => (
@@ -235,6 +280,7 @@ export function BasesView({ config, update }: { config: Config; update: UpdateCo
           index={index}
           total={config.baseRules.length}
           config={config}
+          shares={shares}
           onChange={(next) => setRules((rules) => rules.map((r) => (r.id === next.id ? next : r)))}
           onMove={(delta) => move(index, delta)}
           onDelete={() => setRules((rules) => rules.filter((r) => r.id !== rule.id))}

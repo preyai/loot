@@ -12,6 +12,16 @@ export type SectionId =
   | 'idols'
   | 'lineage'
   | 'gems'
+  | 'uq-weapons'
+  | 'uq-armour'
+  | 'uq-accessories'
+  | 'uq-other'
+
+export interface UniqueInfo {
+  name: string
+  /** Цена в Divine Orb; null — лотов слишком мало, цене нельзя верить. */
+  divine: number | null
+}
 
 export interface MarketItem {
   name: string
@@ -19,6 +29,8 @@ export interface MarketItem {
   section: SectionId
   /** Цена в Divine Orb; null — на рынке нет данных. */
   divine: number | null
+  /** Только в разделах уников: name — базовый тип, здесь — уникальные предметы на этой базе. */
+  uniques?: UniqueInfo[]
 }
 
 export interface MarketSnapshot {
@@ -75,7 +87,7 @@ export interface Config {
   /** Нижняя граница тира в основной валюте; всё, что дешевле D, попадает в E. */
   thresholds: Record<Exclude<TierId, 'E'>, number>
   tiers: Record<TierId, TierStyle>
-  /** Ручной выбор тира по имени предмета. */
+  /** Ручной выбор тира по ключу предмета (itemKey). */
   overrides: Record<string, TierChoice>
   disabledSections: SectionId[]
   visibility: Visibility

@@ -119,6 +119,36 @@ describe('основная валюта', () => {
   })
 })
 
+describe('уники', () => {
+  const robe: MarketItem = {
+    ...item('Silk Robe', 71, 'uq-armour'),
+    uniques: [
+      { name: 'Temporalis', divine: 71 },
+      { name: 'Cloak of Flame', divine: 0.001 },
+    ],
+  }
+
+  it('правило для базы ограничено редкостью Unique', () => {
+    const text = generateFilter(snapshot([robe]), DEFAULT_CONFIG)
+    expect(text).toContain('Show # Unique Armours / S\n    Rarity Unique\n    BaseType == "Silk Robe"\n    SetFontSize 45')
+  })
+
+  it('ручной тир базы уника не пересекается с одноимённым обычным предметом', () => {
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      visibility: { minTier: 'C', minPrice: 0, stacks: true },
+      overrides: { 'unique:Silk Robe': 'hide', 'Scroll of Wisdom': 'S' },
+    }
+    expect(itemDisplay(robe, config, rates)).toEqual({ kind: 'hide' })
+    expect(itemDisplay(item('Silk Robe', 71), config, rates)).toEqual({ kind: 'show', tier: 'S' })
+    // Уники не складываются: дешёвая база скрывается, а не показывается стопкой.
+    expect(itemDisplay({ ...robe, name: 'Plain Hat', divine: 0.001 }, config, rates)).toEqual({ kind: 'hide' })
+    expect(generateFilter(snapshot([robe]), config)).toContain(
+      'Hide # Unique Armours / hidden\n    Rarity Unique\n    BaseType == "Silk Robe"\n',
+    )
+  })
+})
+
 describe('generateFilter', () => {
   it('раскладывает предметы по тирам согласно порогам в exalted', () => {
     const text = generateFilter(snapshot([mirror, jeweller, scroll]), DEFAULT_CONFIG)

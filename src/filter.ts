@@ -91,9 +91,12 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
       }
     }
 
+    // Без этого условия правило для базы уника задело бы и обычные предметы на той же базе.
+    const rarity = section.unique ? ['Rarity Unique'] : []
+
     for (const tier of TIER_IDS) {
       for (const conditions of matchConditions(shown.get(tier) ?? [])) {
-        out.push(block('Show', `${section.label} / ${tier}`, [...conditions, ...styleLines(config.tiers[tier])]))
+        out.push(block('Show', `${section.label} / ${tier}`, [...rarity, ...conditions, ...styleLines(config.tiers[tier])]))
       }
     }
 
@@ -105,6 +108,7 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
       for (const conditions of matchConditions(items)) {
         out.push(
           block('Show', `${section.label} / ${tier} / stacks of ${stackSize}+`, [
+            ...rarity,
             ...conditions,
             `StackSize >= ${stackSize}`,
             ...styleLines(config.tiers[tier]),
@@ -114,7 +118,7 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
     }
 
     for (const conditions of matchConditions(hidden)) {
-      out.push(block('Hide', `${section.label} / hidden`, conditions))
+      out.push(block('Hide', `${section.label} / hidden`, [...rarity, ...conditions]))
     }
   }
 

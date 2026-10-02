@@ -272,6 +272,21 @@ main {
   object-fit: contain;
 }
 
+.uniques {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14px;
+  margin: 3px 0 0;
+  padding: 0 8px;
+  list-style: none;
+  color: #d98a4e;
+  font-size: 12px;
+}
+
+.uniques span {
+  color: var(--muted);
+}
+
 .price {
   color: var(--muted);
   text-align: right;

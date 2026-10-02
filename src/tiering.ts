@@ -18,6 +18,9 @@ const UNPRICED_TIER: TierId = 'C'
 
 const UNSTACKABLE = new Set(SECTIONS.filter((s) => s.unstackable).map((s) => s.id))
 
+/** Ключ для ручного выбора тира: базы уников не должны совпасть с одноимённым обычным предметом. */
+export const itemKey = (item: MarketItem) => (item.uniques ? `unique:${item.name}` : item.name)
+
 const rank = (tier: TierId) => TIER_IDS.indexOf(tier)
 
 /** Сколько единиц валюты дают за 1 Divine. */
@@ -55,7 +58,7 @@ export type Display =
   | { kind: 'hide' }
 
 export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Display {
-  const override = config.overrides[item.name]
+  const override = config.overrides[itemKey(item)]
   if (override === 'hide') return { kind: 'hide' }
   const tier = override ?? autoTier(item, config, rates)
   // Без цены нельзя судить о ценности — лучше показать лишнее, чем скрыть дорогую новинку.

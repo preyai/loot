@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { downloadFilter, ExportView } from './components/ExportView'
 import { SectionView } from './components/SectionView'
 import { StylesView } from './components/StylesView'
@@ -47,17 +47,19 @@ export function App() {
       <aside className="sidebar">
         <div className="brand">Лутфильтр PoE 2</div>
         <nav>
-          {SECTIONS.map((s) => (
-            <a
-              key={s.id}
-              href={`#/${s.id}`}
-              className={[route === s.id && 'active', config.disabledSections.includes(s.id) && 'off']
-                .filter(Boolean)
-                .join(' ')}
-            >
-              {s.title}
-              <span className="count">{counts.get(s.id) ?? '—'}</span>
-            </a>
+          {SECTIONS.map((s, i) => (
+            <Fragment key={s.id}>
+              {s.unique && !SECTIONS[i - 1]?.unique && <hr />}
+              <a
+                href={`#/${s.id}`}
+                className={[route === s.id && 'active', config.disabledSections.includes(s.id) && 'off']
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {s.title}
+                <span className="count">{counts.get(s.id) ?? '—'}</span>
+              </a>
+            </Fragment>
           ))}
           <hr />
           <a href="#/styles" className={route === 'styles' ? 'active' : ''}>

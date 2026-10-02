@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { TIER_TITLES } from '../defaults'
 import type { Section } from '../sections'
 import type { UpdateConfig } from '../store'
-import { formatPrice, itemDisplay, visibilityFor, type Display } from '../tiering'
+import { formatPrice, itemDisplay, itemKey, visibilityFor, type Display } from '../tiering'
 import { TIER_IDS, type Config, type MarketItem, type MarketSnapshot, type TierChoice, type Visibility } from '../types'
 import { ItemLabel } from './ItemLabel'
 import { VisibilityFields } from './VisibilityFields'
@@ -35,7 +35,8 @@ export function SectionView({ section, snapshot, config, update }: Props) {
     const map = new Map<GroupId, Row[]>()
     for (const item of snapshot.items) {
       if (item.section !== section.id) continue
-      if (needle && !item.name.toLowerCase().includes(needle)) continue
+      const names = [item.name, ...(item.uniques ?? []).map((u) => u.name)]
+      if (needle && !names.some((n) => n.toLowerCase().includes(needle))) continue
       const display = itemDisplay(item, config, snapshot.rates)
       const group = display.kind === 'show' ? display.tier : display.kind
       const list = map.get(group) ?? []
@@ -46,11 +47,11 @@ export function SectionView({ section, snapshot, config, update }: Props) {
     return map
   }, [snapshot, section.id, config, query])
 
-  const setTier = (name: string, choice: TierChoice | null) =>
+  const setTier = (key: string, choice: TierChoice | null) =>
     update((c) => {
       const overrides = { ...c.overrides }
-      if (choice === null) delete overrides[name]
-      else overrides[name] = choice
+      if (choice === null) delete overrides[key]
+      else overrides[key] = choice
       return { ...c, overrides }
     })
 
@@ -113,6 +114,12 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         )}
       </section>
 
+      {section.unique && (
+        <p className="note">
+          Уники выпадают неопознанными, и фильтр видит только базовый тип, поэтому тир назначается базе — по самому дорогому
+          унику на ней. Если у какого-то уника слишком мало лотов, цене нельзя верить: такая база показывается всегда, в тире C.
+        </p>
+      )}
       {!enabled && <p className="note">Раздел выключен: игра покажет эти предметы как обычно, без правил фильтра.</p>}
       {failed && <p className="note note--error">Не удалось загрузить цены этого раздела. Попробуйте обновить цены.</p>}
       {!failed && groups.size === 0 && <p className="note">{query ? 'Ничего не найдено.' : 'В этой лиге предметов нет.'}</p>}
@@ -128,20 +135,33 @@ export function SectionView({ section, snapshot, config, update }: Props) {
             </h2>
             <ul className="items">
               {rows.map(({ item, display }) => {
-                const override = config.overrides[item.name]
+                const key = itemKey(item)
+                const override = config.overrides[key]
                 return (
-                  <li key={item.name} className="item">
+                  <li key={key} className="item">
                     <img src={item.icon} alt="" loading="lazy" width={32} height={32} />
-                    <div className="ground">
-                      <ItemLabel name={item.name} style={display.kind === 'hide' ? null : config.tiers[display.tier]} />
-                      {display.kind === 'stack' && <span className="stack">от {display.stackSize} шт.</span>}
+                    <div>
+                      <div className="ground">
+                        <ItemLabel name={item.name} style={display.kind === 'hide' ? null : config.tiers[display.tier]} />
+                        {display.kind === 'stack' && <span className="stack">от {display.stackSize} шт.</span>}
+                      </div>
+                      {item.uniques && (
+                        <ul className="uniques">
+                          {item.uniques.map((u) => (
+                            <li key={u.name}>
+                              {u.name}{' '}
+                              <span>{u.divine === null ? 'мало лотов' : formatPrice(u.divine, snapshot.rates, config.currency)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     <span className="price">{formatPrice(item.divine, snapshot.rates, config.currency)}</span>
                     <div className="tier-picker" role="group" aria-label={`Тир для ${item.name}`}>
                       <button
                         className={override === undefined ? 'active' : ''}
                         title="Тир по цене"
-                        onClick={() => setTier(item.name, null)}
+                        onClick={() => setTier(key, null)}
                       >
                         Авто
                       </button>
@@ -150,7 +170,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                           key={c}
                           className={override === c ? 'active' : ''}
                           title={c === 'hide' ? 'Скрыть предмет' : TIER_TITLES[c]}
-                          onClick={() => setTier(item.name, c)}
+                          onClick={() => setTier(key, c)}
                         >
                           {c === 'hide' ? '✕' : c}
                         </button>

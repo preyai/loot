@@ -92,7 +92,7 @@ export const DEFAULT_CONFIG: Config = {
   },
   overrides: {},
   disabledSections: [],
-  visibility: { minTier: 'E', minPrice: 0, stacks: true },
+  visibility: { minTier: 'E', minPrice: 0, stacks: true, stackPrice: 5 },
   sectionVisibility: {},
   gear: { hideLowRarity: false, areaLevel: 65 },
 }

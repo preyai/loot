@@ -41,30 +41,36 @@ describe('itemDisplay', () => {
     expect(itemDisplay(scroll, DEFAULT_CONFIG, rates)).toEqual({ kind: 'show', tier: 'E' })
   })
 
-  it('ниже мин. тира — только стопка на сумму не меньше границы тира', () => {
-    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'C', minPrice: 0, stacks: true } }
+  it('ниже мин. тира — только стопка на заданную сумму', () => {
+    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'C', minPrice: 0, stacks: true, stackPrice: 2 } }
     expect(itemDisplay(jeweller, config, rates)).toEqual({ kind: 'show', tier: 'C' })
-    // Граница C — 2 ex, свиток стоит 0.1 ex → нужно 20 штук, и такая стопка сама тянет на C.
+    // Стопка от 2 ex, свиток стоит 0.1 ex → нужно 20 штук, и такая стопка сама тянет на C.
     expect(itemDisplay(scroll, config, rates)).toEqual({ kind: 'stack', tier: 'C', stackSize: 20 })
   })
 
-  it('дешевле мин. цены — стопка на сумму не меньше мин. цены', () => {
-    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'E', minPrice: 12, stacks: true } }
+  it('сумма стопки задаётся отдельно от мин. цены', () => {
+    const cheapStacks: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'E', minPrice: 12, stacks: true, stackPrice: 6 } }
+    // 3 ex за штуку → 2 штуки = 6 ex → тир C (от 2 ex)
+    expect(itemDisplay(jeweller, cheapStacks, rates)).toEqual({ kind: 'stack', tier: 'C', stackSize: 2 })
+  })
+
+  it('дешевле мин. цены — только стопка', () => {
+    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'E', minPrice: 12, stacks: true, stackPrice: 12 } }
     // 3 ex за штуку → 4 штуки = 12 ex → тир B (от 10 ex)
     expect(itemDisplay(jeweller, config, rates)).toEqual({ kind: 'stack', tier: 'B', stackSize: 4 })
     expect(itemDisplay(mirror, config, rates)).toEqual({ kind: 'show', tier: 'S' })
   })
 
   it('без стопок дешёвое просто скрывается', () => {
-    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'E', minPrice: 12, stacks: false } }
+    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'E', minPrice: 12, stacks: false, stackPrice: 12 } }
     expect(itemDisplay(jeweller, config, rates)).toEqual({ kind: 'hide' })
   })
 
   it('настройки раздела важнее общих, ручной тир важнее мин. цены', () => {
     const config: Config = {
       ...DEFAULT_CONFIG,
-      visibility: { minTier: 'S', minPrice: 0, stacks: false },
-      sectionVisibility: { currency: { minTier: 'B', minPrice: 50, stacks: false } },
+      visibility: { minTier: 'S', minPrice: 0, stacks: false, stackPrice: 5 },
+      sectionVisibility: { currency: { minTier: 'B', minPrice: 50, stacks: false, stackPrice: 5 } },
       overrides: { 'Scroll of Wisdom': 'A', 'Mirror of Kalandra': 'hide' },
     }
     expect(itemDisplay(scroll, config, rates)).toEqual({ kind: 'show', tier: 'A' })
@@ -73,12 +79,12 @@ describe('itemDisplay', () => {
   })
 
   it('камни не складываются, поэтому вместо стопок скрываются', () => {
-    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'C', minPrice: 0, stacks: true } }
+    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'C', minPrice: 0, stacks: true, stackPrice: 2 } }
     expect(itemDisplay(item('Uncut Skill Gem (Level 3)', 0.001, 'gems'), config, rates)).toEqual({ kind: 'hide' })
   })
 
   it('предмет без цены показывается всегда', () => {
-    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'S', minPrice: 1000, stacks: false } }
+    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'S', minPrice: 1000, stacks: false, stackPrice: 5 } }
     expect(itemDisplay(item('New Thing', null), config, rates)).toEqual({ kind: 'show', tier: 'C' })
   })
 })
@@ -97,7 +103,7 @@ describe('generateFilter', () => {
   it('блок стопок идёт перед Hide для тех же предметов', () => {
     const config: Config = {
       ...DEFAULT_CONFIG,
-      visibility: { minTier: 'C', minPrice: 0, stacks: true },
+      visibility: { minTier: 'C', minPrice: 0, stacks: true, stackPrice: 2 },
       overrides: { 'Mirror of Kalandra': 'hide' },
     }
     const text = generateFilter(snapshot([mirror, jeweller, scroll]), config)

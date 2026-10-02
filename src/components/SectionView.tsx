@@ -100,7 +100,6 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         </label>
         <VisibilityFields
           value={visibilityFor(config, section.id)}
-          thresholds={config.thresholds}
           onChange={setVisibility}
           disabled={ownVisibility === undefined}
           unstackable={section.unstackable}

@@ -241,7 +241,7 @@ export function BasesView({ config, update }: { config: Config; update: UpdateCo
   return (
     <div>
       <header className="page-header">
-        <h1>Базы</h1>
+        <h1>Правила баз</h1>
       </header>
       <p className="note">
         Правила для обычных, магических и редких предметов экипировки. Игра применяет первое подошедшее правило, поэтому

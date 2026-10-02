@@ -16,6 +16,7 @@ export type SectionId =
   | 'uq-armour'
   | 'uq-accessories'
   | 'uq-other'
+  | 'white-bases'
 
 export interface UniqueInfo {
   name: string
@@ -31,6 +32,8 @@ export interface MarketItem {
   divine: number | null
   /** Только в разделах уников: name — базовый тип, здесь — уникальные предметы на этой базе. */
   uniques?: UniqueInfo[]
+  /** Только у белых баз: сколько лотов нашлось на трейде. */
+  listings?: number
 }
 
 export interface MarketSnapshot {
@@ -51,6 +54,18 @@ export interface BasePopularity {
   characters: number
   /** База → доля персонажей с редким предметом этого слота, у которых он на этой базе (0–1). */
   shares: Record<string, number>
+}
+
+/** Состояние фонового обновления цен белых баз с трейда. */
+export interface BasePriceJob {
+  running: boolean
+  league: string | null
+  done: number
+  total: number
+  /** База, которая запрашивается сейчас. */
+  current: string | null
+  error: string | null
+  finishedAt: string | null
 }
 
 export interface League {
@@ -129,4 +144,6 @@ export interface Config {
   /** Разделы со своими настройками показа вместо общих. */
   sectionVisibility: Partial<Record<SectionId, Visibility>>
   gear: { hideLowRarity: boolean; areaLevel: number }
+  /** Для каких баз запрашивать цены на трейде: доля персонажей не меньше minShare (0–1). */
+  basePricing: { minShare: number }
 }

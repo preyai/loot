@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { DEFAULT_CONFIG } from './defaults'
-import type { BasePopularity, Config, League, MarketSnapshot } from './types'
+import type { BasePopularity, BasePriceJob, Config, League, MarketSnapshot } from './types'
 
 const CONFIG_KEY = 'loot-filter-editor:config'
 
@@ -36,8 +36,8 @@ export function useConfig(): [Config, UpdateConfig] {
   return [config, setConfig]
 }
 
-async function api<T>(path: string): Promise<T> {
-  const res = await fetch(path)
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, init)
   const body = (await res.json()) as T | { error: string }
   if (!res.ok) throw new Error((body as { error: string }).error ?? `Ошибка ${res.status}`)
   return body as T
@@ -63,6 +63,48 @@ export function usePopularity(league: string | null): Popularity {
     }
   }, [league])
   return state
+}
+
+const JOB_POLL_MS = 3000
+
+/** Фоновое обновление цен белых баз: запуск, остановка и слежение за ходом. */
+export function useBasePriceJob(onFinished: () => void) {
+  const [job, setJob] = useState<BasePriceJob | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const finished = useRef(onFinished)
+  finished.current = onFinished
+
+  // Обновление могло быть запущено до открытия страницы.
+  useEffect(() => {
+    api<BasePriceJob>('/api/base-prices/status').then(setJob, () => {})
+  }, [])
+
+  const running = job?.running ?? false
+  useEffect(() => {
+    if (!running) return
+    const timer = setInterval(() => {
+      api<BasePriceJob>('/api/base-prices/status').then(
+        (next) => {
+          setJob(next)
+          if (!next.running) finished.current()
+        },
+        (e: Error) => setError(e.message),
+      )
+    }, JOB_POLL_MS)
+    return () => clearInterval(timer)
+  }, [running])
+
+  const post = (path: string, body: unknown = {}) => {
+    setError(null)
+    api<BasePriceJob>(path, { method: 'POST', body: JSON.stringify(body) }).then(setJob, (e: Error) => setError(e.message))
+  }
+
+  return {
+    job,
+    error,
+    start: (league: string, bases: string[]) => post('/api/base-prices/update', { league, bases }),
+    stop: () => post('/api/base-prices/stop'),
+  }
 }
 
 export interface Market {

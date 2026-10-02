@@ -150,6 +150,23 @@ describe('уники', () => {
   })
 })
 
+describe('белые базы', () => {
+  const gloves = item('Sirenscale Gloves', 0.5, 'white-bases') // 50 ex → A
+
+  it('правило ограничено обычной редкостью и уровнем предмета 82+', () => {
+    const text = generateFilter(snapshot([gloves]), DEFAULT_CONFIG)
+    expect(text).toContain(
+      'Show # White Bases / A\n    Rarity Normal\n    ItemLevel >= 82\n    BaseType == "Sirenscale Gloves"\n    SetFontSize 42',
+    )
+  })
+
+  it('ручной тир хранится отдельно от уника на той же базе', () => {
+    const config: Config = { ...DEFAULT_CONFIG, overrides: { 'base:Sirenscale Gloves': 'hide' } }
+    expect(itemDisplay(gloves, config, rates)).toEqual({ kind: 'hide' })
+    expect(itemDisplay({ ...gloves, section: 'uq-armour', uniques: [] }, config, rates)).toEqual({ kind: 'show', tier: 'A' })
+  })
+})
+
 describe('правила баз', () => {
   const rule: BaseRule = {
     id: '1',

@@ -1,3 +1,4 @@
 # Сценарии для сервера должны остаться с переводами строк LF: с CRLF bash их не выполнит.
 *.sh text eol=lf
 Dockerfile text eol=lf
+*.Dockerfile text eol=lf

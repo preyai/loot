@@ -4,7 +4,7 @@
 #   npm run deploy -- -Server root@1.2.3.4  # или параметрами
 #   npm run deploy -- -DryRun               # собрать и упаковать, на сервер не ходить
 #
-# На сервере нужны Linux с systemd, Node.js 20+ и доступ по SSH (root или пользователь с sudo).
+# На сервере нужны Docker и доступ по SSH (root, пользователь из группы docker или с sudo).
 param(
   [string]$Server,
   [string]$AppDir,
@@ -19,6 +19,7 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
 # Параметры командной строки важнее файла настроек, файл важнее значений по умолчанию.
+# service — имя контейнера и образа на сервере.
 $config = @{ server = ''; appDir = '/opt/loot-filter'; service = 'loot-filter'; port = 8080 }
 $configFile = Join-Path $root 'deploy.config.json'
 if (Test-Path $configFile) {
@@ -37,7 +38,7 @@ if (-not $DryRun -and -not $config.server) {
 }
 # Эти значения попадают в команды на сервере, поэтому допускаем только безопасные символы.
 if ($config.appDir -notmatch '^/[A-Za-z0-9_./-]+$') { throw "Недопустимый каталог приложения: $($config.appDir)" }
-if ($config.service -notmatch '^[a-z][a-z0-9_-]*$') { throw "Недопустимое имя службы: $($config.service)" }
+if ($config.service -notmatch '^[a-z][a-z0-9_-]*$') { throw "Недопустимое имя контейнера: $($config.service)" }
 
 function Invoke-Step([string]$Title, [scriptblock]$Action) {
   Write-Host ''
@@ -69,20 +70,23 @@ if ($DryRun) {
 $target = $config.server
 $remoteTmp = '/tmp/loot-deploy-' + (Get-Date -Format 'yyyyMMddHHmmss')
 $installer = Join-Path $PSScriptRoot 'remote-install.sh'
+$dockerfile = Join-Path $PSScriptRoot 'release.Dockerfile'
+# Метка образа: по ней на сервере видно, какой коммит и когда выложен.
+$tag = "$commit-" + (Get-Date -Format 'yyyyMMddHHmmss')
 
 Invoke-Step "Отправка на $target" {
   ssh $target "mkdir -p $remoteTmp"
   if ($LASTEXITCODE -ne 0) { return }
   scp $archive "${target}:$remoteTmp/release.tar.gz"
   if ($LASTEXITCODE -ne 0) { return }
-  scp $installer "${target}:$remoteTmp/remote-install.sh"
+  scp $installer $dockerfile "${target}:$remoteTmp/"
 }
 
 # -t нужен, чтобы sudo на сервере мог спросить пароль.
 Invoke-Step 'Установка на сервере' {
-  ssh -t $target "bash $remoteTmp/remote-install.sh $($config.appDir) $($config.service) $($config.port)"
+  ssh -t $target "bash $remoteTmp/remote-install.sh $($config.appDir) $($config.service) $($config.port) $tag"
 }
 
 Remove-Item $archive -ErrorAction SilentlyContinue
 Write-Host ''
-Write-Host "Выложено: коммит $commit на $target" -ForegroundColor Green
+Write-Host "Выложено: образ $($config.service):$tag на $target" -ForegroundColor Green

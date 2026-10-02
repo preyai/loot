@@ -1,39 +1,35 @@
 #!/usr/bin/env bash
-# Выполняется на сервере сценарием deploy.ps1: ставит новую сборку и перезапускает службу.
-# При первом запуске создаёт пользователя, файл настроек с паролем и службу systemd.
+# Выполняется на сервере сценарием deploy.ps1: собирает Docker-образ из присланной сборки
+# и пересоздаёт контейнер. При первом запуске создаёт файл настроек с паролем.
 set -euo pipefail
 
 APP_DIR=${1:?каталог приложения}
-SERVICE=${2:?имя службы}
+NAME=${2:?имя контейнера}
 PORT=${3:?порт}
+TAG=${4:?метка образа}
 SRC=$(cd "$(dirname "$0")" && pwd)
 ENV_FILE="$APP_DIR/.env"
-UNIT_FILE="/etc/systemd/system/$SERVICE.service"
+# Пользователь node внутри образа node:alpine.
+CONTAINER_UID=1000
 
 if [ "$(id -u)" = 0 ]; then SUDO=""; else SUDO="sudo"; fi
 
-NODE=$(command -v node || true)
-if [ -z "$NODE" ]; then
-  echo "На сервере не найден Node.js. Установите версию 20 или новее и запустите деплой снова." >&2
+if ! command -v docker >/dev/null 2>&1; then
+  echo "На сервере не найден Docker." >&2
   exit 1
 fi
-NODE_MAJOR=$("$NODE" -p 'process.versions.node.split(".")[0]')
-if [ "$NODE_MAJOR" -lt 20 ]; then
-  echo "На сервере Node.js $NODE_MAJOR, нужен 20 или новее." >&2
-  exit 1
-fi
-
-if ! id "$SERVICE" >/dev/null 2>&1; then
-  echo "Создаю пользователя $SERVICE"
-  $SUDO useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$SERVICE"
-fi
+# Пользователю из группы docker sudo для него не нужен.
+if docker info >/dev/null 2>&1; then DOCKER="docker"; else DOCKER="$SUDO docker"; fi
 
 $SUDO mkdir -p "$APP_DIR/data"
+$SUDO chown -R "$CONTAINER_UID:$CONTAINER_UID" "$APP_DIR/data"
 
-if ! $SUDO test -f "$ENV_FILE"; then
+if [ ! -f "$ENV_FILE" ]; then
   PASSWORD=$(head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)
-  printf 'HOST=0.0.0.0\nPORT=%s\nAUTH_USER=loot\nAUTH_PASSWORD=%s\nDATA_DIR=%s/data\n' "$PORT" "$PASSWORD" "$APP_DIR" |
-    $SUDO tee "$ENV_FILE" >/dev/null
+  printf 'AUTH_USER=loot\nAUTH_PASSWORD=%s\n' "$PASSWORD" | $SUDO tee "$ENV_FILE" >/dev/null
+  # Файл читает docker-клиент от имени того, кто деплоит, поэтому владелец — он.
+  $SUDO chown "$(id -u):$(id -g)" "$ENV_FILE"
+  $SUDO chmod 600 "$ENV_FILE"
   echo
   echo "==============================================================="
   echo " Создан файл настроек $ENV_FILE"
@@ -43,57 +39,48 @@ if ! $SUDO test -f "$ENV_FILE"; then
   echo "==============================================================="
   echo
 fi
-$SUDO chown "root:$SERVICE" "$ENV_FILE"
-$SUDO chmod 640 "$ENV_FILE"
 
-# Распаковываем рядом и подменяем каталоги уже готовыми, чтобы служба не увидела половину сборки.
-$SUDO rm -rf "$APP_DIR/release.new"
-$SUDO mkdir "$APP_DIR/release.new"
-$SUDO tar -xzf "$SRC/release.tar.gz" -C "$APP_DIR/release.new"
-for dir in dist dist-server; do
-  $SUDO rm -rf "$APP_DIR/$dir.old"
-  if $SUDO test -d "$APP_DIR/$dir"; then $SUDO mv "$APP_DIR/$dir" "$APP_DIR/$dir.old"; fi
-  $SUDO mv "$APP_DIR/release.new/$dir" "$APP_DIR/$dir"
-done
-$SUDO rm -rf "$APP_DIR/release.new"
-$SUDO chown -R "$SERVICE:$SERVICE" "$APP_DIR/data"
+tar -xzf "$SRC/release.tar.gz" -C "$SRC"
+$DOCKER build --quiet -t "$NAME:$TAG" -f "$SRC/release.Dockerfile" "$SRC" >/dev/null
+echo "Собран образ $NAME:$TAG"
 
-$SUDO tee "$UNIT_FILE" >/dev/null <<UNIT
-[Unit]
-Description=Loot filter editor
-After=network-online.target
-Wants=network-online.target
+run_container() {
+  $DOCKER rm -f "$NAME" >/dev/null 2>&1 || true
+  $DOCKER run -d --name "$NAME" --restart unless-stopped \
+    -p "$PORT:8080" --env-file "$ENV_FILE" -v "$APP_DIR/data:/app/data" "$1" >/dev/null
+}
 
-[Service]
-User=$SERVICE
-WorkingDirectory=$APP_DIR
-EnvironmentFile=$ENV_FILE
-ExecStart=$NODE dist-server/index.js
-Restart=on-failure
-RestartSec=5
+# Проверяем изнутри контейнера: так не нужен curl на сервере и не мешает файрвол.
+is_healthy() {
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    sleep 1
+    if $DOCKER exec "$NAME" node -e \
+      "fetch('http://127.0.0.1:8080/').then(r=>process.exit(r.status===200||r.status===401?0:1),()=>process.exit(1))" \
+      >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+  return 1
+}
 
-[Install]
-WantedBy=multi-user.target
-UNIT
+PREVIOUS=$($DOCKER inspect -f '{{.Image}}' "$NAME" 2>/dev/null || true)
+run_container "$NAME:$TAG"
 
-$SUDO systemctl daemon-reload
-$SUDO systemctl enable "$SERVICE" >/dev/null 2>&1
-$SUDO systemctl restart "$SERVICE"
+if ! is_healthy; then
+  echo "Новая версия не отвечает. Последние строки журнала:" >&2
+  $DOCKER logs --tail 20 "$NAME" >&2 || true
+  if [ -n "$PREVIOUS" ]; then
+    echo "Возвращаю предыдущую версию." >&2
+    run_container "$PREVIOUS"
+  fi
+  rm -rf "$SRC"
+  exit 1
+fi
 
-# Порт берём из файла настроек: на сервере его могли поменять после первой установки.
-ACTUAL_PORT=$($SUDO sed -n 's/^PORT=//p' "$ENV_FILE")
-STATUS=000
-for _ in 1 2 3 4 5 6 7 8 9 10; do
-  sleep 1
-  STATUS=$(curl -s -o /dev/null -m 5 -w '%{http_code}' "http://127.0.0.1:${ACTUAL_PORT:-$PORT}/" || true)
-  if [ "$STATUS" = 200 ] || [ "$STATUS" = 401 ]; then break; fi
+# Оставляем текущий образ и один предыдущий (на случай ручного отката), остальные удаляем.
+$DOCKER images "$NAME" --format '{{.Tag}}' | grep -vx "$TAG" | tail -n +2 | while read -r old; do
+  $DOCKER rmi "$NAME:$old" >/dev/null 2>&1 || true
 done
 
 rm -rf "$SRC"
-
-if [ "$STATUS" != 200 ] && [ "$STATUS" != 401 ]; then
-  echo "Служба не отвечает (код $STATUS). Последние строки журнала:" >&2
-  $SUDO journalctl -u "$SERVICE" -n 20 --no-pager >&2 || true
-  exit 1
-fi
-echo "Готово: служба $SERVICE работает на порту ${ACTUAL_PORT:-$PORT}."
+echo "Готово: контейнер $NAME работает на порту $PORT."

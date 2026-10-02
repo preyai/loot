@@ -146,7 +146,12 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
                     poe2db
                   </a>
                   {league && (
-                    <a href={baseTradeUrl(b.name, league)} target="_blank" rel="noreferrer">
+                    <a
+                      href={baseTradeUrl(b.name, league, rule)}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Поиск на трейде с условиями этого правила"
+                    >
                       трейд
                     </a>
                   )}

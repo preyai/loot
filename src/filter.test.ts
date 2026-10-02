@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './defaults'
-import { baseTradeUrl, baseWikiUrl, describeRule, EMPTY_RULE, topBases } from './bases'
+import { baseTradeQuery, baseTradeUrl, baseWikiUrl, describeRule, EMPTY_RULE, topBases } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
 import { baseRuleBlock, generateFilter, matchConditions } from './filter'
@@ -307,12 +307,41 @@ describe('исключительные вещи с трейда', () => {
 
   it('ссылки на базу: страница poe2db и поиск на трейде в выбранной лиге', () => {
     expect(baseWikiUrl("Adherent's Raiment")).toBe("https://poe2db.tw/ru/Adherent's_Raiment")
-    const url = new URL(baseTradeUrl('Vile Robe', 'Forbidden Rites'))
+    const plain: BaseRule = { ...EMPTY_RULE, id: '1', name: '' }
+    const url = new URL(baseTradeUrl('Vile Robe', 'Forbidden Rites', plain))
     expect(url.pathname).toBe('/trade2/search/poe2/Forbidden%20Rites')
-    expect(JSON.parse(url.searchParams.get('q')!)).toEqual({
-      query: { type: 'Vile Robe', status: { option: 'securable' } },
+    expect(JSON.parse(url.searchParams.get('q')!)).toEqual(baseTradeQuery('Vile Robe', plain))
+  })
+
+  it('поиск на трейде повторяет условия правила', () => {
+    const plain: BaseRule = { ...EMPTY_RULE, id: '1', name: '' }
+    // Без условий — только база и «не уникальный».
+    expect(baseTradeQuery('Vile Robe', plain)).toEqual({
+      query: {
+        type: 'Vile Robe',
+        status: { option: 'securable' },
+        filters: { type_filters: { filters: { rarity: { option: 'nonunique' } } } },
+      },
       sort: { price: 'asc' },
     })
+    const strict: BaseRule = {
+      ...plain,
+      rarities: ['Normal'],
+      minItemLevel: 82,
+      minQuality: 21,
+      minSockets: 3,
+      minUnidentifiedTier: 4,
+      minAreaLevel: 75,
+      excludeCorrupted: true,
+    }
+    expect(baseTradeQuery('Vile Robe', strict).query.filters).toEqual({
+      type_filters: { filters: { rarity: { option: 'normal' }, ilvl: { min: 82 }, quality: { min: 21 } } },
+      equipment_filters: { filters: { rune_sockets: { min: 3 } } },
+      misc_filters: { filters: { unidentified_tier: { min: 4 }, corrupted: { option: 'false' }, mirrored: { option: 'false' } } },
+    })
+    // Две редкости трейд одним запросом не ищет — берём «любую, кроме уникальной».
+    const filters = baseTradeQuery('Vile Robe', { ...plain, rarities: ['Normal', 'Magic'] }).query.filters
+    expect(filters.type_filters.filters).toEqual({ rarity: { option: 'nonunique' } })
   })
 
   it('на каждый вид с базами — правило для обычных не осквернённых предметов', () => {

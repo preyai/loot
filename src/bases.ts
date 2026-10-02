@@ -37,10 +37,37 @@ export function baseIconUrl(name: string): string | null {
 /** Страница базы в справочнике poe2db. */
 export const baseWikiUrl = (name: string) => `https://poe2db.tw/ru/${encodeURIComponent(name.replaceAll(' ', '_'))}`
 
-/** Поиск базы на официальном трейде: лоты с мгновенным выкупом, от дешёвых. */
-export function baseTradeUrl(name: string, league: string): string {
-  const query = { query: { type: name, status: { option: 'securable' } }, sort: { price: 'asc' } }
-  return `https://www.pathofexile.com/trade2/search/poe2/${encodeURIComponent(league)}?q=${encodeURIComponent(JSON.stringify(query))}`
+/** Только заданные поля: пустые группы фильтров трейд отвергает. */
+const filled = (fields: Record<string, unknown>) => Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined))
+
+/**
+ * Запрос к трейду для базы с условиями правила: лоты с мгновенным выкупом, от дешёвых.
+ * Уровень области в поиске не участвует — это условие места выпадения, а не предмета.
+ */
+export function baseTradeQuery(name: string, rule: BaseRule) {
+  const min = (value: number) => (value > 0 ? { min: value } : undefined)
+  // Трейд умеет искать одну редкость либо «любую, кроме уникальной»; несколько выбранных сводим ко второму.
+  const rarity = rule.rarities.length === 1 ? rule.rarities[0].toLowerCase() : 'nonunique'
+  const groups = {
+    type_filters: { rarity: { option: rarity }, ilvl: min(rule.minItemLevel), quality: min(rule.minQuality) },
+    equipment_filters: { rune_sockets: min(rule.minSockets) },
+    misc_filters: {
+      unidentified_tier: min(rule.minUnidentifiedTier),
+      corrupted: rule.excludeCorrupted ? { option: 'false' } : undefined,
+      mirrored: rule.excludeCorrupted ? { option: 'false' } : undefined,
+    },
+  }
+  const filters = Object.fromEntries(
+    Object.entries(groups)
+      .map(([id, fields]) => [id, { filters: filled(fields) }] as const)
+      .filter(([, group]) => Object.keys(group.filters).length > 0),
+  )
+  return { query: { type: name, status: { option: 'securable' }, filters }, sort: { price: 'asc' } }
+}
+
+export function baseTradeUrl(name: string, league: string, rule: BaseRule): string {
+  const query = encodeURIComponent(JSON.stringify(baseTradeQuery(name, rule)))
+  return `https://www.pathofexile.com/trade2/search/poe2/${encodeURIComponent(league)}?q=${query}`
 }
 
 export const BASE_GROUPS: { id: BaseGroup; title: string }[] = [

@@ -1,8 +1,10 @@
 import { TIER_TITLES } from '../defaults'
-import { TIER_IDS, type TierId, type Visibility } from '../types'
+import { cutoffPrice } from '../tiering'
+import { TIER_IDS, type Config, type TierId, type Visibility } from '../types'
 
 interface Props {
   value: Visibility
+  thresholds: Config['thresholds']
   onChange: (value: Visibility) => void
   disabled?: boolean
   /** Раздел с нескладываемыми предметами: настройка стопок не показывается. */
@@ -10,7 +12,8 @@ interface Props {
 }
 
 /** Настройки «что показывать»: общие или для одного раздела. */
-export function VisibilityFields({ value, onChange, disabled, unstackable }: Props) {
+export function VisibilityFields({ value, thresholds, onChange, disabled, unstackable }: Props) {
+  const cutoff = cutoffPrice(value, thresholds)
   return (
     <fieldset className="visibility" disabled={disabled}>
       <label>
@@ -39,17 +42,7 @@ export function VisibilityFields({ value, onChange, disabled, unstackable }: Pro
       ) : (
         <label className="check">
           <input type="checkbox" checked={value.stacks} onChange={(e) => onChange({ ...value, stacks: e.target.checked })} />
-          Остальное показывать стопками на сумму от
-          <input
-            type="number"
-            min={0}
-            step="any"
-            aria-label="Минимальная стоимость стопки"
-            disabled={!value.stacks}
-            value={value.stackPrice}
-            onChange={(e) => onChange({ ...value, stackPrice: Math.max(0, Number(e.target.value)) })}
-          />
-          ex
+          Остальное показывать стопками{cutoff > 0 && ` на сумму от ${cutoff} ex`}
         </label>
       )}
     </fieldset>

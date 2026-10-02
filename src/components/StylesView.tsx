@@ -251,6 +251,7 @@ export function StylesView({ config, update, exaltedPerDivine }: { config: Confi
         </p>
         <VisibilityFields
           value={config.visibility}
+          thresholds={config.thresholds}
           onChange={(visibility) => update((c) => ({ ...c, visibility }))}
         />
       </section>

@@ -1,34 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { DEFAULT_CONFIG } from './defaults'
-import type { Config, League, MarketSnapshot, Visibility } from './types'
+import type { Config, League, MarketSnapshot } from './types'
 
 const CONFIG_KEY = 'loot-filter-editor:config'
-
-/** Настройки, сохранённые до появления stackPrice: раньше порог стопки выводился из мин. цены и мин. тира. */
-function withStackPrice(stored: Partial<Visibility> | undefined, thresholds: Config['thresholds']): Visibility {
-  const visibility = { ...DEFAULT_CONFIG.visibility, ...stored }
-  if (stored && stored.stackPrice === undefined) {
-    const derived = Math.max(visibility.minPrice, visibility.minTier === 'E' ? 0 : thresholds[visibility.minTier])
-    if (derived > 0) visibility.stackPrice = derived
-  }
-  return visibility
-}
 
 function loadConfig(): Config {
   try {
     const stored = JSON.parse(localStorage.getItem(CONFIG_KEY) ?? 'null') as Partial<Config> | null
     if (!stored) return DEFAULT_CONFIG
     // Поля, добавленные в новых версиях, берутся из значений по умолчанию.
-    const thresholds = { ...DEFAULT_CONFIG.thresholds, ...stored.thresholds }
     return {
       ...DEFAULT_CONFIG,
       ...stored,
-      thresholds,
+      thresholds: { ...DEFAULT_CONFIG.thresholds, ...stored.thresholds },
       tiers: { ...DEFAULT_CONFIG.tiers, ...stored.tiers },
-      visibility: withStackPrice(stored.visibility, thresholds),
-      sectionVisibility: Object.fromEntries(
-        Object.entries(stored.sectionVisibility ?? {}).map(([id, v]) => [id, withStackPrice(v, thresholds)]),
-      ),
+      visibility: { ...DEFAULT_CONFIG.visibility, ...stored.visibility },
       gear: { ...DEFAULT_CONFIG.gear, ...stored.gear },
     }
   } catch {

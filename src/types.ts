@@ -52,10 +52,8 @@ export interface Visibility {
   minTier: TierId
   /** Минимальная цена в Exalted Orb; 0 — без ограничения. */
   minPrice: number
-  /** Показывать то, что не прошло, стопками на сумму не меньше stackPrice. */
+  /** Показывать то, что не прошло, стопками на сумму не меньше порога. */
   stacks: boolean
-  /** Минимальная стоимость стопки в Exalted Orb. */
-  stackPrice: number
 }
 
 export interface TierStyle {

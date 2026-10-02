@@ -28,6 +28,11 @@ export function visibilityFor(config: Config, section: SectionId): Visibility {
   return config.sectionVisibility[section] ?? config.visibility
 }
 
+/** Сколько должна стоить стопка, чтобы её показали: не меньше мин. цены и нижней границы мин. тира. */
+export function cutoffPrice(visibility: Visibility, thresholds: Config['thresholds']): number {
+  return Math.max(visibility.minPrice, visibility.minTier === 'E' ? 0 : thresholds[visibility.minTier])
+}
+
 export type Display =
   | { kind: 'show'; tier: TierId }
   /** Показывать только стопки от stackSize штук; tier — стиль по стоимости такой стопки. */
@@ -49,7 +54,7 @@ export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Dis
   if (!visibility.stacks || price <= 0 || UNSTACKABLE.has(item.section)) return { kind: 'hide' }
 
   // Не меньше 2: одиночный предмет сюда попал именно потому, что его показывать не нужно.
-  const stackSize = Math.max(2, Math.ceil(visibility.stackPrice / price))
+  const stackSize = Math.max(2, Math.ceil(cutoffPrice(visibility, config.thresholds) / price))
   return { kind: 'stack', tier: tierByValue(stackSize * price, config.thresholds), stackSize }
 }
 

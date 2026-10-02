@@ -148,6 +148,15 @@ describe('уники', () => {
     expect(text).toContain('Show # Unique Armours / S\n    Rarity Unique\n    BaseType == "Silk Robe"\n    SetFontSize 45')
   })
 
+  it('обычная плитка и уникальная на той же базе не задевают друг друга; предмет без цены показывается в тире C', () => {
+    const tablet = item('Breach Tablet', 71, 'tablets')
+    const uniqueTablet: MarketItem = { ...item('Breach Tablet', 0.001, 'uq-other'), uniques: [{ name: 'Cheap', divine: 0.001 }] as MarketItem['uniques'] }
+    const text = generateFilter(snapshot([tablet, uniqueTablet, item('Waystone (Tier 16)', null, 'waystones')]), DEFAULT_CONFIG)
+    expect(text).toContain('Show # Tablets / S\n    Rarity <= Rare\n    BaseType == "Breach Tablet"\n')
+    expect(text).toContain('# Unique Misc / E\n    Rarity Unique\n    BaseType == "Breach Tablet"\n')
+    expect(text).toContain('Show # Waystones / C\n    BaseType == "Waystone (Tier 16)"\n')
+  })
+
   it('ручной тир базы уника не пересекается с одноимённым обычным предметом', () => {
     const config: Config = {
       ...DEFAULT_CONFIG,

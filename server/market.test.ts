@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { groupUniques, plainText } from './market'
+import { SECTIONS } from '../src/sections'
+import { catalogItems, groupBases, groupUniques, plainText } from './market'
 
 const line = (name: string, baseType: string, primaryValue: number, listingCount = 100) => ({
   name,
@@ -74,5 +75,47 @@ describe('groupUniques', () => {
     expect(jewel.uniques).toMatchObject([{ name: 'Voices', divine: 960 }])
     expect(jewel.uniques).toHaveLength(1)
     expect(jewel.divine).toBe(960)
+  })
+})
+
+describe('groupBases', () => {
+  it('цена базы — по самому дорогому варианту редкости с надёжной ценой', () => {
+    const tablets = groupBases(
+      [
+        line('Temple Tablet', 'Temple Tablet', 0.87),
+        line('Temple Tablet', 'Temple Tablet', 0.62),
+        line('Temple Tablet', 'Temple Tablet', 50, 2),
+        line('Rare One', 'Overseer Tablet', 3, 1),
+      ],
+      'tablets',
+    )
+    expect(tablets).toEqual([
+      { name: 'Temple Tablet', icon: 'Temple Tablet.png', section: 'tablets', divine: 0.87 },
+      { name: 'Overseer Tablet', icon: 'Rare One.png', section: 'tablets', divine: null },
+    ])
+  })
+})
+
+describe('catalogItems', () => {
+  const catalog = {
+    fetchedAt: '',
+    groups: {
+      Runes: [
+        { name: 'Stone Rune', icon: 'stone.png' },
+        { name: 'Iron Rune', icon: 'iron.png' },
+      ],
+      Waystones: [{ name: 'Waystone (Tier 1)', icon: '' }],
+    },
+  }
+  const section = (id: string) => SECTIONS.find((s) => s.id === id)!
+
+  it('добавляет без цены только то, чего ещё нет, и не повторяет предмет в другом разделе', () => {
+    const seen = new Set(['Iron Rune'])
+    expect(catalogItems(catalog, section('runes'), seen)).toEqual([{ name: 'Stone Rune', icon: 'stone.png', section: 'runes', divine: null }])
+    expect(catalogItems(catalog, section('runes'), seen)).toEqual([])
+    expect(catalogItems(catalog, section('waystones'), seen)).toMatchObject([{ name: 'Waystone (Tier 1)', section: 'waystones' }])
+    // Раздел без групп справочника и группа, которой в справочнике нет.
+    expect(catalogItems(catalog, section('idols'), seen)).toEqual([])
+    expect(catalogItems(catalog, section('currency'), seen)).toEqual([])
   })
 })

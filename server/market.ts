@@ -41,6 +41,16 @@ interface UniqueOverview {
   lines?: UniqueLine[]
 }
 
+/** Справочник обмена валюты: всё, что есть на внутриигровом рынке, по группам. */
+export interface ExchangeCatalog {
+  fetchedAt: string
+  groups: Record<string, { name: string; icon: string }[]>
+}
+
+interface TradeStatic {
+  result: { id: string; entries: { id: string; text: string; image?: string }[] }[]
+}
+
 /** Убирает разметку poe.ninja: «[Critical|Critical Hit]» → «Critical Hit», «[Physical]» → «Physical». */
 export const plainText = (text: string) => text.replace(/\[(?:[^\]|]*\|)?([^\]]*)\]/g, '$1')
 
@@ -118,6 +128,51 @@ function exchangeItems(overview: ExchangeOverview, section: SectionId, seen: Set
   return items
 }
 
+/**
+ * Предметы не-уников из раздела предметов poe.ninja (плитки): у базы по строке на каждую редкость.
+ * Фильтр их различать не будет, поэтому цена базы — по самому дорогому варианту с надёжной ценой.
+ */
+export function groupBases(lines: NonNullable<UniqueOverview['lines']>, section: SectionId): MarketItem[] {
+  const bases = new Map<string, MarketItem>()
+  for (const line of lines) {
+    const base = bases.get(line.baseType) ?? { name: line.baseType, icon: line.icon, section, divine: null }
+    bases.set(line.baseType, base)
+    if (line.listingCount >= MIN_LISTINGS) base.divine = Math.max(base.divine ?? 0, line.primaryValue)
+  }
+  return [...bases.values()]
+}
+
+const CATALOG_URL = 'https://www.pathofexile.com/api/trade2/data/static'
+// Справочник меняется только с патчами игры.
+const CATALOG_TTL_MS = 24 * 60 * 60 * 1000
+
+const exchangeCatalog = storedResource<ExchangeCatalog>('catalog', CATALOG_TTL_MS, async () => {
+  const res = await fetch(CATALOG_URL, { headers: HEADERS, signal: AbortSignal.timeout(20_000) })
+  if (!res.ok) throw new Error(`трейд ответил ${res.status} на ${CATALOG_URL}`)
+  const data = (await res.json()) as TradeStatic
+  const groups: ExchangeCatalog['groups'] = {}
+  for (const group of data.result) {
+    // «sep» — разделители списка: заголовки подгрупп и пустые строки, а не предметы.
+    groups[group.id] = group.entries
+      .filter((e) => e.id !== 'sep' && e.text)
+      .map((e) => ({ name: e.text, icon: e.image ? ICON_HOST + e.image : '' }))
+  }
+  return { fetchedAt: new Date().toISOString(), groups }
+})
+
+/** Предметы раздела из справочника обмена, которых ещё нет в списке: цены у них нет. */
+export function catalogItems(catalog: ExchangeCatalog, section: Section, seen: Set<string>): MarketItem[] {
+  const items: MarketItem[] = []
+  for (const group of section.trade ?? []) {
+    for (const { name, icon } of catalog.groups[group] ?? []) {
+      if (seen.has(name)) continue
+      seen.add(name)
+      items.push({ name, icon, section: section.id, divine: null })
+    }
+  }
+  return items
+}
+
 const ICONS_FILE = 'icons.json'
 
 /** Иконка предмета со страницы poe2db; null — страницы или картинки нет. */
@@ -154,7 +209,7 @@ async function fillMissingIcons(items: MarketItem[]): Promise<void> {
 
 async function loadSnapshot(league: string): Promise<MarketSnapshot> {
   const load = (section: Section) => {
-    const path = section.unique ? 'stash/current/item' : 'exchange/current'
+    const path = section.unique || section.bases ? 'stash/current/item' : 'exchange/current'
     return Promise.all(
       section.ninja.map((type) =>
         getJson<ExchangeOverview & UniqueOverview>(
@@ -163,7 +218,14 @@ async function loadSnapshot(league: string): Promise<MarketSnapshot> {
       ),
     )
   }
-  const results = await Promise.allSettled(SECTIONS.map(load))
+  const [results, catalog] = await Promise.all([
+    Promise.allSettled(SECTIONS.map(load)),
+    // Без справочника обходимся: пропадут только предметы без цены.
+    exchangeCatalog.get('all').catch((e: unknown) => {
+      console.warn(`справочник обмена не загрузился: ${e instanceof Error ? e.message : String(e)}`)
+      return null
+    }),
+  ])
 
   const items: MarketItem[] = []
   const failed: SectionId[] = []
@@ -176,8 +238,9 @@ async function loadSnapshot(league: string): Promise<MarketSnapshot> {
       failed.push(section.id)
       return
     }
-    if (section.unique) {
-      items.push(...groupUniques(result.value.flatMap((o) => o.lines ?? []), section.id))
+    if (section.unique || section.bases) {
+      const group = section.unique ? groupUniques : groupBases
+      items.push(...group(result.value.flatMap((o) => o.lines ?? []), section.id))
       return
     }
     for (const overview of result.value) {
@@ -187,7 +250,15 @@ async function loadSnapshot(league: string): Promise<MarketSnapshot> {
     }
   })
 
-  if (failed.length === SECTIONS.length) throw new Error('poe.ninja недоступен')
+  // С poe.ninja не пришло ничего — справочник это не заменит: цен нет, показывать нечего.
+  if (failed.length === SECTIONS.filter((s) => s.ninja.length > 0).length) throw new Error('poe.ninja недоступен')
+
+  // Предметы без цены — после всех разделов с ценами: если poe.ninja отнёс предмет к другому разделу, он там и останется.
+  for (const section of SECTIONS) {
+    if (failed.includes(section.id) || !section.trade) continue
+    if (catalog) items.push(...catalogItems(catalog, section, seen))
+    else if (section.ninja.length === 0) failed.push(section.id)
+  }
   await fillMissingIcons(items)
 
   return { league, fetchedAt: new Date().toISOString(), rates, items, failed }

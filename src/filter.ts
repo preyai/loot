@@ -116,7 +116,8 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
     }
 
     // Без этого условия правило для базы уника задело бы и обычные предметы на той же базе.
-    const rarity = section.unique ? ['Rarity Unique'] : []
+    // И наоборот: правило для обычной плитки не должно задеть уникальную на той же базе.
+    const rarity = section.unique ? ['Rarity Unique'] : section.bases ? ['Rarity <= Rare'] : []
 
     for (const tier of TIER_IDS) {
       for (const conditions of matchConditions(shown.get(tier) ?? [])) {

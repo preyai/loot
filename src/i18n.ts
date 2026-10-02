@@ -39,6 +39,9 @@ const ru = {
   'section.runes': 'Руны',
   'section.soulcores': 'Ядра душ',
   'section.idols': 'Идолы',
+  'section.verisium': 'Веризий',
+  'section.tablets': 'Плитки',
+  'section.waystones': 'Путевые камни',
   'section.lineage': 'Камни родословной',
   'section.gems': 'Неогранённые камни',
   'section.uq-weapons': 'Уники: оружие',
@@ -66,6 +69,10 @@ const ru = {
   'items.globalNote': 'Действуют общие настройки — они меняются на странице',
   'items.uniqueNote':
     'Уники выпадают неопознанными, и фильтр видит только базовый тип, поэтому тир назначается базе — по самому дорогому унику на ней. Если у какого-то уника слишком мало лотов, цене нельзя верить: такая база показывается всегда, в тире C.',
+  'items.basesNote':
+    'Цены на poe.ninja даны отдельно для каждой редкости; тир назначается базе — по самому дорогому варианту. Уникальные плитки — в разделе «Уники: прочее».',
+  'items.noPricesNote':
+    'Цен для этого раздела на poe.ninja нет: все предметы показываются в тире C, пока вы не назначите тир вручную.',
   'items.disabled': 'Раздел выключен: игра покажет эти предметы как обычно, без правил фильтра.',
   'items.failed': 'Не удалось загрузить цены этого раздела.',
   'items.notFound': 'Ничего не найдено.',
@@ -360,6 +367,9 @@ const en: Record<Key, string> = {
   'section.runes': 'Runes',
   'section.soulcores': 'Soul Cores',
   'section.idols': 'Idols',
+  'section.verisium': 'Verisium',
+  'section.tablets': 'Tablets',
+  'section.waystones': 'Waystones',
   'section.lineage': 'Lineage Supports',
   'section.gems': 'Uncut Gems',
   'section.uq-weapons': 'Uniques: weapons',
@@ -387,6 +397,9 @@ const en: Record<Key, string> = {
   'items.globalNote': 'Global settings apply — change them on the page',
   'items.uniqueNote':
     'Uniques drop unidentified and the filter only sees the base type, so the tier is assigned to the base — by its most expensive unique. If a unique has too few listings its price cannot be trusted: such a base is always shown, in tier C.',
+  'items.basesNote':
+    'poe.ninja prices each rarity separately; the tier is assigned to the base by its most expensive variant. Unique tablets are in “Uniques: other”.',
+  'items.noPricesNote': 'poe.ninja has no prices for this section: every item is shown in tier C until you assign a tier manually.',
   'items.disabled': 'Section disabled: the game shows these items as usual, without filter rules.',
   'items.failed': 'Failed to load prices for this section.',
   'items.notFound': 'Nothing found.',

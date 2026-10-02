@@ -38,13 +38,19 @@ for (const entry of realEntries(enStatic)) {
 const NINJA = 'https://poe.ninja/poe2/api'
 const EXCHANGE_TYPES = [
   'Currency', 'Fragments', 'Ritual', 'Delirium', 'Abyss', 'Breach', 'Expedition',
-  'Essences', 'Runes', 'SoulCores', 'Idols', 'LineageSupportGems', 'UncutGems',
+  'Essences', 'Runes', 'SoulCores', 'Idols', 'LineageSupportGems', 'UncutGems', 'Verisium',
 ]
+// Не уники из раздела предметов: в справочнике валют трейда их нет, название — базовый тип.
+const BASE_TYPES = ['PrecursorTablets']
 const [{ name: league }] = (await get(`${NINJA}/data/index-state`)).economyLeagues
 const marketNames = new Set()
 for (const type of EXCHANGE_TYPES) {
   const overview = await get(`${NINJA}/economy/exchange/current/overview?league=${encodeURIComponent(league)}&type=${type}`)
   for (const item of overview.items ?? []) marketNames.add(item.name)
+}
+for (const type of BASE_TYPES) {
+  const overview = await get(`${NINJA}/economy/stash/current/item/overview?league=${encodeURIComponent(league)}&type=${type}`)
+  for (const line of overview.lines ?? []) marketNames.add(line.baseType)
 }
 const untranslated = [...marketNames].filter((name) => !items[name])
 let fromWiki = 0

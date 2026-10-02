@@ -9,7 +9,8 @@
     "start": "node dist-server/index.js",
     "preview": "vite preview",
     "test": "vitest run",
-    "update-bases": "node scripts/update-bases.mjs"
+    "update-bases": "node scripts/update-bases.mjs",
+    "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1"
   },
   "dependencies": {
     "react": "^19.3.0",

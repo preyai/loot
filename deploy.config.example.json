@@ -1,0 +1,6 @@
+{
+  "server": "root@203.0.113.10",
+  "appDir": "/opt/loot-filter",
+  "service": "loot-filter",
+  "port": 8080
+}

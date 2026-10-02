@@ -4,3 +4,5 @@ dist-server
 # цены баз с трейда — локальные данные, обновляются вручную
 data
 *.log
+# адрес сервера для npm run deploy
+deploy.config.json

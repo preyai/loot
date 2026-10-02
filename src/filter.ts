@@ -9,14 +9,16 @@ const color = (c: Rgba) => `${c.r} ${c.g} ${c.b} ${c.a}`
 
 /**
  * Условия блоков для набора предметов. Неогранённые камни на рынке идут как
- * «Uncut Skill Gem (Level 20)», а в игре это один BaseType с разным ItemLevel,
+ * «Uncut Skill Gem (Level 20)», а в фильтре это тип камня и условие GemLevel,
  * поэтому соседние уровни склеиваются в диапазоны.
  */
 export function matchConditions(items: MarketItem[]): string[][] {
   const plain: string[] = []
   const levels = new Map<string, number[]>()
   for (const { name } of items) {
-    const leveled = /^(.+) \(Level (\d+)\)$/.exec(name)
+    // Только камни. У прочих предметов с уровнем в названии («Thaumaturgic Flux (Level 15)»)
+    // каждое такое название — отдельный базовый тип, и сокращённого имени игра не знает.
+    const leveled = /^(Uncut \w+ Gem) \(Level (\d+)\)$/.exec(name)
     if (!leveled) {
       plain.push(name)
       continue
@@ -33,8 +35,10 @@ export function matchConditions(items: MarketItem[]): string[][] {
     for (let i = 0; i < list.length; ) {
       let j = i
       while (j + 1 < list.length && list[j + 1] === list[j] + 1) j++
-      const range = i === j ? [`ItemLevel == ${list[i]}`] : [`ItemLevel >= ${list[i]}`, `ItemLevel <= ${list[j]}`]
-      groups.push([`BaseType == ${quote([base])}`, ...range])
+      const range = i === j ? [`GemLevel ${list[i]}`] : [`GemLevel >= ${list[i]}`, `GemLevel <= ${list[j]}`]
+      // Без «==»: совпадение по части имени находит камень, как бы игра ни записала его базовый тип —
+      // «Uncut Skill Gem» или «Uncut Skill Gem (Level 20)». Так же сделано в фильтре NeverSink.
+      groups.push([`BaseType ${quote([base])}`, ...range])
       i = j + 1
     }
   }

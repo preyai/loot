@@ -37,9 +37,15 @@ describe('matchConditions', () => {
   it('склеивает соседние уровни неогранённых камней в диапазоны', () => {
     const items = [18, 20, 19, 5].map((l) => item(`Uncut Skill Gem (Level ${l})`, 1, 'gems'))
     expect(matchConditions(items)).toEqual([
-      ['BaseType == "Uncut Skill Gem"', 'ItemLevel == 5'],
-      ['BaseType == "Uncut Skill Gem"', 'ItemLevel >= 18', 'ItemLevel <= 20'],
+      ['BaseType "Uncut Skill Gem"', 'GemLevel 5'],
+      ['BaseType "Uncut Skill Gem"', 'GemLevel >= 18', 'GemLevel <= 20'],
     ])
+  })
+
+  it('у прочих предметов уровень в названии — часть базового типа, его нельзя отрезать', () => {
+    // «Thaumaturgic Flux» без уровня игра не знает и отказывается загружать фильтр.
+    const items = [item('Thaumaturgic Flux (Level 15)', 1, 'expedition'), item('Blazing Flux', 1, 'expedition')]
+    expect(matchConditions(items)).toEqual([['BaseType == "Thaumaturgic Flux (Level 15)" "Blazing Flux"']])
   })
 })
 

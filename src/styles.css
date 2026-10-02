@@ -1242,3 +1242,11 @@ main {
   padding-top: 4px;
   font-size: 12px;
 }
+
+/* Кнопка прослушивания звука */
+
+.sound-play {
+  padding: 4px 10px;
+  color: var(--gold);
+  line-height: 1;
+}

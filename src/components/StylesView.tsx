@@ -8,6 +8,8 @@ import {
   SOUND_VOLUME_MAX,
   TIER_TITLES,
 } from '../defaults'
+import { useState } from 'react'
+import { playAlertSound } from '../sound'
 import type { UpdateConfig } from '../store'
 import { convertThresholds, perDivine } from '../tiering'
 import { TIER_IDS, type Config, type MarketSnapshot, type Rgba, type TierId, type TierStyle } from '../types'
@@ -71,6 +73,14 @@ function ColorField({
 
 function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onChange: (s: TierStyle) => void }) {
   const set = <K extends keyof TierStyle>(key: K, value: TierStyle[K]) => onChange({ ...style, [key]: value })
+  const [soundError, setSoundError] = useState(false)
+  const listen = (soundId: number, volume: number) => {
+    setSoundError(false)
+    playAlertSound(soundId, volume).catch((e: unknown) => {
+      // Новый звук обрывает предыдущий — это не ошибка, а обычное переключение.
+      if (!(e instanceof DOMException && e.name === 'AbortError')) setSoundError(true)
+    })
+  }
   return (
     <section className="tier-editor">
       <h2>{TIER_TITLES[id]}</h2>
@@ -109,7 +119,12 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
               <select
                 aria-label="Номер звука"
                 value={style.sound.id}
-                onChange={(e) => set('sound', { ...style.sound!, id: Number(e.target.value) })}
+                onChange={(e) => {
+                  const id = Number(e.target.value)
+                  set('sound', { ...style.sound!, id })
+                  // Звуки выбирают на слух: проигрываем сразу, не заставляя жать отдельную кнопку.
+                  listen(id, style.sound!.volume)
+                }}
               >
                 {SOUND_IDS.map((n) => (
                   <option key={n} value={n}>
@@ -126,6 +141,15 @@ function TierEditor({ id, style, onChange }: { id: TierId; style: TierStyle; onC
                 value={style.sound.volume}
                 onChange={(e) => set('sound', { ...style.sound!, volume: Number(e.target.value) })}
               />
+              <button
+                className="sound-play"
+                aria-label={`Прослушать звук № ${style.sound.id}`}
+                title="Прослушать с выбранной громкостью"
+                onClick={() => listen(style.sound!.id, style.sound!.volume)}
+              >
+                ▶
+              </button>
+              {soundError && <span className="note--error">Не удалось проиграть звук</span>}
             </>
           )}
         </div>

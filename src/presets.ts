@@ -104,13 +104,22 @@ export const RULE_PRESETS: RulePreset[] = [
 /**
  * Заменяет правила баз набором; уровень области для скрытия остаётся тем, что выбрал пользователь.
  * Правила, созданные опросом трейда, сохраняются и остаются первыми.
+ * Правило под шансинг (если для него нашлись базы) входит в каждый набор и идёт перед остальными:
+ * от набора оно не зависит, а белая база под дорогой уник важнее общих правил.
  */
-export function applyPreset(config: Config, preset: RulePreset, shares: Record<string, number> | null, t: T): Config {
+export function applyPreset(
+  config: Config,
+  preset: RulePreset,
+  shares: Record<string, number> | null,
+  t: T,
+  chancing: Draft | null = null,
+): Config {
+  const rules = [...(chancing ? [chancing] : []), ...preset.make(shares, t)]
   return {
     ...config,
     baseRules: [
       ...config.baseRules.filter((rule) => rule.source === 'trade'),
-      ...preset.make(shares, t).map((rule) => ({ ...rule, id: crypto.randomUUID() })),
+      ...rules.map((rule) => ({ ...rule, id: crypto.randomUUID() })),
     ],
     gear: { ...config.gear, hideLowRarity: preset.hideLowRarity },
   }

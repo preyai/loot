@@ -12,13 +12,24 @@ import {
   wikiUrl,
   type BaseInfo,
 } from '../bases'
+import { chancingBases, chancingRule, uniquesByBase } from '../chancing'
 import { CURRENCIES } from '../defaults'
 import { baseOffers } from '../exceptional'
 import { keyOf, translateOr, type T } from '../i18n'
 import { useI18n } from '../i18n-react'
 import { applyPreset, RULE_PRESETS, type RulePreset } from '../presets'
 import { useExceptionalScan, usePopularity, type UpdateConfig } from '../store'
-import { RARITIES, TIER_IDS, type BaseRule, type Config, type ExceptionalScan, type MarketSnapshot, type TierId } from '../types'
+import { formatPrice, perDivine } from '../tiering'
+import {
+  RARITIES,
+  TIER_IDS,
+  type BaseRule,
+  type Config,
+  type ExceptionalScan,
+  type MarketSnapshot,
+  type TierId,
+  type UniqueInfo,
+} from '../types'
 import { ExceptionalPanel } from './ExceptionalPanel'
 import { ItemLabel } from './ItemLabel'
 import { EnglishName } from './ItemName'
@@ -58,23 +69,31 @@ interface BaseContext {
   shares: Shares | null
   scan: ExceptionalScan | null
   league: string | null
+  /** Самый дорогой уник каждой базы и его цена на языке интерфейса — повод поднять белую базу под шансинг. */
+  uniques: Map<string, UniqueInfo>
+  priceOf: (unique: UniqueInfo) => string
 }
 
 function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: BaseContext; onChange: (bases: string[]) => void }) {
   const { t, lang, name } = useI18n()
-  const { shares, scan, league } = context
+  const { shares, scan, league, uniques, priceOf } = context
   const offers = useMemo(() => (scan ? baseOffers(scan) : null), [scan])
   const [query, setQuery] = useState('')
   const [minDrop, setMinDrop] = useState(65)
   const [minShare, setMinShare] = useState(POPULAR_SHARE * 100)
+  // Выбранные на момент открытия списка — наверх. Берём снимок, а не текущий выбор:
+  // иначе карточка уезжала бы из-под курсора при каждом клике.
+  const [pinned] = useState(() => new Set(rule.bases))
   const classes = useMemo(
     () =>
       BASE_CLASSES.filter((c) => rule.classes.includes(c.name)).map((c) => ({
         ...c,
-        // Популярные — наверх; у остальных сохраняется порядок справочника (по уровню выпадения).
-        bases: shares ? [...c.bases].sort((a, b) => (shares[b.name] ?? 0) - (shares[a.name] ?? 0)) : c.bases,
+        // Дальше популярные; у остальных сохраняется порядок справочника (по уровню выпадения).
+        bases: [...c.bases].sort(
+          (a, b) => Number(pinned.has(b.name)) - Number(pinned.has(a.name)) || (shares?.[b.name] ?? 0) - (shares?.[a.name] ?? 0),
+        ),
       })),
-    [rule.classes, shares],
+    [rule.classes, shares, pinned],
   )
   const needle = query.trim().toLowerCase()
   const matches = (base: BaseInfo) => base.name.toLowerCase().includes(needle) || name(base.name).toLowerCase().includes(needle)
@@ -140,6 +159,11 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
                 <EnglishName name={b.name} />
                 <span className="count">{describe(b, t)}</span>
                 {shares?.[b.name] !== undefined && <span className="share">{t('rules.worn', { share: percent(shares[b.name]) })}</span>}
+                {uniques.has(b.name) && (
+                  <span className="base-card-unique" title={t('rules.uniqueHint')}>
+                    {name(uniques.get(b.name)!.name)}: {priceOf(uniques.get(b.name)!)}
+                  </span>
+                )}
                 {scan &&
                   offers?.get(b.name)?.map((offer) => (
                     <span key={offer.kind} className="base-card-price" title={t('rules.offerHint')}>
@@ -375,15 +399,32 @@ interface Props {
   config: Config
   update: UpdateConfig
   /** null, пока цены не загружены. */
-  rates: MarketSnapshot['rates'] | null
+  snapshot: MarketSnapshot | null
 }
 
-export function BasesView({ config, update, rates }: Props) {
+export function BasesView({ config, update, snapshot }: Props) {
   const { t, locale } = useI18n()
+  const rates = snapshot?.rates ?? null
   const popularity = usePopularity(config.league)
   const shares = popularity.data?.shares ?? null
   const exceptional = useExceptionalScan(config.league)
-  const context: BaseContext = { shares, scan: exceptional.scan, league: config.league }
+  const uniques = useMemo(() => uniquesByBase(snapshot?.items ?? []), [snapshot])
+  const context: BaseContext = {
+    shares,
+    scan: exceptional.scan,
+    league: config.league,
+    uniques,
+    priceOf: (unique) => (rates ? formatPrice(unique.divine, rates, config.currency, t) : ''),
+  }
+
+  // Под шансинг годятся базы уников уровня «джекпот»: порог — нижняя граница тира S, как она задана у пользователя.
+  const chancing = useMemo(() => {
+    if (!snapshot || !rates) return null
+    const minDivine = config.thresholds.S / perDivine(config.currency, rates)
+    const bases = chancingBases(snapshot.items, minDivine)
+    return bases.length ? chancingRule(bases, formatPrice(minDivine, rates, config.currency, t), t) : null
+  }, [snapshot, rates, config.thresholds.S, config.currency, t])
+
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
   const addRule = (rule: Omit<BaseRule, 'id'>) => setRules((rules) => [...rules, { ...rule, id: crypto.randomUUID() }])
 
@@ -392,7 +433,7 @@ export function BasesView({ config, update, rates }: Props) {
     const count = config.baseRules.filter((r) => r.source !== 'trade').length
     const title = t(keyOf('preset', `${preset.id}.title`))
     if (count > 0 && !confirm(t('rules.presetConfirm', { title, n: count }))) return
-    update((c) => applyPreset(c, preset, shares, t))
+    update((c) => applyPreset(c, preset, shares, t, chancing))
   }
 
   const move = (index: number, delta: number) =>
@@ -444,6 +485,9 @@ export function BasesView({ config, update, rates }: Props) {
         <div className="actions">
           <button disabled={!shares} onClick={() => shares && addRule(popularRule(shares, t))}>
             {t('template.popular')}
+          </button>
+          <button disabled={!chancing} onClick={() => chancing && addRule(chancing)}>
+            {t('template.chancing')}
           </button>
           {RULE_TEMPLATES.map((template) => (
             <button key={template.title} onClick={() => addRule(template.make(t))}>

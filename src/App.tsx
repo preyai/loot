@@ -161,7 +161,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
             </p>
           )}
           {!snapshot && market.loading && <p className="note">{t('top.loading')}</p>}
-          {route === 'bases' && <BasesView config={config} update={update} rates={snapshot?.rates ?? null} />}
+          {route === 'bases' && <BasesView config={config} update={update} snapshot={snapshot} />}
           {route === 'styles' && <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />}
           {snapshot && route === 'export' && <ExportView snapshot={snapshot} config={config} />}
           {snapshot && section && <SectionView key={section.id} section={section} snapshot={snapshot} config={config} update={update} />}

@@ -1229,6 +1229,12 @@ main {
   color: var(--gold-bright);
 }
 
+.base-card-unique {
+  /* Цвет уникальных предметов в игре. */
+  color: #c9742f;
+  font-size: 12px;
+}
+
 .base-card-price {
   color: var(--gold);
   font-size: 12px;

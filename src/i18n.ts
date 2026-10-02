@@ -233,6 +233,7 @@ const ru = {
   'rules.dropLevel': 'ур. {n}',
   'rules.worn': 'носят {share}',
   'rules.offerHint': 'Обычные предметы на трейде, по одному лоту на продавца',
+  'rules.uniqueHint': 'Самый дорогой уник на этой базе',
   'rules.offer': '{kind}: от {price}',
   'rules.sellers': ' · продавцов: {n}',
   'rules.trade': 'трейд',
@@ -256,6 +257,7 @@ const ru = {
   'desc.area': 'с уровня области {n}',
 
   'template.popular': 'Популярные базы, ур. предмета 82+',
+  'template.chancing': 'Базы под шансинг',
   'template.top': 'Топовые базы, ур. предмета 82+',
   'template.quality': 'Качество 20%+',
   'template.sockets': 'Гнёзда: 2+',
@@ -266,15 +268,15 @@ const ru = {
   'preset.soft.title': 'Мягкий',
   'preset.soft.summary': 'Для начала карт: подсвечивает ценное, ничего не скрывает.',
   'preset.soft.details':
-    'Исключительные вещи: лишние гнёзда, качество 21%+|Редкие со ступенью свойств 2+ на популярных базах|Вся редкая бижутерия|Белые и синие заготовки ур. 82+ на популярных базах',
+    'Белые базы под шансинг дорогих уников|Исключительные вещи: лишние гнёзда, качество 21%+|Редкие со ступенью свойств 2+ на популярных базах|Вся редкая бижутерия|Белые и синие заготовки ур. 82+ на популярных базах',
   'preset.balanced.title': 'Сбалансированный',
   'preset.balanced.summary': 'Основной вариант: ценное подсвечено, белый и синий мусор скрыт.',
   'preset.balanced.details':
-    'Исключительные вещи: лишние гнёзда, качество 21%+|Редкие со ступенью свойств 3+ на популярных базах|Вся редкая бижутерия|Заготовки ур. 82+ на популярных базах|Скрыты прочие обычные и магические оружие и броня',
+    'Белые базы под шансинг дорогих уников|Исключительные вещи: лишние гнёзда, качество 21%+|Редкие со ступенью свойств 3+ на популярных базах|Вся редкая бижутерия|Заготовки ур. 82+ на популярных базах|Скрыты прочие обычные и магические оружие и броня',
   'preset.strict.title': 'Строгий',
   'preset.strict.summary': 'Для быстрой зачистки: только то, ради чего стоит остановиться.',
   'preset.strict.details':
-    'Исключительные вещи: лишние гнёзда, качество 27%+ и 21%+ на популярных базах|Редкие со ступенью свойств 3+ на популярных базах|Редкая бижутерия со ступенью свойств 3+|Скрыты прочие редкие оружие и броня (с уровня области 75)|Скрыты прочие обычные и магические оружие и броня',
+    'Белые базы под шансинг дорогих уников|Исключительные вещи: лишние гнёзда, качество 27%+ и 21%+ на популярных базах|Редкие со ступенью свойств 3+ на популярных базах|Редкая бижутерия со ступенью свойств 3+|Скрыты прочие редкие оружие и броня (с уровня области 75)|Скрыты прочие обычные и магические оружие и броня',
 
   'rule.sockets3': 'Исключительные: 3+ гнезда (нагрудники, двуручное оружие)',
   'rule.sockets2': 'Исключительные: 2+ гнезда (остальная экипировка)',
@@ -288,6 +290,7 @@ const ru = {
   'rule.rare82': 'Редкие на популярных базах, ур. предмета 82+',
   'rule.hideRares': 'Скрывать остальные редкие оружие и броню',
   'rule.exceptional': 'Исключительные от {price}: {kind}',
+  'rule.chancing': 'Под шансинг: базы уников от {price}',
 
   'exceptional.sockets3': '3+ гнезда',
   'exceptional.sockets2': '2+ гнезда',
@@ -544,6 +547,7 @@ const en: Record<Key, string> = {
   'rules.dropLevel': 'lvl {n}',
   'rules.worn': 'worn by {share}',
   'rules.offerHint': 'Normal items on trade, one listing per seller',
+  'rules.uniqueHint': 'The most expensive unique on this base',
   'rules.offer': '{kind}: from {price}',
   'rules.sellers': ' · sellers: {n}',
   'rules.trade': 'trade',
@@ -567,6 +571,7 @@ const en: Record<Key, string> = {
   'desc.area': 'from area level {n}',
 
   'template.popular': 'Popular bases, item level 82+',
+  'template.chancing': 'Chancing bases',
   'template.top': 'Top bases, item level 82+',
   'template.quality': 'Quality 20%+',
   'template.sockets': 'Sockets: 2+',
@@ -577,15 +582,15 @@ const en: Record<Key, string> = {
   'preset.soft.title': 'Soft',
   'preset.soft.summary': 'For early maps: highlights valuables, hides nothing.',
   'preset.soft.details':
-    'Exceptional items: extra sockets, quality 21%+|Rares with mod tier 2+ on popular bases|All rare jewellery|White and blue crafting bases, item level 82+, on popular bases',
+    'White bases for chancing expensive uniques|Exceptional items: extra sockets, quality 21%+|Rares with mod tier 2+ on popular bases|All rare jewellery|White and blue crafting bases, item level 82+, on popular bases',
   'preset.balanced.title': 'Balanced',
   'preset.balanced.summary': 'The main option: valuables highlighted, white and blue junk hidden.',
   'preset.balanced.details':
-    'Exceptional items: extra sockets, quality 21%+|Rares with mod tier 3+ on popular bases|All rare jewellery|Crafting bases, item level 82+, on popular bases|Other normal and magic weapons and armour hidden',
+    'White bases for chancing expensive uniques|Exceptional items: extra sockets, quality 21%+|Rares with mod tier 3+ on popular bases|All rare jewellery|Crafting bases, item level 82+, on popular bases|Other normal and magic weapons and armour hidden',
   'preset.strict.title': 'Strict',
   'preset.strict.summary': 'For fast clearing: only what is worth stopping for.',
   'preset.strict.details':
-    'Exceptional items: extra sockets, quality 27%+ and 21%+ on popular bases|Rares with mod tier 3+ on popular bases|Rare jewellery with mod tier 3+|Other rare weapons and armour hidden (from area level 75)|Other normal and magic weapons and armour hidden',
+    'White bases for chancing expensive uniques|Exceptional items: extra sockets, quality 27%+ and 21%+ on popular bases|Rares with mod tier 3+ on popular bases|Rare jewellery with mod tier 3+|Other rare weapons and armour hidden (from area level 75)|Other normal and magic weapons and armour hidden',
 
   'rule.sockets3': 'Exceptional: 3+ sockets (body armours, two-handed weapons)',
   'rule.sockets2': 'Exceptional: 2+ sockets (other gear)',
@@ -599,6 +604,7 @@ const en: Record<Key, string> = {
   'rule.rare82': 'Rares on popular bases, item level 82+',
   'rule.hideRares': 'Hide other rare weapons and armour',
   'rule.exceptional': 'Exceptional from {price}: {kind}',
+  'rule.chancing': 'Chancing: bases of uniques from {price}',
 
   'exceptional.sockets3': '3+ sockets',
   'exceptional.sockets2': '2+ sockets',

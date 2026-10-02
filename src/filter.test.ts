@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { chancingBases, chancingRule, topUnique, uniquesByBase } from './chancing'
 import { DEFAULT_CONFIG } from './defaults'
 import { baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
@@ -251,6 +252,48 @@ describe('правила баз', () => {
     const bows = topBases(['Bows'])
     expect(bows).toContain('Fanatic Bow')
     expect(bows).not.toContain('Crude Bow')
+  })
+})
+
+describe('шансинг', () => {
+  const unique = (name: string, divine: number | null) => ({ name, divine }) as NonNullable<MarketItem['uniques']>[number]
+  const base = (name: string, uniques: ReturnType<typeof unique>[]): MarketItem => ({ ...item(name, null, 'uq-accessories'), uniques })
+  const belt = base('Utility Belt', [unique('Ingenuity', 0.007), unique('Mageblood', 337)])
+  const heavy = base('Heavy Belt', [unique('Headhunter', 36)])
+  const ring = base('Ruby Ring', [unique('Cheap', 0.01)])
+  const unreliable = base('Gold Ring', [unique('Rare One', null)])
+  // База, существующая только под уник: в справочнике экипировки её нет, белой она не выпадает.
+  const uniqueOnly = base('Runemastered Silk Robe', [unique('Temporalis', 6900)])
+  const all = [ring, heavy, belt, unreliable, uniqueOnly, item('Divine Orb', 1)]
+
+  it('берёт базы из справочника с уником не дешевле порога, дорогие — первыми', () => {
+    expect(chancingBases(all, 1)).toEqual(['Utility Belt', 'Heavy Belt'])
+    expect(chancingBases(all, 100)).toEqual(['Utility Belt'])
+    expect(chancingBases(all, 1000)).toEqual([])
+  })
+
+  it('уник без надёжной цены базу под шансинг не делает', () => {
+    expect(topUnique(unreliable)).toBeNull()
+    expect(topUnique(belt)?.name).toBe('Mageblood')
+    expect(uniquesByBase(all).get('Heavy Belt')?.name).toBe('Headhunter')
+    expect(uniquesByBase(all).has('Gold Ring')).toBe(false)
+  })
+
+  it('правило — для обычных неосквернённых предметов на этих базах', () => {
+    const rule = chancingRule(['Utility Belt', 'Heavy Belt'], '500 ex', t)
+    expect(rule).toMatchObject({ name: 'Под шансинг: базы уников от 500 ex', classes: ['Belts'], rarities: ['Normal'], excludeCorrupted: true })
+    expect(baseRuleBlock({ ...rule, id: '1' }, 0, DEFAULT_CONFIG.tiers)).toContain(
+      'BaseType == "Utility Belt" "Heavy Belt"\n    Rarity Normal\n    Corrupted False\n    Mirrored False',
+    )
+  })
+
+  it('в наборе правило под шансинг идёт сразу после правил с трейда, а без баз его нет', () => {
+    const trade: BaseRule = { ...EMPTY_RULE, id: 'trade', name: 'с трейда', source: 'trade' }
+    const rule = chancingRule(['Utility Belt'], '500 ex', t)
+    const withChancing = applyPreset({ ...DEFAULT_CONFIG, baseRules: [trade] }, RULE_PRESETS[1], null, t, rule).baseRules
+    expect(withChancing.slice(0, 2).map((r) => r.name)).toEqual(['с трейда', 'Под шансинг: базы уников от 500 ex'])
+    const without = applyPreset(DEFAULT_CONFIG, RULE_PRESETS[1], null, t, null).baseRules
+    expect(without.some((r) => r.name.startsWith('Под шансинг'))).toBe(false)
   })
 })
 

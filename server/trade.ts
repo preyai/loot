@@ -10,7 +10,7 @@ const HEADERS = {
   Accept: 'application/json',
   'Content-Type': 'application/json',
 }
-const STORE_FILE = path.resolve(process.cwd(), 'data/base-prices.json')
+const STORE_FILE = path.resolve(process.env.DATA_DIR ?? 'data', 'base-prices.json')
 /** Сколько самых дешёвых лотов идёт в медиану. */
 const SAMPLE = 10
 /** Меньше лотов на рынке — цена ненадёжна. */

@@ -1,5 +1,6 @@
 node_modules
 dist
+dist-server
 # цены баз с трейда — локальные данные, обновляются вручную
 data
 *.log

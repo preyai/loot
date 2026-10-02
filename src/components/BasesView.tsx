@@ -1,0 +1,270 @@
+import { useMemo, useState } from 'react'
+import { BASE_CLASSES, BASE_GROUPS, RULE_TEMPLATES, type BaseInfo } from '../bases'
+import { TIER_TITLES } from '../defaults'
+import type { UpdateConfig } from '../store'
+import { RARITIES, TIER_IDS, type BaseRule, type Config, type Rarity, type TierId } from '../types'
+import { ItemLabel } from './ItemLabel'
+
+const RARITY_TITLES: Record<Rarity, string> = { Normal: 'Обычные', Magic: 'Магические', Rare: 'Редкие' }
+const DEFENCE_TITLES: Record<string, string> = { a: 'броня', e: 'уклонение', s: 'энергощит' }
+
+const toggle = <T,>(list: T[], value: T) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
+const describe = (base: BaseInfo) =>
+  [`ур. ${base.drop}`, ...(base.defence ?? '').split('').map((d) => DEFENCE_TITLES[d])].join(', ')
+
+function BasePicker({ rule, onChange }: { rule: BaseRule; onChange: (bases: string[]) => void }) {
+  const [query, setQuery] = useState('')
+  const [minDrop, setMinDrop] = useState(65)
+  const classes = useMemo(() => BASE_CLASSES.filter((c) => rule.classes.includes(c.name)), [rule.classes])
+  const needle = query.trim().toLowerCase()
+
+  return (
+    <div className="base-picker">
+      <div className="actions">
+        <input
+          type="search"
+          placeholder="Поиск базы…"
+          aria-label="Поиск базы"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <label className="check">
+          Уровень выпадения от
+          <input type="number" min={1} max={100} value={minDrop} onChange={(e) => setMinDrop(Number(e.target.value))} />
+        </label>
+        <button onClick={() => onChange(classes.flatMap((c) => c.bases.filter((b) => b.drop >= minDrop).map((b) => b.name)))}>
+          Выбрать такие
+        </button>
+        <button disabled={rule.bases.length === 0} onClick={() => onChange([])}>
+          Очистить
+        </button>
+      </div>
+      {classes.map((c) => {
+        const bases = needle ? c.bases.filter((b) => b.name.toLowerCase().includes(needle)) : c.bases
+        if (bases.length === 0) return null
+        return (
+          <fieldset key={c.name}>
+            <legend>{c.name}</legend>
+            {bases.map((b) => (
+              <label key={b.name} className="check">
+                <input type="checkbox" checked={rule.bases.includes(b.name)} onChange={() => onChange(toggle(rule.bases, b.name))} />
+                {b.name} <span className="count">{describe(b)}</span>
+              </label>
+            ))}
+          </fieldset>
+        )
+      })}
+    </div>
+  )
+}
+
+interface CardProps {
+  rule: BaseRule
+  index: number
+  total: number
+  config: Config
+  onChange: (rule: BaseRule) => void
+  onMove: (delta: number) => void
+  onDelete: () => void
+}
+
+function RuleCard({ rule, index, total, config, onChange, onMove, onDelete }: CardProps) {
+  // Список баз длинный — рисуем его, только пока он раскрыт.
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const set = <K extends keyof BaseRule>(key: K, value: BaseRule[K]) => onChange({ ...rule, [key]: value })
+
+  const setClasses = (classes: string[]) => {
+    // Базы снятых классов не должны остаться в правиле незаметно для пользователя.
+    const allowed = new Set(BASE_CLASSES.filter((c) => classes.includes(c.name)).flatMap((c) => c.bases.map((b) => b.name)))
+    onChange({ ...rule, classes, bases: rule.bases.filter((b) => allowed.has(b)) })
+  }
+
+  const minField = (key: 'minItemLevel' | 'minQuality' | 'minSockets', label: string, max: number) => (
+    <label className="check">
+      {label}
+      <input
+        type="number"
+        min={0}
+        max={max}
+        value={rule[key]}
+        onChange={(e) => set(key, Math.max(0, Math.round(Number(e.target.value))))}
+      />
+    </label>
+  )
+
+  return (
+    <section className={rule.enabled ? 'panel rule' : 'panel rule rule--off'}>
+      <header>
+        <span className="count">№ {index + 1}</span>
+        <input
+          className="rule-name"
+          type="text"
+          aria-label="Название правила"
+          value={rule.name}
+          onChange={(e) => set('name', e.target.value)}
+        />
+        <label className="check">
+          <input type="checkbox" checked={rule.enabled} onChange={(e) => set('enabled', e.target.checked)} />
+          Включено
+        </label>
+        <div className="actions">
+          <button disabled={index === 0} title="Выше — главнее" onClick={() => onMove(-1)}>
+            ↑
+          </button>
+          <button disabled={index === total - 1} title="Ниже" onClick={() => onMove(1)}>
+            ↓
+          </button>
+          <button onClick={() => confirm(`Удалить правило «${rule.name}»?`) && onDelete()}>Удалить</button>
+        </div>
+      </header>
+
+      <div className="rule-row">
+        <select aria-label="Действие" value={rule.action} onChange={(e) => set('action', e.target.value as BaseRule['action'])}>
+          <option value="show">Показывать</option>
+          <option value="hide">Скрывать</option>
+        </select>
+        {rule.action === 'show' && (
+          <>
+            <label className="check">
+              в стиле тира
+              <select value={rule.tier} onChange={(e) => set('tier', e.target.value as TierId)}>
+                {TIER_IDS.map((t) => (
+                  <option key={t} value={t}>
+                    {TIER_TITLES[t]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="ground">
+              <ItemLabel name={rule.bases[0] ?? 'Предмет'} style={config.tiers[rule.tier]} />
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="rule-row">
+        {RARITIES.map((r) => (
+          <label key={r} className="check">
+            <input type="checkbox" checked={rule.rarities.includes(r)} onChange={() => set('rarities', toggle(rule.rarities, r))} />
+            {RARITY_TITLES[r]}
+          </label>
+        ))}
+        {minField('minItemLevel', 'Ур. предмета от', 100)}
+        {minField('minQuality', 'Качество от', 30)}
+        {minField('minSockets', 'Гнёзд от', 6)}
+      </div>
+
+      {BASE_GROUPS.map((group) => {
+        const names = BASE_CLASSES.filter((c) => c.group === group.id).map((c) => c.name)
+        const allSelected = names.every((n) => rule.classes.includes(n))
+        return (
+          <div key={group.id} className="rule-row chips">
+            <button
+              className="chip-group"
+              title={allSelected ? 'Снять все' : 'Выбрать все'}
+              onClick={() =>
+                setClasses(allSelected ? rule.classes.filter((c) => !names.includes(c)) : [...new Set([...rule.classes, ...names])])
+              }
+            >
+              {group.title}
+            </button>
+            {names.map((name) => (
+              <button
+                key={name}
+                className="chip"
+                aria-pressed={rule.classes.includes(name)}
+                onClick={() => setClasses(toggle(rule.classes, name))}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        )
+      })}
+
+      {rule.classes.length === 0 ? (
+        <p className="note note--error">Не выбран ни один класс — правило в фильтр не попадёт.</p>
+      ) : (
+        <details open={pickerOpen} onToggle={(e) => setPickerOpen(e.currentTarget.open)}>
+          <summary>
+            {rule.bases.length === 0 ? 'Базы: любые из выбранных классов' : `Базы: выбрано ${rule.bases.length}`}
+          </summary>
+          {pickerOpen && <BasePicker rule={rule} onChange={(bases) => set('bases', bases)} />}
+        </details>
+      )}
+    </section>
+  )
+}
+
+export function BasesView({ config, update }: { config: Config; update: UpdateConfig }) {
+  const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
+
+  const move = (index: number, delta: number) =>
+    setRules((rules) => {
+      const next = [...rules]
+      ;[next[index], next[index + delta]] = [next[index + delta], next[index]]
+      return next
+    })
+
+  return (
+    <div>
+      <header className="page-header">
+        <h1>Базы</h1>
+      </header>
+      <p className="note">
+        Правила для обычных, магических и редких предметов экипировки. Игра применяет первое подошедшее правило, поэтому
+        порядок важен: чем выше правило, тем оно главнее. Уникальные предметы настраиваются в своих разделах и этими правилами
+        не затрагиваются.
+      </p>
+
+      <section className="panel">
+        <h2>Добавить правило</h2>
+        <div className="actions">
+          {RULE_TEMPLATES.map((template) => (
+            <button key={template.title} onClick={() => setRules((rules) => [...rules, { ...template.make(), id: crypto.randomUUID() }])}>
+              {template.title}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {config.baseRules.map((rule, index) => (
+        <RuleCard
+          key={rule.id}
+          rule={rule}
+          index={index}
+          total={config.baseRules.length}
+          config={config}
+          onChange={(next) => setRules((rules) => rules.map((r) => (r.id === next.id ? next : r)))}
+          onMove={(delta) => move(index, delta)}
+          onDelete={() => setRules((rules) => rules.filter((r) => r.id !== rule.id))}
+        />
+      ))}
+
+      <section className="panel">
+        <h2>Остальная экипировка</h2>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={config.gear.hideLowRarity}
+            onChange={(e) => update((c) => ({ ...c, gear: { ...c.gear, hideLowRarity: e.target.checked } }))}
+          />
+          Скрывать обычные и магические оружие и броню начиная с уровня области
+          <input
+            type="number"
+            min={1}
+            max={100}
+            aria-label="Уровень области"
+            disabled={!config.gear.hideLowRarity}
+            value={config.gear.areaLevel}
+            onChange={(e) => update((c) => ({ ...c, gear: { ...c.gear, areaLevel: Number(e.target.value) } }))}
+          />
+        </label>
+        <p className="note">
+          Срабатывает после правил выше: то, что они показывают, остаётся видимым. Кольца, амулеты, пояса и все редкие и
+          уникальные предметы не скрываются.
+        </p>
+      </section>
+    </div>
+  )
+}

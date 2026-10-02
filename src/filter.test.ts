@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './defaults'
-import { generateFilter, matchConditions } from './filter'
+import { topBases } from './bases'
+import { baseRuleBlock, generateFilter, matchConditions } from './filter'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
-import type { Config, MarketItem, MarketSnapshot } from './types'
+import type { BaseRule, Config, MarketItem, MarketSnapshot } from './types'
 
 const item = (name: string, divine: number | null, section: MarketItem['section'] = 'currency'): MarketItem => ({
   name,
@@ -146,6 +147,70 @@ describe('уники', () => {
     expect(generateFilter(snapshot([robe]), config)).toContain(
       'Hide # Unique Armours / hidden\n    Rarity Unique\n    BaseType == "Silk Robe"\n',
     )
+  })
+})
+
+describe('правила баз', () => {
+  const rule: BaseRule = {
+    id: '1',
+    name: 'Топовые луки',
+    enabled: true,
+    action: 'show',
+    classes: ['Bows'],
+    bases: [],
+    rarities: ['Normal', 'Magic'],
+    minItemLevel: 82,
+    minQuality: 0,
+    minSockets: 0,
+    tier: 'C',
+  }
+  const { tiers } = DEFAULT_CONFIG
+
+  it('без выбранных баз правило работает по классу', () => {
+    expect(baseRuleBlock(rule, 0, tiers)).toBe(
+      [
+        'Show # Bases / rule 1',
+        '    Class == "Bows"',
+        '    Rarity Normal Magic',
+        '    ItemLevel >= 82',
+        '    SetFontSize 36',
+        '    SetTextColor 245 220 70 255',
+        '    SetBorderColor 245 220 70 255',
+        '    SetBackgroundColor 40 30 0 235',
+        '    PlayEffect Yellow Temp',
+        '    MinimapIcon 2 Yellow Circle',
+      ].join('\n'),
+    )
+  })
+
+  it('с базами — по BaseType; любая редкость не задевает уники; Hide без стиля', () => {
+    const hide: BaseRule = { ...rule, action: 'hide', bases: ['Gemini Bow'], rarities: [], minItemLevel: 0, minQuality: 20, minSockets: 2 }
+    expect(baseRuleBlock(hide, 2, tiers)).toBe(
+      ['Hide # Bases / rule 3', '    BaseType == "Gemini Bow"', '    Rarity <= Rare', '    Quality >= 20', '    Sockets >= 2'].join('\n'),
+    )
+  })
+
+  it('выключенное правило и правило без классов пропускаются', () => {
+    expect(baseRuleBlock({ ...rule, enabled: false }, 0, tiers)).toBeNull()
+    expect(baseRuleBlock({ ...rule, classes: [] }, 0, tiers)).toBeNull()
+  })
+
+  it('правила идут по порядку и раньше общего скрытия экипировки', () => {
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      baseRules: [rule, { ...rule, id: '2', classes: ['Rings'] }],
+      gear: { hideLowRarity: true, areaLevel: 70 },
+    }
+    const text = generateFilter(snapshot([]), config)
+    const positions = ['Bases / rule 1', 'Bases / rule 2', 'Gear / normal and magic'].map((s) => text.indexOf(s))
+    expect(positions).toEqual([...positions].sort((a, b) => a - b))
+    expect(positions[0]).toBeGreaterThan(-1)
+  })
+
+  it('топовые базы — в пределах пяти уровней выпадения от лучшей в классе', () => {
+    const bows = topBases(['Bows'])
+    expect(bows).toContain('Fanatic Bow')
+    expect(bows).not.toContain('Crude Bow')
   })
 })
 

@@ -414,6 +414,90 @@ main {
   min-width: 80px;
 }
 
+/* Правила баз */
+
+.rule--off > :not(header) {
+  opacity: 0.45;
+}
+
+.rule header,
+.rule-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 10px;
+}
+
+.rule header .actions {
+  margin-left: auto;
+}
+
+.rule-name {
+  flex: 1;
+  min-width: 180px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+}
+
+.rule-row .ground {
+  flex: 1;
+  min-width: 160px;
+}
+
+.chips {
+  gap: 6px;
+}
+
+.chip,
+.chip-group {
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-size: 13px;
+}
+
+.chip-group {
+  width: 92px;
+  border-color: transparent;
+  background: none;
+  color: var(--muted);
+  text-align: left;
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #1a1408;
+}
+
+.rule summary {
+  cursor: pointer;
+}
+
+.base-picker {
+  margin-top: 10px;
+}
+
+.base-picker fieldset {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 2px 14px;
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.base-picker legend {
+  padding: 0 6px;
+  color: var(--muted);
+}
+
 /* Экспорт */
 
 .filter-text {

@@ -1,7 +1,7 @@
-import { GEAR_CLASSES } from './defaults'
+import { GEAR_CLASSES } from './bases'
 import { SECTIONS } from './sections'
 import { itemDisplay } from './tiering'
-import { TIER_IDS, type Config, type MarketItem, type MarketSnapshot, type Rgba, type TierId, type TierStyle } from './types'
+import { RARITIES, TIER_IDS, type BaseRule, type Config, type MarketItem, type MarketSnapshot, type Rgba, type TierId, type TierStyle } from './types'
 
 const INDENT = '    '
 const quote = (names: string[]) => names.map((n) => `"${n}"`).join(' ')
@@ -53,6 +53,23 @@ export function styleLines(style: TierStyle): string[] {
 
 function block(action: 'Show' | 'Hide', comment: string, lines: string[]): string {
   return [`${action} # ${comment}`, ...lines.map((l) => INDENT + l)].join('\n')
+}
+
+/** Блок фильтра для правила баз; null — правило выключено или ничего не выбирает. */
+export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tiers']): string | null {
+  if (!rule.enabled || rule.classes.length === 0) return null
+  const all = rule.rarities.length === 0 || rule.rarities.length === RARITIES.length
+  const lines = [
+    rule.bases.length ? `BaseType == ${quote(rule.bases)}` : `Class == ${quote(rule.classes)}`,
+    // Даже «любая редкость» не должна задевать уники: у них свои разделы.
+    all ? 'Rarity <= Rare' : `Rarity ${rule.rarities.join(' ')}`,
+  ]
+  if (rule.minItemLevel > 0) lines.push(`ItemLevel >= ${rule.minItemLevel}`)
+  if (rule.minQuality > 0) lines.push(`Quality >= ${rule.minQuality}`)
+  if (rule.minSockets > 0) lines.push(`Sockets >= ${rule.minSockets}`)
+  const show = rule.action === 'show'
+  // Название правила в комментарий не идёт: оно может быть не на латинице.
+  return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(tiers[rule.tier])] : lines)
 }
 
 function push<K, V>(map: Map<K, V[]>, key: K, value: V) {
@@ -121,6 +138,11 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
       out.push(block('Hide', `${section.label} / hidden`, [...rarity, ...conditions]))
     }
   }
+
+  config.baseRules.forEach((rule, index) => {
+    const text = baseRuleBlock(rule, index, config.tiers)
+    if (text) out.push(text)
+  })
 
   if (config.gear.hideLowRarity) {
     out.push(

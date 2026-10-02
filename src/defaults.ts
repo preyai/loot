@@ -19,13 +19,6 @@ export const FONT_SIZE = { min: 18, max: 45, base: 32 }
 export const SOUND_IDS = Array.from({ length: 16 }, (_, i) => i + 1)
 export const SOUND_VOLUME_MAX = 300
 
-/** Классы экипировки, которые скрывает правило «обычные и магические предметы». */
-export const GEAR_CLASSES = [
-  'Body Armours', 'Helmets', 'Gloves', 'Boots', 'Shields', 'Bucklers', 'Foci', 'Quivers',
-  'One Hand Maces', 'Two Hand Maces', 'Quarterstaves', 'Bows', 'Crossbows', 'Spears',
-  'Wands', 'Staves', 'Sceptres',
-]
-
 export const TIER_TITLES: Record<TierId, string> = {
   S: 'S — джекпот',
   A: 'A — очень ценное',
@@ -99,6 +92,7 @@ export const DEFAULT_CONFIG: Config = {
   },
   overrides: {},
   disabledSections: [],
+  baseRules: [],
   visibility: { minTier: 'E', minPrice: 0, stacks: true },
   sectionVisibility: {},
   gear: { hideLowRarity: false, areaLevel: 65 },

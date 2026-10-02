@@ -81,6 +81,29 @@ export interface TierStyle {
   icon: { size: 0 | 1 | 2; color: string; shape: string } | null
 }
 
+export const RARITIES = ['Normal', 'Magic', 'Rare'] as const
+export type Rarity = (typeof RARITIES)[number]
+
+/** Правило для неуникальной экипировки: что показать или скрыть и по каким признакам. */
+export interface BaseRule {
+  id: string
+  name: string
+  enabled: boolean
+  action: 'show' | 'hide'
+  /** Классы предметов; правило без классов в фильтр не попадает. */
+  classes: string[]
+  /** Конкретные базы из выбранных классов; пусто — любые. */
+  bases: string[]
+  /** Пусто — любая редкость, кроме уникальной. */
+  rarities: Rarity[]
+  /** Минимальные значения; 0 — без ограничения. */
+  minItemLevel: number
+  minQuality: number
+  minSockets: number
+  /** Тир, чьим стилем оформляется предмет. */
+  tier: TierId
+}
+
 export interface Config {
   league: string | null
   currency: Currency
@@ -90,6 +113,8 @@ export interface Config {
   /** Ручной выбор тира по ключу предмета (itemKey). */
   overrides: Record<string, TierChoice>
   disabledSections: SectionId[]
+  /** Применяются по порядку: первое подошедшее правило побеждает. */
+  baseRules: BaseRule[]
   visibility: Visibility
   /** Разделы со своими настройками показа вместо общих. */
   sectionVisibility: Partial<Record<SectionId, Visibility>>

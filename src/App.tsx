@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { BasesView } from './components/BasesView'
 import { downloadFilter, ExportView } from './components/ExportView'
 import { SectionView } from './components/SectionView'
 import { StylesView } from './components/StylesView'
@@ -9,7 +10,7 @@ import { useConfig, useMarket } from './store'
 import { convertCurrency, perDivine } from './tiering'
 import type { Currency } from './types'
 
-const PAGES = ['styles', 'export'] as const
+const PAGES = ['bases', 'styles', 'export'] as const
 type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number]
 
 function readRoute(): Route {
@@ -61,6 +62,10 @@ export function App() {
               </a>
             </Fragment>
           ))}
+          <a href="#/bases" className={route === 'bases' ? 'active' : ''}>
+            Базы
+            <span className="count">{config.baseRules.filter((r) => r.enabled).length}</span>
+          </a>
           <hr />
           <a href="#/styles" className={route === 'styles' ? 'active' : ''}>
             Тиры и стили
@@ -124,6 +129,7 @@ export function App() {
             </p>
           )}
           {!snapshot && market.loading && <p className="note">Загрузка цен…</p>}
+          {route === 'bases' && <BasesView config={config} update={update} />}
           {route === 'styles' && (
             <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />
           )}

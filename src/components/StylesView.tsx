@@ -280,28 +280,6 @@ export function StylesView({ config, update, rates }: Props) {
       </div>
 
       <section className="panel">
-        <h2>Экипировка</h2>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={config.gear.hideLowRarity}
-            onChange={(e) => update((c) => ({ ...c, gear: { ...c.gear, hideLowRarity: e.target.checked } }))}
-          />
-          Скрывать обычные и магические оружие и броню начиная с уровня области
-          <input
-            type="number"
-            min={1}
-            max={100}
-            aria-label="Уровень области"
-            disabled={!config.gear.hideLowRarity}
-            value={config.gear.areaLevel}
-            onChange={(e) => update((c) => ({ ...c, gear: { ...c.gear, areaLevel: Number(e.target.value) } }))}
-          />
-        </label>
-        <p className="note">Кольца, амулеты, пояса и все редкие и уникальные предметы остаются видимыми.</p>
-      </section>
-
-      <section className="panel">
         <h2>Сброс</h2>
         <div className="actions">
           <button

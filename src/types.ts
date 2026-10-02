@@ -17,10 +17,28 @@ export type SectionId =
   | 'uq-accessories'
   | 'uq-other'
 
+/** Строка свойства предмета; variant — одно из взаимоисключающих свойств (у предмета будет только одно). */
+export interface ModLine {
+  text: string
+  variant?: true
+}
+
 export interface UniqueInfo {
   name: string
   /** Цена в Divine Orb; null — лотов слишком мало, цене нельзя верить. */
   divine: number | null
+  icon: string
+  /** Сколько лотов на рынке. */
+  listings: number
+  /** Изменение цены за 7 дней, в процентах; null — нет данных. */
+  weekChange: number | null
+  /** Строки игровой подсказки: характеристики, требования, даруемые умения, скрытые и явные свойства. */
+  properties: string[]
+  requirements: string[]
+  skills: string[]
+  implicits: ModLine[]
+  explicits: ModLine[]
+  flavour: string
 }
 
 export interface MarketItem {

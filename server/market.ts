@@ -1,5 +1,5 @@
 import { SECTIONS, type Section } from '../src/sections'
-import type { League, MarketItem, MarketSnapshot, SectionId, UniqueInfo } from '../src/types'
+import type { League, MarketItem, MarketSnapshot, ModLine, SectionId, UniqueInfo } from '../src/types'
 import { storedResource } from './storage'
 
 export const API = 'https://poe.ninja/poe2/api'
@@ -16,8 +16,52 @@ interface ExchangeOverview {
   lines?: { id: string; primaryValue: number }[]
 }
 
+interface NinjaMod {
+  text: string
+  optional?: boolean
+}
+
+interface UniqueLine {
+  name: string
+  baseType: string
+  icon: string
+  primaryValue: number
+  listingCount: number
+  flavourText?: string
+  sparkLine?: { totalChange?: number }
+  propertyModifiers?: NinjaMod[]
+  utilityModifiers?: NinjaMod[]
+  requirementModifiers?: NinjaMod[]
+  grantedSkillModifiers?: NinjaMod[]
+  implicitModifiers?: NinjaMod[]
+  explicitModifiers?: NinjaMod[]
+}
+
 interface UniqueOverview {
-  lines?: { name: string; baseType: string; icon: string; primaryValue: number; listingCount: number }[]
+  lines?: UniqueLine[]
+}
+
+/** Убирает разметку poe.ninja: «[Critical|Critical Hit]» → «Critical Hit», «[Physical]» → «Physical». */
+export const plainText = (text: string) => text.replace(/\[(?:[^\]|]*\|)?([^\]]*)\]/g, '$1')
+
+const texts = (mods: NinjaMod[] = []) => mods.map((m) => plainText(m.text))
+const modLines = (mods: NinjaMod[] = []): ModLine[] =>
+  mods.map((m) => (m.optional ? { text: plainText(m.text), variant: true } : { text: plainText(m.text) }))
+
+function uniqueInfo(line: UniqueLine): UniqueInfo {
+  return {
+    name: line.name,
+    divine: line.listingCount >= MIN_LISTINGS ? line.primaryValue : null,
+    icon: line.icon,
+    listings: line.listingCount,
+    weekChange: line.sparkLine?.totalChange ?? null,
+    properties: [...texts(line.propertyModifiers), ...texts(line.utilityModifiers)],
+    requirements: texts(line.requirementModifiers),
+    skills: texts(line.grantedSkillModifiers),
+    implicits: modLines(line.implicitModifiers),
+    explicits: modLines(line.explicitModifiers),
+    flavour: (line.flavourText ?? '').replace(/\r/g, ''),
+  }
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -47,10 +91,10 @@ export function groupUniques(lines: NonNullable<UniqueOverview['lines']>, sectio
   for (const line of lines) {
     const base = bases.get(line.baseType) ?? { icon: line.icon, uniques: new Map() }
     bases.set(line.baseType, base)
-    const divine = line.listingCount >= MIN_LISTINGS ? line.primaryValue : null
+    const unique = uniqueInfo(line)
     // У одного уника бывает несколько строк (например, осквернённый вариант) — берём самую дорогую.
     const known = base.uniques.get(line.name)
-    if (!known || (divine ?? -1) > (known.divine ?? -1)) base.uniques.set(line.name, { name: line.name, divine })
+    if (!known || (unique.divine ?? -1) > (known.divine ?? -1)) base.uniques.set(line.name, unique)
   }
 
   return [...bases].map(([name, { icon, uniques }]) => {
@@ -114,6 +158,7 @@ async function loadSnapshot(league: string): Promise<MarketSnapshot> {
 }
 
 /** Снимки цен по лигам: хранятся на диске и обновляются не чаще раза в TTL. */
-export const snapshots = storedResource('market', TTL_MS, loadSnapshot)
+// «v2» в имени: в снимках появились свойства уников, старые файлы под новый формат не годятся.
+export const snapshots = storedResource('market-v2', TTL_MS, loadSnapshot)
 
 export const getSnapshot = (league: string) => snapshots.get(league)

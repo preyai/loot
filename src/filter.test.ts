@@ -125,10 +125,11 @@ describe('основная валюта', () => {
 describe('уники', () => {
   const robe: MarketItem = {
     ...item('Silk Robe', 71, 'uq-armour'),
+    // Генератору фильтра от уников нужны только имя и цена.
     uniques: [
       { name: 'Temporalis', divine: 71 },
       { name: 'Cloak of Flame', divine: 0.001 },
-    ],
+    ] as MarketItem['uniques'],
   }
 
   it('правило для базы ограничено редкостью Unique', () => {

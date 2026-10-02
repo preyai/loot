@@ -34,8 +34,14 @@ export function baseIconUrl(name: string): string | null {
   return icon ? `${ICON_HOST}/${icon}.webp` : null
 }
 
-/** Страница базы в справочнике poe2db. */
+/** Страница предмета (базы или уника) в справочнике poe2db. */
 export const baseWikiUrl = (name: string) => `https://poe2db.tw/ru/${encodeURIComponent(name.replaceAll(' ', '_'))}`
+
+/** Поиск уника на официальном трейде: лоты с мгновенным выкупом, от дешёвых. */
+export function uniqueTradeUrl(name: string, base: string, league: string): string {
+  const query = { query: { name, type: base, status: { option: 'securable' } }, sort: { price: 'asc' } }
+  return `https://www.pathofexile.com/trade2/search/poe2/${encodeURIComponent(league)}?q=${encodeURIComponent(JSON.stringify(query))}`
+}
 
 /** Только заданные поля: пустые группы фильтров трейд отвергает. */
 const filled = (fields: Record<string, unknown>) => Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined))

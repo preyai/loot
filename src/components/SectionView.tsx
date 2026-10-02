@@ -3,8 +3,17 @@ import { TIER_TITLES } from '../defaults'
 import type { Section } from '../sections'
 import type { UpdateConfig } from '../store'
 import { formatPrice, itemDisplay, itemKey, visibilityFor, type Display } from '../tiering'
-import { TIER_IDS, type Config, type MarketItem, type MarketSnapshot, type TierChoice, type Visibility } from '../types'
+import {
+  TIER_IDS,
+  type Config,
+  type MarketItem,
+  type MarketSnapshot,
+  type TierChoice,
+  type UniqueInfo,
+  type Visibility,
+} from '../types'
 import { ItemLabel } from './ItemLabel'
+import { UniqueCard } from './UniqueCard'
 import { VisibilityFields } from './VisibilityFields'
 
 const CHOICES: TierChoice[] = [...TIER_IDS, 'hide']
@@ -27,6 +36,7 @@ interface Props {
 
 export function SectionView({ section, snapshot, config, update }: Props) {
   const [query, setQuery] = useState('')
+  const [opened, setOpened] = useState<{ unique: UniqueInfo; base: string } | null>(null)
   const enabled = !config.disabledSections.includes(section.id)
   const ownVisibility = config.sectionVisibility[section.id]
 
@@ -149,7 +159,9 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                         <ul className="uniques">
                           {item.uniques.map((u) => (
                             <li key={u.name}>
-                              {u.name}{' '}
+                              <button title="Свойства, цена и ссылки" onClick={() => setOpened({ unique: u, base: item.name })}>
+                                {u.name}
+                              </button>{' '}
                               <span>{u.divine === null ? 'мало лотов' : formatPrice(u.divine, snapshot.rates, config.currency)}</span>
                             </li>
                           ))}
@@ -183,6 +195,19 @@ export function SectionView({ section, snapshot, config, update }: Props) {
           </section>
         )
       })}
+
+      {opened && (
+        <UniqueCard
+          // Новый ключ на каждый уник: диалог открывается заново, а не подменяет содержимое открытого.
+          key={`${opened.base}/${opened.unique.name}`}
+          unique={opened.unique}
+          base={opened.base}
+          league={config.league}
+          rates={snapshot.rates}
+          currency={config.currency}
+          onClose={() => setOpened(null)}
+        />
+      )}
     </div>
   )
 }

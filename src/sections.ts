@@ -3,6 +3,8 @@ import type { SectionId } from './types'
 export interface Section {
   id: SectionId
   title: string
+  /** Короткое имя для боковой панели, где раздел стоит под заголовком своей группы. */
+  short?: string
   /** Английское имя для комментариев в .filter (игра читает файл не как UTF-8). */
   label: string
   /** Типы в API poe.ninja. */
@@ -27,11 +29,28 @@ export const SECTIONS: Section[] = [
   { id: 'idols', title: 'Идолы', label: 'Idols', ninja: ['Idols'] },
   { id: 'lineage', title: 'Камни родословной', label: 'Lineage Supports', ninja: ['LineageSupportGems'], unstackable: true },
   { id: 'gems', title: 'Неогранённые камни', label: 'Uncut Gems', ninja: ['UncutGems'], unstackable: true },
-  { id: 'uq-weapons', title: 'Уники: оружие', label: 'Unique Weapons', ninja: ['UniqueWeapons'], unique: true, unstackable: true },
-  { id: 'uq-armour', title: 'Уники: броня', label: 'Unique Armours', ninja: ['UniqueArmours'], unique: true, unstackable: true },
+  {
+    id: 'uq-weapons',
+    title: 'Уники: оружие',
+    short: 'Оружие',
+    label: 'Unique Weapons',
+    ninja: ['UniqueWeapons'],
+    unique: true,
+    unstackable: true,
+  },
+  {
+    id: 'uq-armour',
+    title: 'Уники: броня',
+    short: 'Броня',
+    label: 'Unique Armours',
+    ninja: ['UniqueArmours'],
+    unique: true,
+    unstackable: true,
+  },
   {
     id: 'uq-accessories',
     title: 'Уники: бижутерия',
+    short: 'Бижутерия',
     label: 'Unique Accessories',
     ninja: ['UniqueAccessories'],
     unique: true,
@@ -40,6 +59,7 @@ export const SECTIONS: Section[] = [
   {
     id: 'uq-other',
     title: 'Уники: прочее',
+    short: 'Прочее',
     label: 'Unique Misc',
     ninja: ['UniqueFlasks', 'UniqueJewels', 'UniqueCharms', 'UniqueSanctumRelics', 'UniqueTablets'],
     unique: true,

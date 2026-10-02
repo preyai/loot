@@ -128,7 +128,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         const rows = groups.get(group)
         if (!rows) return null
         return (
-          <section key={group} className="tier-group">
+          <section key={group} className="tier-group" data-tier={group}>
             <h2>
               {GROUP_TITLES[group]}
               <span className="count">{rows.length}</span>

@@ -46,27 +46,41 @@ export function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <div className="brand">Лутфильтр PoE 2</div>
+        <div className="brand">
+          {/* Знак: гранёный камень в ромбовидной оправе. */}
+          <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+            <path d="M17 1.5 32.5 17 17 32.5 1.5 17Z" fill="#1a130b" stroke="#c9a45c" strokeWidth="1.2" />
+            <path d="M17 7 27 17 17 27 7 17Z" fill="#7a1e16" stroke="#f1d892" strokeWidth="0.8" />
+            <path d="M17 7 21 17 17 27 13 17Z" fill="#c2392b" opacity="0.85" />
+            <path d="M7 17h20" stroke="#f1d892" strokeWidth="0.6" opacity="0.7" />
+          </svg>
+          <div>
+            <div className="brand-title">Лутфильтр</div>
+            <div className="brand-sub">Path of Exile 2</div>
+          </div>
+        </div>
         <nav>
           {SECTIONS.map((s, i) => (
             <Fragment key={s.id}>
-              {s.unique && !SECTIONS[i - 1]?.unique && <hr />}
+              {i === 0 && <div className="nav-group">Рынок</div>}
+              {s.unique && !SECTIONS[i - 1]?.unique && <div className="nav-group">Уникальные</div>}
               <a
                 href={`#/${s.id}`}
                 className={[route === s.id && 'active', config.disabledSections.includes(s.id) && 'off']
                   .filter(Boolean)
                   .join(' ')}
               >
-                {s.title}
+                {s.short ?? s.title}
                 <span className="count">{counts.get(s.id) ?? '—'}</span>
               </a>
             </Fragment>
           ))}
+          <div className="nav-group">Экипировка</div>
           <a href="#/bases" className={route === 'bases' ? 'active' : ''}>
             Правила баз
             <span className="count">{config.baseRules.filter((r) => r.enabled).length}</span>
           </a>
-          <hr />
+          <div className="nav-group">Фильтр</div>
           <a href="#/styles" className={route === 'styles' ? 'active' : ''}>
             Тиры и стили
           </a>

@@ -272,6 +272,8 @@ export const ko: Dictionary = {
   'rules.minShare': '인기도',
   'rules.pickPopular': '인기 베이스 선택',
   'rules.allBases': '모든 베이스',
+  'rules.tabAll': '모든 종류',
+  'rules.tabsLabel': '아이템 종류',
   'rules.dropLevel': '레벨 {n}',
   'rules.worn': '착용 {share}',
   'rules.offerHint': '거래소의 일반 아이템, 판매자당 매물 하나',

@@ -272,6 +272,8 @@ export const fr: Dictionary = {
   'rules.minShare': 'Popularité dès',
   'rules.pickPopular': 'Choisir les populaires',
   'rules.allBases': 'Toutes les bases',
+  'rules.tabAll': 'Tous les types',
+  'rules.tabsLabel': 'Types d’objets',
   'rules.dropLevel': 'niv. {n}',
   'rules.worn': 'portée par {share}',
   'rules.offerHint': 'Objets normaux à l’échange, une annonce par vendeur',

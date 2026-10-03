@@ -272,6 +272,8 @@ export const ja: Dictionary = {
   'rules.minShare': '人気度',
   'rules.pickPopular': '人気のものを選ぶ',
   'rules.allBases': 'すべてのベース',
+  'rules.tabAll': 'すべての種類',
+  'rules.tabsLabel': 'アイテムの種類',
   'rules.dropLevel': 'Lv {n}',
   'rules.worn': '使用率 {share}',
   'rules.offerHint': 'トレードのノーマルアイテム、出品者ごとに 1 件',

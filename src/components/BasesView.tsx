@@ -46,6 +46,9 @@ const classTitle = (t: T, name: string) => translateOr(t, 'class', name, name)
 
 type Shares = Record<string, number>
 
+/** Вкладка выбора баз со всеми классами сразу. */
+const ALL_TAB = '*'
+
 /** Значение в списке «в стиле тира», означающее своё оформление правила. */
 const CUSTOM = 'custom'
 
@@ -103,6 +106,13 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
   )
   const needle = query.trim().toLowerCase()
   const matches = (base: BaseInfo) => base.name.toLowerCase().includes(needle) || name(base.name).toLowerCase().includes(needle)
+  const visible = (c: (typeof classes)[number]) => (needle ? c.bases.filter(matches) : c.bases)
+
+  // Классы — вкладками, чтобы не листать сотни карточек. Начинаем с первого класса; ALL_TAB — всё одним списком.
+  const [tab, setTab] = useState<string>(() => rule.classes[0] ?? ALL_TAB)
+  // Класс могли убрать из правила, пока была открыта его вкладка.
+  const active = tab === ALL_TAB || classes.some((c) => c.name === tab) ? tab : (classes[0]?.name ?? ALL_TAB)
+  const shown = active === ALL_TAB ? classes : classes.filter((c) => c.name === active)
 
   // Пустой список в правиле значит «любая база выбранных классов» — на экране это все карточки отмеченными.
   const all = useMemo(() => classes.flatMap((c) => c.bases.map((b) => b.name)), [classes])
@@ -151,12 +161,36 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
           {t('rules.allBases')}
         </button>
       </div>
-      {classes.map((c) => {
-        const bases = needle ? c.bases.filter(matches) : c.bases
+      {classes.length > 1 && (
+        <div className="base-tabs" role="tablist" aria-label={t('rules.tabsLabel')}>
+          {[{ name: ALL_TAB, bases: all.map((b) => ({ name: b })) }, ...classes].map((c) => {
+            const total = c.bases.length
+            const picked = c.bases.filter((b) => selected.has(b.name)).length
+            const found = needle ? (c.name === ALL_TAB ? classes.flatMap(visible).length : visible(c as (typeof classes)[number]).length) : null
+            return (
+              <button
+                key={c.name}
+                role="tab"
+                aria-selected={active === c.name}
+                className={active === c.name ? 'active' : found === 0 ? 'empty' : undefined}
+                onClick={() => setTab(c.name)}
+              >
+                {c.name === ALL_TAB ? t('rules.tabAll') : classTitle(t, c.name)}
+                {/* При поиске — сколько найдено, иначе — сколько выбрано из всех. */}
+                <span className="count">{found !== null ? found : `${picked}/${total}`}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {needle && shown.every((c) => visible(c).length === 0) && <p className="note">{t('items.notFound')}</p>}
+      {shown.map((c) => {
+        const bases = visible(c)
         if (bases.length === 0) return null
         return (
           <fieldset key={c.name}>
-            <legend>{classTitle(t, c.name)}</legend>
+            {/* На вкладке одного класса его название уже написано на вкладке. */}
+            {shown.length > 1 && <legend>{classTitle(t, c.name)}</legend>}
             {bases.map((b) => (
               <label key={b.name} className="base-card">
                 <input type="checkbox" checked={selected.has(b.name)} onChange={() => toggleBase(b.name)} />

@@ -272,6 +272,8 @@ export const th: Dictionary = {
   'rules.minShare': 'ความนิยมตั้งแต่',
   'rules.pickPopular': 'เลือกที่นิยม',
   'rules.allBases': 'ฐานทั้งหมด',
+  'rules.tabAll': 'ทุกประเภท',
+  'rules.tabsLabel': 'ประเภทไอเทม',
   'rules.dropLevel': 'เลเวล {n}',
   'rules.worn': 'ใช้โดย {share}',
   'rules.offerHint': 'ไอเทมธรรมดาในเทรด หนึ่งรายการต่อผู้ขาย',

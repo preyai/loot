@@ -2,7 +2,7 @@ import catalog from './data/bases.json'
 import { keyOf, type Lang, type T } from './i18n'
 import { RARITIES, type BaseRule, type TierId, type TierStyle } from './types'
 
-export type BaseGroup = 'weapon' | 'armour' | 'jewellery'
+export type BaseGroup = 'weapon' | 'armour' | 'jewellery' | 'flasks' | 'jewels'
 
 export interface BaseInfo {
   name: string
@@ -82,7 +82,7 @@ export function baseTradeUrl(name: string, league: string, rule: BaseRule): stri
 }
 
 /** Названия групп — в словаре: «baseGroup.<id>». */
-export const BASE_GROUPS: BaseGroup[] = ['weapon', 'armour', 'jewellery']
+export const BASE_GROUPS: BaseGroup[] = ['weapon', 'armour', 'jewellery', 'flasks', 'jewels']
 
 export const classNames = (...groups: BaseGroup[]) => BASE_CLASSES.filter((c) => groups.includes(c.group)).map((c) => c.name)
 
@@ -130,6 +130,7 @@ export const EMPTY_RULE: Omit<BaseRule, 'id' | 'name'> = {
   minSockets: 0,
   minUnidentifiedTier: 0,
   minAreaLevel: 0,
+  maxAreaLevel: 0,
   excludeCorrupted: false,
   tier: 'C',
 }
@@ -153,6 +154,7 @@ export function describeRule(rule: BaseRule, t: T): string {
     rule.minUnidentifiedTier > 0 && t('desc.unidentified', { n: rule.minUnidentifiedTier }),
     rule.excludeCorrupted && t('desc.notCorrupted'),
     rule.minAreaLevel > 0 && t('desc.area', { n: rule.minAreaLevel }),
+    rule.maxAreaLevel > 0 && t('desc.areaTo', { n: rule.maxAreaLevel }),
     rule.action === 'show' && rule.style && t('desc.customStyle'),
   ]
     .filter(Boolean)
@@ -180,7 +182,15 @@ export function popularRule(shares: Record<string, number>, t: T): Omit<BaseRule
   }
 }
 
-type TemplateKey = 'template.top' | 'template.quality' | 'template.sockets' | 'template.jewellery' | 'template.empty'
+type TemplateKey =
+  | 'template.top'
+  | 'template.quality'
+  | 'template.sockets'
+  | 'template.jewellery'
+  | 'template.flasks'
+  | 'template.charms'
+  | 'template.jewels'
+  | 'template.empty'
 
 /** Шаблоны отдельных правил; название правила создаётся на языке интерфейса в момент добавления. */
 export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule, 'id'> }[] = [
@@ -206,6 +216,36 @@ export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule
   {
     title: 'template.jewellery',
     make: (t) => ({ ...EMPTY_RULE, name: t('template.jewellery'), classes: classNames('jewellery'), rarities: ['Rare'] }),
+  },
+  // Флаконы, обереги и самоцветы — по правилам NeverSink для карт.
+  {
+    title: 'template.flasks',
+    make: (t) => ({
+      ...EMPTY_RULE,
+      name: t('template.flasks'),
+      classes: ['Life Flasks', 'Mana Flasks'],
+      bases: ['Ultimate Life Flask', 'Ultimate Mana Flask'],
+      rarities: ['Normal', 'Magic'],
+      minItemLevel: 83,
+      excludeCorrupted: true,
+      tier: 'C',
+    }),
+  },
+  {
+    title: 'template.charms',
+    make: (t) => ({
+      ...EMPTY_RULE,
+      name: t('template.charms'),
+      classes: ['Charms'],
+      rarities: ['Normal', 'Magic'],
+      minItemLevel: 83,
+      excludeCorrupted: true,
+      tier: 'C',
+    }),
+  },
+  {
+    title: 'template.jewels',
+    make: (t) => ({ ...EMPTY_RULE, name: t('template.jewels'), classes: ['Jewels'], rarities: ['Rare'], tier: 'B' }),
   },
   { title: 'template.empty', make: (t) => ({ ...EMPTY_RULE, name: t('template.emptyName') }) },
 ]

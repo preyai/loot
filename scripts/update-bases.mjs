@@ -5,6 +5,9 @@ import { writeFile } from 'node:fs/promises'
 const SOURCE = 'https://repoe-fork.github.io/poe2'
 const OUTPUT = new URL('../src/data/bases.json', import.meta.url)
 const JEWELLERY = new Set(['Amulet', 'Ring', 'Belt'])
+// Флаконы, обереги (в данных — UtilityFlask) и самоцветы: в игровых данных у них свои домены, а не «item».
+const FLASKS = new Set(['LifeFlask', 'ManaFlask', 'UtilityFlask'])
+const JEWELS = new Set(['Jewel'])
 const SKIPPED_CLASSES = new Set([
   'HiddenItem',
   'FishingRod',
@@ -36,7 +39,7 @@ const tradeable = new Set((await tradeRes.json()).result.flatMap((group) => grou
 
 const classes = new Map()
 for (const [id, item] of Object.entries(items)) {
-  if (item.domain !== 'item' || item.release_state !== 'released' || SKIPPED_CLASSES.has(item.item_class)) continue
+  if ((item.domain !== 'item' && !FLASKS.has(item.item_class) && !JEWELS.has(item.item_class)) || item.release_state !== 'released' || SKIPPED_CLASSES.has(item.item_class)) continue
   // Базы, которые существуют только под уникальные предметы.
   if (id.includes('Unique')) continue
   if (!tradeable.has(item.name)) continue
@@ -45,7 +48,15 @@ for (const [id, item] of Object.entries(items)) {
   const className = itemClasses[item.item_class]?.name
   if (!className) continue
   const props = item.properties ?? {}
-  const group = JEWELLERY.has(item.item_class) ? 'jewellery' : item.tags.includes('armour') ? 'armour' : 'weapon'
+  const group = FLASKS.has(item.item_class)
+    ? 'flasks'
+    : JEWELS.has(item.item_class)
+      ? 'jewels'
+      : JEWELLERY.has(item.item_class)
+      ? 'jewellery'
+      : item.tags.includes('armour')
+        ? 'armour'
+        : 'weapon'
   // a — броня, e — уклонение, s — энергощит
   const defence = (props.armour ? 'a' : '') + (props.evasion ? 'e' : '') + (props.energy_shield ? 's' : '')
   // Путь к иконке без общего начала и расширения: так справочник заметно меньше.
@@ -60,7 +71,7 @@ for (const [id, item] of Object.entries(items)) {
   }
 }
 
-const GROUP_ORDER = ['weapon', 'armour', 'jewellery']
+const GROUP_ORDER = ['weapon', 'armour', 'jewellery', 'flasks', 'jewels']
 const result = [...classes.values()]
   .map((c) => ({ ...c, bases: [...c.bases.values()].sort((a, b) => b.drop - a.drop || a.name.localeCompare(b.name)) }))
   .sort((a, b) => GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group) || a.name.localeCompare(b.name))

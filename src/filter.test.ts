@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { chanceOf, chancingBases, chancingRule, dropSource, topUnique, uniquesByBase } from './chancing'
 import { DEFAULT_CONFIG } from './defaults'
-import { baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, moveItem, topBases, wikiUrl } from './bases'
+import { BASE_CLASSES, baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, GEAR_CLASSES, moveItem, RULE_TEMPLATES, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
 import { baseRuleBlock, extraBlocks, generateFilter, goldBlocks, matchConditions, styleLines, waystoneBlocks } from './filter'
@@ -190,6 +190,7 @@ describe('правила баз', () => {
     minSockets: 0,
     minUnidentifiedTier: 0,
     minAreaLevel: 0,
+    maxAreaLevel: 0,
     excludeCorrupted: false,
     tier: 'C',
   }
@@ -353,9 +354,9 @@ describe('шансинг', () => {
   it('в наборе правило под шансинг идёт сразу после правил с трейда, а без баз его нет', () => {
     const trade: BaseRule = { ...EMPTY_RULE, id: 'trade', name: 'с трейда', source: 'trade' }
     const rule = chancingRule(['Utility Belt'], '500 ex', t)
-    const withChancing = applyPreset({ ...DEFAULT_CONFIG, baseRules: [trade] }, RULE_PRESETS[1], null, t, rule).baseRules
+    const withChancing = applyPreset({ ...DEFAULT_CONFIG, baseRules: [trade] }, RULE_PRESETS.find((p) => p.id === 'balanced')!, null, t, rule).baseRules
     expect(withChancing.slice(0, 2).map((r) => r.name)).toEqual(['с трейда', 'Под шансинг: базы уников от 500 ex'])
-    const without = applyPreset(DEFAULT_CONFIG, RULE_PRESETS[1], null, t, null).baseRules
+    const without = applyPreset(DEFAULT_CONFIG, RULE_PRESETS.find((p) => p.id === 'balanced')!, null, t, null).baseRules
     expect(without.some((r) => r.name.startsWith('Под шансинг'))).toBe(false)
   })
 })
@@ -484,7 +485,7 @@ describe('исключительные вещи с трейда', () => {
       'Исключительные от 100 ex: качество 21%+',
       'ручное',
     ])
-    const afterPreset = applyPreset({ ...DEFAULT_CONFIG, baseRules: rules }, RULE_PRESETS[0], null, t).baseRules
+    const afterPreset = applyPreset({ ...DEFAULT_CONFIG, baseRules: rules }, RULE_PRESETS.find((p) => p.id === 'soft')!, null, t).baseRules
     expect(afterPreset.slice(0, 2).every((r) => r.source === 'trade')).toBe(true)
     expect(afterPreset.some((r) => r.id === 'manual')).toBe(false)
   })
@@ -619,28 +620,27 @@ describe('золото', () => {
 })
 
 describe('прочие предметы', () => {
-  it('по умолчанию: тиры и скрытие из NeverSink, ловушка неизвестного — последней', () => {
+  it('по умолчанию: тиры из NeverSink, ловушка неизвестного — последней', () => {
     const all = extraBlocks(DEFAULT_CONFIG).join('\n\n')
-    expect(all).toContain('Show # Other / jewels / timeLost\n    Class == "Jewels"\n    Rarity <= Rare\n')
-    expect(all).toContain(
-      'Hide # Other / flasks / outdated\n    Class == "Life Flasks" "Mana Flasks"\n    Quality 0\n    BaseType "Lesser" "Medium"\n    AreaLevel >= 15',
-    )
-    expect(all).toContain('BaseType "Grand"\n    AreaLevel <= 22')
+    expect(all).toContain('Show # Other / quest / items\n    Class == "Quest Items" "Instance Local Items"\n')
+    expect(all).toContain('Show # Other / trials / barya80\n    ItemLevel >= 80\n    BaseType == "Djinn Barya"\n')
+    expect(all).toContain('Show # Other / gems / twiceTop\n    Class == "Skill Gems" "Support Gems"\n    TwiceCorrupted True\n')
+    expect(all).not.toContain('Hide')
     expect(all.trimEnd().split('\n\n').at(-1)).toMatch(/^Show # Other \/ unknown \/ currency\n    Class == "Stackable Currency"/)
   })
 
   it('выбор пользователя: другой тир, скрытие, без правила, выключенная группа', () => {
     const config: Config = {
       ...DEFAULT_CONFIG,
-      extras: { 'relics.any': 'S', 'gems.any': 'hide', 'trials.baryaLow': 'off' },
-      disabledExtras: ['exotic'],
+      extras: { 'relics.any': 'S', 'trials.barya60': 'hide', 'trials.baryaLow': 'off' },
+      disabledExtras: ['quest'],
     }
     const all = extraBlocks(config).join('\n\n')
     expect(all).toContain('Show # Other / relics / any\n    Rarity Normal Magic\n    BaseType == "Amphora Relic"')
     expect(all).toMatch(/relics \/ any[^#]*SetFontSize 45/)
-    expect(all).toContain('Hide # Other / gems / any\n    Class == "Skill Gems" "Support Gems"')
+    expect(all).toContain('Hide # Other / trials / barya60\n    ItemLevel >= 60\n    ItemLevel <= 79\n    BaseType == "Djinn Barya"')
     expect(all).not.toContain('baryaLow')
-    expect(all).not.toContain('Other / exotic')
+    expect(all).not.toContain('Other / quest')
   })
 
   it('у каждого правила есть подпись на всех языках', () => {
@@ -652,5 +652,43 @@ describe('прочие предметы', () => {
         }
       }
     }
+  })
+})
+
+describe('флаконы, обереги и самоцветы — в правилах баз', () => {
+  it('классы есть в справочнике баз, в отдельной группе, и не попадают в скрытие экипировки', () => {
+    const group = (id: string) => BASE_CLASSES.filter((c) => c.group === id).map((c) => c.name).sort()
+    expect(group('flasks')).toEqual(['Charms', 'Life Flasks', 'Mana Flasks'])
+    expect(group('jewels')).toEqual(['Jewels'])
+    expect(GEAR_CLASSES).not.toContain('Charms')
+  })
+
+  it('шаблон флаконов — высшие флаконы 83+, без осквернённых', () => {
+    const template = RULE_TEMPLATES.find((r) => r.title === 'template.flasks')!
+    const text = baseRuleBlock({ ...template.make(t), id: '1' }, 0, DEFAULT_CONFIG.tiers)!
+    expect(text).toContain('BaseType == "Ultimate Life Flask" "Ultimate Mana Flask"\n    Rarity Normal Magic\n    ItemLevel >= 83\n    Corrupted False')
+  })
+})
+
+describe('набор «Прокачка»', () => {
+  const leveling = RULE_PRESETS.find((p) => p.id === 'leveling')!
+  const rules = leveling.make(null, t).map((rule, i) => ({ ...rule, id: String(i) }))
+
+  it('все правила — только для кампании, ничего не скрывают', () => {
+    expect(rules.length).toBeGreaterThan(5)
+    for (const rule of rules) {
+      expect(rule.action).toBe('show')
+      expect(rule.maxAreaLevel, rule.name).toBeGreaterThan(0)
+      expect(rule.maxAreaLevel, rule.name).toBeLessThanOrEqual(64)
+    }
+    expect(leveling.hideLowRarity).toBe(false)
+  })
+
+  it('в фильтре — условие верхней границы уровня области', () => {
+    const boots = rules.find((r) => r.name === 'Прокачка: магические сапоги')!
+    expect(baseRuleBlock(boots, 0, DEFAULT_CONFIG.tiers)).toContain('Class == "Boots"\n    Rarity Magic\n    AreaLevel <= 32')
+    expect(describeRule(boots, t)).toContain('до уровня области 32')
+    const flasks = rules.find((r) => r.name === 'Прокачка: флаконы и обереги')!
+    expect(flasks.classes.sort()).toEqual(['Charms', 'Life Flasks', 'Mana Flasks'])
   })
 })

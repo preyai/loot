@@ -55,7 +55,7 @@ describe('словари', () => {
     expect(formatPrice(null, { exalted: 100, chaos: 10 }, 'exalted', en)).toBe('no price')
     const rule = { ...EMPTY_RULE, id: '1', name: '', classes: ['Bows'], rarities: ['Rare' as const], minSockets: 2, excludeCorrupted: true }
     expect(describeRule(rule, en)).toBe('rare · Bows · sockets 2+ · not corrupted')
-    expect(RULE_PRESETS[0].make(null, en)[0].name).toBe('Exceptional: 3+ sockets (body armours, two-handed weapons)')
+    expect(RULE_PRESETS.find((p) => p.id === 'soft')!.make(null, en)[0].name).toBe('Exceptional: 3+ sockets (body armours, two-handed weapons)')
   })
 })
 

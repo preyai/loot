@@ -283,7 +283,7 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
   }, [rule.bases, rule.classes, context.shares])
 
   const minField = (
-    key: 'minItemLevel' | 'minQuality' | 'minSockets' | 'minUnidentifiedTier' | 'minAreaLevel',
+    key: 'minItemLevel' | 'minQuality' | 'minSockets' | 'minUnidentifiedTier' | 'minAreaLevel' | 'maxAreaLevel',
     label: string,
     max: number,
     hint?: string,
@@ -447,6 +447,7 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
           <div className="rule-row">
             {minField('minUnidentifiedTier', t('rules.minUnidentified'), 5, t('rules.minUnidentifiedHint'))}
             {minField('minAreaLevel', t('rules.minArea'), 100, t('rules.minAreaHint'))}
+            {minField('maxAreaLevel', t('rules.maxArea'), 100, t('rules.maxAreaHint'))}
             <label className="check" title={t('rules.excludeCorruptedHint')}>
               <input type="checkbox" checked={rule.excludeCorrupted} onChange={(e) => set('excludeCorrupted', e.target.checked)} />
               {t('rules.excludeCorrupted')}
@@ -623,6 +624,19 @@ export function BasesView({ config, update, snapshot }: Props) {
             t('rules.popularityNote', { n: popularity.data.characters.toLocaleString(locale), share: POPULAR_SHARE * 100 })}
         </p>
       </section>
+
+      {config.baseRules.length > 0 && (
+        <div className="actions rules-actions">
+          <button
+            className="danger"
+            onClick={() =>
+              confirm(t('rules.deleteAllConfirm', { n: config.baseRules.length })) && setRules(() => [])
+            }
+          >
+            {t('rules.deleteAll', { n: config.baseRules.length })}
+          </button>
+        </div>
+      )}
 
       {config.baseRules.map((rule, index) => (
         <RuleCard

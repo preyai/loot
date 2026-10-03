@@ -42,7 +42,29 @@ function blocks(shares: Record<string, number> | null, t: T) {
   }
 }
 
-export type PresetId = 'soft' | 'balanced' | 'strict'
+/** Последний уровень области кампании: с 65-го начинаются карты. */
+const CAMPAIGN_END = 64
+const FLASKS_AND_CHARMS = known(['Life Flasks', 'Mana Flasks', 'Charms'])
+
+/** Правила для кампании — по разделу «Leveling» фильтра NeverSink. В картах они не действуют. */
+function levelingRules(t: T): Draft[] {
+  const rule = (name: string, fields: Partial<Draft>): Draft => ({ ...EMPTY_RULE, name, maxAreaLevel: CAMPAIGN_END, ...fields })
+  const everything = [...GEAR_CLASSES, ...JEWELLERY]
+  return [
+    rule(t('rule.levelingRareJewellery'), { classes: JEWELLERY, rarities: ['Rare'], tier: 'B' }),
+    rule(t('rule.levelingRareTier', { n: 4 }), { classes: GEAR_CLASSES, rarities: ['Rare'], minUnidentifiedTier: 4, tier: 'B' }),
+    rule(t('rule.levelingRareTier', { n: 3 }), { classes: GEAR_CLASSES, rarities: ['Rare'], minUnidentifiedTier: 3, tier: 'C' }),
+    rule(t('rule.levelingRare'), { classes: GEAR_CLASSES, rarities: ['Rare'], tier: 'D' }),
+    // Скорость передвижения на ранних сапогах — главное, что ищут в начале кампании.
+    rule(t('rule.levelingBoots'), { classes: known(['Boots']), rarities: ['Magic'], maxAreaLevel: 32, tier: 'C' }),
+    rule(t('rule.levelingJewellery'), { classes: JEWELLERY, rarities: ['Normal', 'Magic'], tier: 'D' }),
+    rule(t('rule.levelingFlasks'), { classes: FLASKS_AND_CHARMS, rarities: ['Normal', 'Magic'], tier: 'D' }),
+    rule(t('rule.levelingQuality'), { classes: everything, rarities: ['Normal', 'Magic'], minQuality: 1, tier: 'E' }),
+    rule(t('rule.levelingSockets'), { classes: everything, rarities: ['Normal', 'Magic'], minSockets: 1, tier: 'E' }),
+  ]
+}
+
+export type PresetId = 'leveling' | 'soft' | 'balanced' | 'strict'
 
 /** Заголовок, описание и список «что входит» набора — в словаре: «preset.<id>.title / summary / details». */
 export interface RulePreset {
@@ -54,6 +76,11 @@ export interface RulePreset {
 }
 
 export const RULE_PRESETS: RulePreset[] = [
+  {
+    id: 'leveling',
+    hideLowRarity: false,
+    make: (_shares, t) => levelingRules(t),
+  },
   {
     id: 'soft',
     hideLowRarity: false,

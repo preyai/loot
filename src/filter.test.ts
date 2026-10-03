@@ -4,7 +4,8 @@ import { DEFAULT_CONFIG } from './defaults'
 import { baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, moveItem, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
-import { baseRuleBlock, generateFilter, matchConditions, styleLines, waystoneBlocks } from './filter'
+import { baseRuleBlock, generateFilter, goldBlocks, matchConditions, styleLines, waystoneBlocks } from './filter'
+import { DEFAULT_GOLD } from './gold'
 import { DEFAULT_WAYSTONES } from './waystones'
 import { translator } from './i18n'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
@@ -582,5 +583,32 @@ describe('путевые камни', () => {
   it('выключенные правила в фильтр не попадают', () => {
     expect(waystoneBlocks({ ...DEFAULT_WAYSTONES, enabled: false })).toEqual([])
     expect(generateFilter(snapshot([]), DEFAULT_CONFIG)).toContain('Class == "Waystones"')
+  })
+})
+
+describe('золото', () => {
+  const text = (change: Partial<typeof DEFAULT_GOLD> = {}) => goldBlocks({ ...DEFAULT_GOLD, ...change }).join('\n\n')
+
+  it('кучи от крупных к мелким, затем пороги прокачки, в конце — мелкое золото', () => {
+    const all = text()
+    expect(all.startsWith('Show # Gold / huge pile\n    StackSize >= 5000\n    BaseType == "Gold"\n    SetFontSize 40')).toBe(true)
+    expect(all.indexOf('StackSize >= 2000')).toBeLessThan(all.indexOf('StackSize >= 650'))
+    expect(all).toContain('StackSize >= 500\n    BaseType == "Gold"\n    AreaLevel <= 24\n')
+    expect(all).toContain('StackSize >= 100\n    BaseType == "Gold"\n    AreaLevel <= 16\n')
+    expect(all.endsWith('Show # Gold / small piles\n    BaseType == "Gold"\n    SetFontSize 32\n    SetTextColor 180 180 180 255\n    SetBorderColor 0 0 0 255\n    SetBackgroundColor 20 20 0 180')).toBe(true)
+  })
+
+  it('без прокачки и со скрытием мелкого; порог прокачки выше обычного не пишется', () => {
+    const all = text({ leveling: false, hideSmall: true })
+    expect(all).not.toContain('AreaLevel')
+    expect(all.endsWith('Hide # Gold / small piles\n    BaseType == "Gold"')).toBe(true)
+    expect(text({ sizes: { huge: 5000, large: 800, medium: 200 } })).not.toContain('StackSize >= 1000')
+    expect(text({ sizes: { huge: 5000, large: 800, medium: 200 } })).not.toContain('StackSize >= 250\n')
+  })
+
+  it('золото идёт в фильтре первым, а выключенное не пишется', () => {
+    const filter = generateFilter(snapshot([item('Divine Orb', 1)]), DEFAULT_CONFIG)
+    expect(filter.indexOf('BaseType == "Gold"')).toBeLessThan(filter.indexOf('Divine Orb'))
+    expect(goldBlocks({ ...DEFAULT_GOLD, enabled: false })).toEqual([])
   })
 })

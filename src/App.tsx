@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { BasesView } from './components/BasesView'
+import { GoldView } from './components/GoldView'
 import { downloadFilter, ExportView } from './components/ExportView'
 import { SectionView } from './components/SectionView'
 import { StylesView } from './components/StylesView'
@@ -13,7 +14,7 @@ import { useConfig, useMarket, type UpdateConfig } from './store'
 import { convertCurrency, perDivine } from './tiering'
 import type { Config, Currency } from './types'
 
-const PAGES = ['waystones', 'bases', 'styles', 'export'] as const
+const PAGES = ['waystones', 'gold', 'bases', 'styles', 'export'] as const
 type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number]
 
 function readRoute(): Route {
@@ -88,9 +89,12 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
               </a>
             </Fragment>
           ))}
-          <div className="nav-group">{t('nav.maps')}</div>
+          <div className="nav-group">{t('nav.other')}</div>
           <a href="#/waystones" className={[route === 'waystones' && 'active', !config.waystones.enabled && 'off'].filter(Boolean).join(' ')}>
             {t('nav.waystones')}
+          </a>
+          <a href="#/gold" className={[route === 'gold' && 'active', !config.gold.enabled && 'off'].filter(Boolean).join(' ')}>
+            {t('nav.gold')}
           </a>
           <div className="nav-group">{t('nav.gear')}</div>
           <a href="#/bases" className={route === 'bases' ? 'active' : ''}>
@@ -167,6 +171,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
           )}
           {!snapshot && market.loading && <p className="note">{t('top.loading')}</p>}
           {route === 'waystones' && <WaystonesView config={config} update={update} />}
+          {route === 'gold' && <GoldView config={config} update={update} />}
           {route === 'bases' && <BasesView config={config} update={update} snapshot={snapshot} />}
           {route === 'styles' && <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />}
           {snapshot && route === 'export' && <ExportView snapshot={snapshot} config={config} />}

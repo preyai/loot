@@ -1,4 +1,5 @@
 import type { Config, Currency, Rgba } from './types'
+import { DEFAULT_GOLD } from './gold'
 import { DEFAULT_WAYSTONES } from './waystones'
 
 /** title — имя предмета-валюты в игре (английское); на экране переводится как любое имя предмета. */
@@ -92,4 +93,5 @@ export const DEFAULT_CONFIG: Config = {
   sectionVisibility: {},
   gear: { hideLowRarity: false, areaLevel: 65 },
   waystones: DEFAULT_WAYSTONES,
+  gold: DEFAULT_GOLD,
 }

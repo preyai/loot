@@ -944,12 +944,12 @@ main {
   gap: 8px 24px;
 }
 
-/* Путевые камни: строка — название группы, образец плашки и кнопка оформления. */
-.waystone-row + .waystone-row {
+/* Строка с образцом плашки (путевые камни, золото): название, образец и кнопка оформления. */
+.style-row + .style-row {
   margin-top: 8px;
 }
 
-.waystone-row-head {
+.style-row-head {
   display: grid;
   grid-template-columns: auto minmax(140px, 1fr) auto minmax(220px, 1.4fr) auto;
   align-items: center;
@@ -957,19 +957,19 @@ main {
   margin-bottom: 8px;
 }
 
-.waystone-row-title {
+.style-row-title {
   grid-column: 2;
 }
 
-.waystone-row-head > .count {
+.style-row-head > .count {
   grid-column: 3;
 }
 
-.waystone-row-head > .ground {
+.style-row-head > .ground {
   grid-column: 4;
 }
 
-.waystone-row-head > button {
+.style-row-head > button {
   grid-column: 5;
 }
 

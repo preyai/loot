@@ -1,12 +1,14 @@
 import { GEAR_CLASSES, ruleStyle } from './bases'
 import { SECTIONS } from './sections'
 import { itemDisplay } from './tiering'
+import { GOLD_PILES, LEVELING_GOLD } from './gold'
 import { MAX_WAYSTONE_TIER, UPGRADE_AREA_LEVEL, UPGRADE_BORDER, WAYSTONE_BANDS } from './waystones'
 import {
   RARITIES,
   TIER_IDS,
   type BaseRule,
   type Config,
+  type GoldConfig,
   type MarketItem,
   type MarketSnapshot,
   type Rgba,
@@ -91,6 +93,34 @@ export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tier
   return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(ruleStyle(rule, tiers))] : lines)
 }
 
+/**
+ * Золото по образцу NeverSink: кучи от крупных к мелким, на прокачке — пороги поменьше,
+ * в конце — всё остальное золото, приглушённо или скрыто.
+ */
+export function goldBlocks(gold: GoldConfig): string[] {
+  if (!gold.enabled) return []
+  const base = 'BaseType == "Gold"'
+  const out = GOLD_PILES.map((pile) =>
+    block('Show', `Gold / ${pile} pile`, [`StackSize >= ${gold.sizes[pile]}`, base, ...styleLines(gold.styles[pile])]),
+  )
+  if (gold.leveling) {
+    for (const { pile, size, maxAreaLevel } of LEVELING_GOLD) {
+      // Порог прокачки не выше обычного — иначе блок ничего не добавит.
+      if (size >= gold.sizes[pile]) continue
+      out.push(
+        block('Show', `Gold / ${pile} pile while levelling`, [
+          `StackSize >= ${size}`,
+          base,
+          `AreaLevel <= ${maxAreaLevel}`,
+          ...styleLines(gold.styles[pile]),
+        ]),
+      )
+    }
+  }
+  out.push(gold.hideSmall ? block('Hide', 'Gold / small piles', [base]) : block('Show', 'Gold / small piles', [base, ...styleLines(gold.styles.small)]))
+  return out
+}
+
 const tierRange = (from: number, to: number) =>
   // Верхняя группа — без верхней границы, как у NeverSink: на случай, если в игре появятся тиры выше 16.
   to === MAX_WAYSTONE_TIER ? [`WaystoneTier >= ${from}`] : from === to ? [`WaystoneTier ${from}`] : [`WaystoneTier >= ${from}`, `WaystoneTier <= ${to}`]
@@ -153,6 +183,8 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
     '# Loot Filter Editor',
     `# League: ${snapshot.league} | prices: poe.ninja, ${snapshot.fetchedAt}`,
     '#' + '='.repeat(70),
+    // Золото — первым, как у NeverSink: у него свой базовый тип, и ничто ниже его не задевает.
+    ...goldBlocks(config.gold),
   ]
 
   for (const section of SECTIONS) {

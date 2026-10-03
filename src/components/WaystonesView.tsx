@@ -1,10 +1,8 @@
-import { useState } from 'react'
 import { useI18n } from '../i18n-react'
 import type { UpdateConfig } from '../store'
-import type { Config, TierStyle, WaystoneConfig } from '../types'
+import type { Config, WaystoneConfig } from '../types'
 import { DEFAULT_WAYSTONES, MAX_WAYSTONE_TIER, SPECIAL_WAYSTONE_STYLE, WAYSTONE_BANDS, waystoneName } from '../waystones'
-import { ItemLabel } from './ItemLabel'
-import { StyleFields } from './StyleFields'
+import { StyleRow } from './StyleRow'
 
 interface Props {
   config: Config
@@ -12,49 +10,6 @@ interface Props {
 }
 
 const TIERS = Array.from({ length: MAX_WAYSTONE_TIER }, (_, i) => i + 1)
-
-/** Строка с образцом плашки и раскрывающимися полями оформления. */
-function StyleRow({
-  id,
-  title,
-  sample,
-  style,
-  note,
-  onChange,
-  children,
-}: {
-  id: string
-  title: string
-  sample: string
-  /** null — камни этой строки скрыты или не выделяются. */
-  style: TierStyle | null
-  note?: string
-  onChange: (style: TierStyle) => void
-  children?: React.ReactNode
-}) {
-  const { t } = useI18n()
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="waystone-row">
-      <div className="waystone-row-head">
-        {children}
-        <span className="waystone-row-title">{title}</span>
-        {note && <span className="count">{note}</span>}
-        <div className="ground">
-          <ItemLabel name={sample} style={style} />
-        </div>
-        <button disabled={!style} aria-expanded={open && !!style} onClick={() => setOpen(!open)}>
-          {t('waystones.style')}
-        </button>
-      </div>
-      {open && style && (
-        <div className="rule-style">
-          <StyleFields id={`waystone-${id}`} style={style} onChange={onChange} />
-        </div>
-      )}
-    </div>
-  )
-}
 
 export function WaystonesView({ config, update }: Props) {
   const { t, name } = useI18n()
@@ -100,7 +55,7 @@ export function WaystonesView({ config, update }: Props) {
           {(['corrupted', 'enchanted'] as const).map((kind) => (
             <StyleRow
               key={kind}
-              id={kind}
+              id={`waystone-${kind}`}
               title={t(`waystones.${kind}`)}
               sample={name(waystoneName(MAX_WAYSTONE_TIER))}
               style={w[kind]}
@@ -124,7 +79,7 @@ export function WaystonesView({ config, update }: Props) {
             return (
               <StyleRow
                 key={band.id}
-                id={band.id}
+                id={`waystone-${band.id}`}
                 title={band.from === band.to ? t('waystones.tier', { n: band.from }) : t('waystones.range', { from: band.from, to: band.to })}
                 note={hidden ? t('waystones.hidden') : partly ? t('waystones.partly', { n: w.minTier }) : undefined}
                 sample={name(waystoneName(band.to))}

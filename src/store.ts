@@ -27,6 +27,12 @@ function loadConfig(): Config {
         ...stored.waystones,
         styles: { ...DEFAULT_CONFIG.waystones.styles, ...stored.waystones?.styles },
       },
+      gold: {
+        ...DEFAULT_CONFIG.gold,
+        ...stored.gold,
+        sizes: { ...DEFAULT_CONFIG.gold.sizes, ...stored.gold?.sizes },
+        styles: { ...DEFAULT_CONFIG.gold.styles, ...stored.gold?.styles },
+      },
       baseRules: (stored.baseRules ?? []).map((rule) => ({ ...EMPTY_RULE, ...rule })),
     }
   } catch {

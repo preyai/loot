@@ -12,7 +12,8 @@ const ru = {
 
   'nav.market': 'Рынок',
   'nav.uniques': 'Уникальные',
-  'nav.maps': 'Карты',
+  'nav.other': 'Прочее',
+  'nav.gold': 'Золото',
   'nav.waystones': 'Путевые камни',
   'nav.gear': 'Экипировка',
   'nav.filter': 'Фильтр',
@@ -72,6 +73,23 @@ const ru = {
     'Уники выпадают неопознанными, и фильтр видит только базовый тип, поэтому тир назначается базе — по самому дорогому унику на ней. Если у какого-то уника слишком мало лотов, цене нельзя верить: такая база показывается всегда, в тире C.',
   'items.basesNote':
     'Цены на poe.ninja даны отдельно для каждой редкости; тир назначается базе — по самому дорогому варианту. Уникальные плитки — в разделе «Уники: прочее».',
+  'gold.enable': 'Включить правила золота',
+  'gold.note':
+    'Правила и оформление — как в фильтре NeverSink: чем крупнее куча, тем заметнее. Блоки золота идут в фильтре первыми.',
+  'gold.disabled': 'Правила выключены: игра покажет золото как обычно.',
+  'gold.piles': 'Кучи золота',
+  'gold.from': 'от',
+  'gold.huge': 'Огромная куча',
+  'gold.large': 'Крупная куча',
+  'gold.medium': 'Средняя куча',
+  'gold.small': 'Меньше {n}',
+  'gold.hideSmall': 'скрывать',
+  'gold.hidden': 'скрыты',
+  'gold.sample': '{n} золота',
+  'gold.leveling': 'На прокачке выделять кучи поменьше',
+  'gold.levelingNote':
+    'Пороги NeverSink: крупная куча — от 500 до уровня области 24 и от 1000 до 64; средняя — от 100 до 16, от 250 до 34 и от 400 до 64.',
+  'gold.resetConfirm': 'Вернуть все настройки золота по умолчанию?',
   'waystones.enable': 'Включить правила путевых камней',
   'waystones.note':
     'Правила и оформление — как в фильтре NeverSink: группы тиров со своим видом, отдельное выделение особых камней и метка камня, который выше текущей области.',
@@ -360,7 +378,8 @@ const en: Record<Key, string> = {
 
   'nav.market': 'Market',
   'nav.uniques': 'Uniques',
-  'nav.maps': 'Maps',
+  'nav.other': 'Other',
+  'nav.gold': 'Gold',
   'nav.waystones': 'Waystones',
   'nav.gear': 'Gear',
   'nav.filter': 'Filter',
@@ -420,6 +439,22 @@ const en: Record<Key, string> = {
     'Uniques drop unidentified and the filter only sees the base type, so the tier is assigned to the base — by its most expensive unique. If a unique has too few listings its price cannot be trusted: such a base is always shown, in tier C.',
   'items.basesNote':
     'poe.ninja prices each rarity separately; the tier is assigned to the base by its most expensive variant. Unique tablets are in “Uniques: other”.',
+  'gold.enable': 'Enable gold rules',
+  'gold.note': 'Rules and styles follow NeverSink’s filter: the bigger the pile, the more visible. Gold blocks come first in the filter.',
+  'gold.disabled': 'Rules are off: the game shows gold as usual.',
+  'gold.piles': 'Gold piles',
+  'gold.from': 'from',
+  'gold.huge': 'Huge pile',
+  'gold.large': 'Large pile',
+  'gold.medium': 'Medium pile',
+  'gold.small': 'Below {n}',
+  'gold.hideSmall': 'hide',
+  'gold.hidden': 'hidden',
+  'gold.sample': '{n} Gold',
+  'gold.leveling': 'Highlight smaller piles while levelling',
+  'gold.levelingNote':
+    'NeverSink’s thresholds: large pile from 500 up to area level 24 and from 1000 up to 64; medium from 100 up to 16, from 250 up to 34 and from 400 up to 64.',
+  'gold.resetConfirm': 'Restore all gold settings to defaults?',
   'waystones.enable': 'Enable waystone rules',
   'waystones.note':
     'Rules and styles follow NeverSink’s filter: tier groups with their own look, special waystones highlighted separately and a marker for waystones above the current area.',

@@ -200,6 +200,21 @@ export interface WaystoneConfig {
   upgradeBorder: boolean
 }
 
+/** Кучи золота: huge, large, medium — от своего размера; small — всё, что меньше средней. */
+export type GoldPileId = 'huge' | 'large' | 'medium'
+
+export interface GoldConfig {
+  /** Выключено — игра показывает золото как обычно. */
+  enabled: boolean
+  /** С какого размера кучи она считается крупной и т. д. */
+  sizes: Record<GoldPileId, number>
+  styles: Record<GoldPileId | 'small', TierStyle>
+  /** На прокачке выделять кучи поменьше (пороги NeverSink по уровню области). */
+  leveling: boolean
+  /** Скрывать кучи меньше средней. */
+  hideSmall: boolean
+}
+
 export interface Config {
   /** Язык интерфейса и названий предметов. В файле фильтра имена всегда английские. */
   language: Lang
@@ -218,4 +233,5 @@ export interface Config {
   sectionVisibility: Partial<Record<SectionId, Visibility>>
   gear: { hideLowRarity: boolean; areaLevel: number }
   waystones: WaystoneConfig
+  gold: GoldConfig
 }

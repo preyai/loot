@@ -94,4 +94,6 @@ export const DEFAULT_CONFIG: Config = {
   gear: { hideLowRarity: false, areaLevel: 65 },
   waystones: DEFAULT_WAYSTONES,
   gold: DEFAULT_GOLD,
+  extras: {},
+  disabledExtras: [],
 }

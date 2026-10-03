@@ -957,6 +957,23 @@ main {
   margin-bottom: 8px;
 }
 
+/* Прочие предметы: подпись, образец, выбор тира — без переключателя слева. */
+.style-row-head.extra-row {
+  grid-template-columns: minmax(200px, 1.2fr) minmax(220px, 1.4fr) 250px;
+}
+
+.style-row-head.extra-row > .style-row-title {
+  grid-column: 1;
+}
+
+.style-row-head.extra-row > .ground {
+  grid-column: 2;
+}
+
+.style-row-head.extra-row > select {
+  grid-column: 3;
+}
+
 .style-row-title {
   grid-column: 2;
 }

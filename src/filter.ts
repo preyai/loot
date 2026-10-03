@@ -1,6 +1,7 @@
 import { GEAR_CLASSES, ruleStyle } from './bases'
 import { SECTIONS } from './sections'
 import { itemDisplay } from './tiering'
+import { EXTRA_GROUPS, extraKey } from './extras'
 import { GOLD_PILES, LEVELING_GOLD } from './gold'
 import { MAX_WAYSTONE_TIER, UPGRADE_AREA_LEVEL, UPGRADE_BORDER, WAYSTONE_BANDS } from './waystones'
 import {
@@ -121,6 +122,30 @@ export function goldBlocks(gold: GoldConfig): string[] {
   return out
 }
 
+/** Прочие предметы: правила групп по порядку, с выбранным тиром или скрытием. */
+export function extraBlocks(config: Config): string[] {
+  const out: string[] = []
+  for (const group of EXTRA_GROUPS) {
+    if (config.disabledExtras.includes(group.id)) continue
+    for (const rule of group.rules) {
+      const choice = config.extras[extraKey(group, rule)] ?? rule.tier
+      if (choice === 'off') continue
+      for (const conditions of rule.blocks) {
+        out.push(
+          choice === 'hide'
+            ? block('Hide', `Other / ${group.id} / ${rule.id}`, conditions)
+            : block('Show', `Other / ${group.id} / ${rule.id}`, [...conditions, ...styleLines(config.tiers[choice])]),
+        )
+      }
+    }
+  }
+  return out
+}
+
+/** Ловушка неизвестной валюты включена — тогда предметам выключенных разделов нужен свой блок. */
+const catchesUnknown = (config: Config) =>
+  !config.disabledExtras.includes('unknown') && (config.extras['unknown.currency'] ?? 'B') !== 'off'
+
 const tierRange = (from: number, to: number) =>
   // Верхняя группа — без верхней границы, как у NeverSink: на случай, если в игре появятся тиры выше 16.
   to === MAX_WAYSTONE_TIER ? [`WaystoneTier >= ${from}`] : from === to ? [`WaystoneTier ${from}`] : [`WaystoneTier >= ${from}`, `WaystoneTier <= ${to}`]
@@ -188,7 +213,15 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
   ]
 
   for (const section of SECTIONS) {
-    if (config.disabledSections.includes(section.id)) continue
+    if (config.disabledSections.includes(section.id)) {
+      // Выключенный раздел — «как в игре по умолчанию». Без этого блока его предметы
+      // поймала бы ловушка неизвестной валюты и выделила как новинку.
+      if (!section.unique && catchesUnknown(config)) {
+        const items = snapshot.items.filter((item) => item.section === section.id)
+        for (const conditions of matchConditions(items)) out.push(block('Show', `${section.label} / disabled`, conditions))
+      }
+      continue
+    }
 
     const shown = new Map<TierId, MarketItem[]>()
     const stacks = new Map<string, { tier: TierId; stackSize: number; items: MarketItem[] }>()
@@ -242,6 +275,7 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
   }
 
   out.push(...waystoneBlocks(config.waystones))
+  out.push(...extraBlocks(config))
 
   config.baseRules.forEach((rule, index) => {
     const text = baseRuleBlock(rule, index, config.tiers)

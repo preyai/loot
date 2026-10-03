@@ -215,6 +215,9 @@ export interface GoldConfig {
   hideSmall: boolean
 }
 
+/** Выбор для правила прочих предметов: тир, скрытие или «без правила». */
+export type ExtraChoice = TierId | 'hide' | 'off'
+
 export interface Config {
   /** Язык интерфейса и названий предметов. В файле фильтра имена всегда английские. */
   language: Lang
@@ -234,4 +237,8 @@ export interface Config {
   gear: { hideLowRarity: boolean; areaLevel: number }
   waystones: WaystoneConfig
   gold: GoldConfig
+  /** Прочие предметы: выбор по ключу «группа.правило», только отличия от значений по умолчанию. */
+  extras: Record<string, ExtraChoice>
+  /** Группы прочих предметов, выключенные целиком. */
+  disabledExtras: string[]
 }

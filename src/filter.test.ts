@@ -4,10 +4,11 @@ import { DEFAULT_CONFIG } from './defaults'
 import { baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, moveItem, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
-import { baseRuleBlock, generateFilter, goldBlocks, matchConditions, styleLines, waystoneBlocks } from './filter'
+import { baseRuleBlock, extraBlocks, generateFilter, goldBlocks, matchConditions, styleLines, waystoneBlocks } from './filter'
 import { DEFAULT_GOLD } from './gold'
 import { DEFAULT_WAYSTONES } from './waystones'
-import { translator } from './i18n'
+import { keyOf, LANGUAGES, translator } from './i18n'
+import { EXTRA_GROUPS, extraKey } from './extras'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
 import type { BaseRule, Config, ExceptionalScan, MarketItem, MarketSnapshot } from './types'
 
@@ -522,7 +523,7 @@ describe('generateFilter', () => {
     expect(text).toContain('Show # Currency / E\n    BaseType == "Scroll of Wisdom"')
     expect(text).toContain('PlayAlertSound 6 300')
     expect(text).toContain('MinimapIcon 0 Red Star')
-    expect(text).not.toContain('Hide')
+    expect(text).not.toContain('Hide # Currency')
   })
 
   it('блок стопок идёт перед Hide для тех же предметов', () => {
@@ -547,8 +548,12 @@ describe('generateFilter', () => {
       gear: { hideLowRarity: true, areaLevel: 70 },
     }
     const text = generateFilter(snapshot([mirror]), config)
-    expect(text).not.toContain('Mirror of Kalandra')
+    // Предмет выключенного раздела — «как в игре»: блок без оформления, чтобы его не поймала ловушка неизвестной валюты.
+    expect(text).toContain('Show # Currency / disabled\n    BaseType == "Mirror of Kalandra"\n\n')
+    expect(text.indexOf('Currency / disabled')).toBeLessThan(text.indexOf('Other / unknown / currency'))
     expect(text).toContain('Rarity <= Magic\n    AreaLevel >= 70')
+    const noCatcher = generateFilter(snapshot([mirror]), { ...config, disabledExtras: ['unknown'] })
+    expect(noCatcher).not.toContain('Mirror of Kalandra')
   })
 })
 
@@ -610,5 +615,42 @@ describe('золото', () => {
     const filter = generateFilter(snapshot([item('Divine Orb', 1)]), DEFAULT_CONFIG)
     expect(filter.indexOf('BaseType == "Gold"')).toBeLessThan(filter.indexOf('Divine Orb'))
     expect(goldBlocks({ ...DEFAULT_GOLD, enabled: false })).toEqual([])
+  })
+})
+
+describe('прочие предметы', () => {
+  it('по умолчанию: тиры и скрытие из NeverSink, ловушка неизвестного — последней', () => {
+    const all = extraBlocks(DEFAULT_CONFIG).join('\n\n')
+    expect(all).toContain('Show # Other / jewels / timeLost\n    Class == "Jewels"\n    Rarity <= Rare\n')
+    expect(all).toContain(
+      'Hide # Other / flasks / outdated\n    Class == "Life Flasks" "Mana Flasks"\n    Quality 0\n    BaseType "Lesser" "Medium"\n    AreaLevel >= 15',
+    )
+    expect(all).toContain('BaseType "Grand"\n    AreaLevel <= 22')
+    expect(all.trimEnd().split('\n\n').at(-1)).toMatch(/^Show # Other \/ unknown \/ currency\n    Class == "Stackable Currency"/)
+  })
+
+  it('выбор пользователя: другой тир, скрытие, без правила, выключенная группа', () => {
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      extras: { 'relics.any': 'S', 'gems.any': 'hide', 'trials.baryaLow': 'off' },
+      disabledExtras: ['exotic'],
+    }
+    const all = extraBlocks(config).join('\n\n')
+    expect(all).toContain('Show # Other / relics / any\n    Rarity Normal Magic\n    BaseType == "Amphora Relic"')
+    expect(all).toMatch(/relics \/ any[^#]*SetFontSize 45/)
+    expect(all).toContain('Hide # Other / gems / any\n    Class == "Skill Gems" "Support Gems"')
+    expect(all).not.toContain('baryaLow')
+    expect(all).not.toContain('Other / exotic')
+  })
+
+  it('у каждого правила есть подпись на всех языках', () => {
+    for (const group of EXTRA_GROUPS) {
+      for (const lang of LANGUAGES) {
+        expect(translator(lang)(keyOf('extraGroup', group.id)), `${lang}: ${group.id}`).toEqual(expect.any(String))
+        for (const rule of group.rules) {
+          expect(translator(lang)(keyOf('extra', extraKey(group, rule))), `${lang}: ${rule.id}`).toEqual(expect.any(String))
+        }
+      }
+    }
   })
 })

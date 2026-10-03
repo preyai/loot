@@ -13,6 +13,24 @@ export interface I18n {
 }
 
 const identity = (english: string) => english
+
+interface NameData {
+  items: Record<string, string>
+  bases: Record<string, string>
+  uniques: Record<string, string>
+}
+
+/** Названия предметов — отдельные файлы по сотне килобайт: грузится только файл выбранного языка. */
+const NAME_FILES: Record<Exclude<Lang, 'en'>, () => Promise<{ default: NameData }>> = {
+  ru: () => import('./data/names-ru.json'),
+  de: () => import('./data/names-de.json'),
+  fr: () => import('./data/names-fr.json'),
+  es: () => import('./data/names-es.json'),
+  pt: () => import('./data/names-pt.json'),
+  ja: () => import('./data/names-ja.json'),
+  ko: () => import('./data/names-ko.json'),
+  th: () => import('./data/names-th.json'),
+}
 const ENGLISH: I18n = { lang: 'en', locale: LOCALES.en, t: translator('en'), name: identity, english: () => null }
 
 const I18nContext = createContext<I18n>(ENGLISH)
@@ -20,15 +38,16 @@ const I18nContext = createContext<I18n>(ENGLISH)
 export const useI18n = () => useContext(I18nContext)
 
 export function I18nProvider({ lang, children }: { lang: Lang; children: ReactNode }) {
-  const [names, setNames] = useState<Map<string, string> | null>(null)
+  // Названия хранятся вместе с языком: при смене языка старые не должны показаться ни на миг.
+  const [names, setNames] = useState<{ lang: Lang; map: Map<string, string> } | null>(null)
 
-  // Русские названия — отдельный файл на сотни килобайт: грузим его, только когда он нужен.
   useEffect(() => {
-    if (lang !== 'ru' || names) return
+    if (lang === 'en' || names?.lang === lang) return
     let stale = false
-    import('./data/names-ru.json').then(({ default: data }) => {
+    NAME_FILES[lang]().then(({ default: data }) => {
       // Валюта главнее баз, базы главнее уников — на случай одинаковых английских имён.
-      if (!stale) setNames(new Map([...Object.entries(data.uniques), ...Object.entries(data.bases), ...Object.entries(data.items)]))
+      const map = new Map([...Object.entries(data.uniques), ...Object.entries(data.bases), ...Object.entries(data.items)])
+      if (!stale) setNames({ lang, map })
     })
     return () => {
       stale = true
@@ -42,7 +61,8 @@ export function I18nProvider({ lang, children }: { lang: Lang; children: ReactNo
 
   const value = useMemo<I18n>(() => {
     if (lang === 'en') return ENGLISH
-    const name = (english: string) => names?.get(english) ?? english
+    const map = names?.lang === lang ? names.map : null
+    const name = (english: string) => map?.get(english) ?? english
     return {
       lang,
       locale: LOCALES[lang],

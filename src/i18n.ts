@@ -1,10 +1,39 @@
-// Надписи интерфейса на двух языках. Названия предметов сюда не входят: они в data/names-ru.json.
+// Надписи интерфейса. Русский и английский словари — здесь (русский задаёт набор ключей), остальные — в locales/.
+// Названия предметов сюда не входят: они в data/names-<язык>.json.
+import { de } from './locales/de'
+import { es } from './locales/es'
+import { fr } from './locales/fr'
+import { ja } from './locales/ja'
+import { ko } from './locales/ko'
+import { pt } from './locales/pt'
+import { th } from './locales/th'
 
-export const LANGUAGES = ['ru', 'en'] as const
+/** Языки клиента игры с официальным сайтом торговли (китайские версии игры — отдельные серверы, их здесь нет). */
+export const LANGUAGES = ['ru', 'en', 'de', 'fr', 'es', 'pt', 'ja', 'ko', 'th'] as const
 export type Lang = (typeof LANGUAGES)[number]
 
-export const LANGUAGE_TITLES: Record<Lang, string> = { ru: 'Русский', en: 'English' }
-export const LOCALES: Record<Lang, string> = { ru: 'ru-RU', en: 'en-GB' }
+export const LANGUAGE_TITLES: Record<Lang, string> = {
+  ru: 'Русский',
+  en: 'English',
+  de: 'Deutsch',
+  fr: 'Français',
+  es: 'Español',
+  pt: 'Português (Brasil)',
+  ja: '日本語',
+  ko: '한국어',
+  th: 'ไทย',
+}
+export const LOCALES: Record<Lang, string> = {
+  ru: 'ru-RU',
+  en: 'en-GB',
+  de: 'de-DE',
+  fr: 'fr-FR',
+  es: 'es-ES',
+  pt: 'pt-BR',
+  ja: 'ja-JP',
+  ko: 'ko-KR',
+  th: 'th-TH',
+}
 
 const ru = {
   'app.title': 'Редактор лутфильтра — Path of Exile 2',
@@ -371,8 +400,11 @@ const ru = {
 } as const
 
 export type Key = keyof typeof ru
+export type Dictionary = Record<Key, string>
+/** Все ключи словаря. */
+export const KEYS = Object.keys(ru) as Key[]
 
-const en: Record<Key, string> = {
+const en: Dictionary = {
   'app.title': 'Loot filter editor — Path of Exile 2',
   'app.brand': 'Loot Filter',
 
@@ -735,7 +767,7 @@ const en: Record<Key, string> = {
   'unique.modsNote': '',
 }
 
-const DICTIONARIES: Record<Lang, Record<Key, string>> = { ru, en }
+const DICTIONARIES: Record<Lang, Dictionary> = { ru, en, de, fr, es, pt, ja, ko, th }
 
 export type Params = Record<string, string | number>
 export type T = (key: Key, params?: Params) => string
@@ -758,6 +790,6 @@ export function translateOr(t: T, prefix: string, id: string, fallback: string):
 
 /** Язык для первого запуска — по языку браузера. */
 export function detectLanguage(): Lang {
-  const preferred = typeof navigator === 'undefined' ? '' : navigator.language
-  return preferred.toLowerCase().startsWith('ru') ? 'ru' : 'en'
+  const preferred = (typeof navigator === 'undefined' ? '' : navigator.language).toLowerCase().slice(0, 2)
+  return LANGUAGES.find((lang) => lang === preferred) ?? 'en'
 }

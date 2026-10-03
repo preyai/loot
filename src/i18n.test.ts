@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BASE_CLASSES, describeRule, EMPTY_RULE, RULE_TEMPLATES } from './bases'
-import { keyOf, LANGUAGES, translateOr, translator, type Key } from './i18n'
+import { KEYS, keyOf, LANGUAGES, translateOr, translator, type Key } from './i18n'
 import { RULE_PRESETS } from './presets'
 import { SECTIONS } from './sections'
 import { formatPrice } from './tiering'
@@ -31,10 +31,17 @@ describe('словари', () => {
     }
   })
 
-  it('у наборов одинаковое число пунктов описания на обоих языках', () => {
+  it('у наборов одинаковое число пунктов описания на всех языках', () => {
     for (const preset of RULE_PRESETS) {
       const key = keyOf('preset', `${preset.id}.details`)
-      expect(en(key).split('|').length, preset.id).toBe(ru(key).split('|').length)
+      for (const lang of LANGUAGES) expect(translator(lang)(key).split('|').length, `${lang}: ${preset.id}`).toBe(ru(key).split('|').length)
+    }
+  })
+
+  it('во всех переводах те же подстановки, что в русском', () => {
+    const placeholders = (text: string) => [...text.matchAll(/{(w+)}/g)].map((m) => m[1]).sort()
+    for (const lang of LANGUAGES) {
+      for (const key of KEYS) expect(placeholders(translator(lang)(key)), `${lang}: ${key}`).toEqual(placeholders(ru(key)))
     }
   })
 
@@ -49,6 +56,25 @@ describe('словари', () => {
     const rule = { ...EMPTY_RULE, id: '1', name: '', classes: ['Bows'], rarities: ['Rare' as const], minSockets: 2, excludeCorrupted: true }
     expect(describeRule(rule, en)).toBe('rare · Bows · sockets 2+ · not corrupted')
     expect(RULE_PRESETS[0].make(null, en)[0].name).toBe('Exceptional: 3+ sockets (body armours, two-handed weapons)')
+  })
+})
+
+describe('названия предметов на других языках', () => {
+  const files = import.meta.glob<{ items: Record<string, string>; bases: Record<string, string>; uniques: Record<string, string> }>(
+    './data/names-*.json',
+    { eager: true, import: 'default' },
+  )
+
+  it('файл есть для каждого языка, кроме английского', () => {
+    const langs = Object.keys(files).map((path) => /names-(\w+)\.json$/.exec(path)![1])
+    expect(langs.sort()).toEqual(LANGUAGES.filter((lang) => lang !== 'en').sort())
+  })
+
+  it('валюта переведена; в тайском клиенте названия валюты английские — их и нет', () => {
+    const divine: Record<string, string | undefined> = {}
+    for (const [path, data] of Object.entries(files)) divine[/names-(\w+)\.json$/.exec(path)![1]] = data.items['Divine Orb']
+    expect(divine).toMatchObject({ de: 'Göttliche Sphäre', fr: 'Orbe divin', es: 'Orbe divino', pt: 'Orbe Divino', ja: '神のオーブ', ko: '신성한 오브' })
+    expect(divine.th).toBeUndefined()
   })
 })
 

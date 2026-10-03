@@ -35,9 +35,12 @@ export function baseIconUrl(name: string): string | null {
   return icon ? `${ICON_HOST}/${icon}.webp` : null
 }
 
+/** Разделы poe2db по языкам интерфейса. */
+const POE2DB: Record<Lang, string> = { ru: 'ru', en: 'us', de: 'de', fr: 'fr', es: 'sp', pt: 'pt', ja: 'jp', ko: 'kr', th: 'th' }
+
 /** Страница предмета (базы или уника) в справочнике poe2db на языке интерфейса. */
 export const wikiUrl = (name: string, lang: Lang) =>
-  `https://poe2db.tw/${lang === 'ru' ? 'ru' : 'us'}/${encodeURIComponent(name.replaceAll(' ', '_'))}`
+  `https://poe2db.tw/${POE2DB[lang]}/${encodeURIComponent(name.replaceAll(' ', '_'))}`
 
 /** Поиск уника на официальном трейде: лоты с мгновенным выкупом, от дешёвых. */
 export function uniqueTradeUrl(name: string, base: string, league: string): string {

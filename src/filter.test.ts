@@ -4,7 +4,8 @@ import { DEFAULT_CONFIG } from './defaults'
 import { baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, moveItem, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, RULE_PRESETS } from './presets'
-import { baseRuleBlock, generateFilter, matchConditions, styleLines } from './filter'
+import { baseRuleBlock, generateFilter, matchConditions, styleLines, waystoneBlocks } from './filter'
+import { DEFAULT_WAYSTONES } from './waystones'
 import { translator } from './i18n'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
 import type { BaseRule, Config, ExceptionalScan, MarketItem, MarketSnapshot } from './types'
@@ -151,10 +152,10 @@ describe('уники', () => {
   it('обычная плитка и уникальная на той же базе не задевают друг друга; предмет без цены показывается в тире C', () => {
     const tablet = item('Breach Tablet', 71, 'tablets')
     const uniqueTablet: MarketItem = { ...item('Breach Tablet', 0.001, 'uq-other'), uniques: [{ name: 'Cheap', divine: 0.001 }] as MarketItem['uniques'] }
-    const text = generateFilter(snapshot([tablet, uniqueTablet, item('Waystone (Tier 16)', null, 'waystones')]), DEFAULT_CONFIG)
+    const text = generateFilter(snapshot([tablet, uniqueTablet, item('Liquid Verisium', null, 'verisium')]), DEFAULT_CONFIG)
     expect(text).toContain('Show # Tablets / S\n    Rarity <= Rare\n    BaseType == "Breach Tablet"\n')
     expect(text).toContain('# Unique Misc / E\n    Rarity Unique\n    BaseType == "Breach Tablet"\n')
-    expect(text).toContain('Show # Waystones / C\n    BaseType == "Waystone (Tier 16)"\n')
+    expect(text).toContain('Show # Verisium / C\n    BaseType == "Liquid Verisium"\n')
   })
 
   it('ручной тир базы уника не пересекается с одноимённым обычным предметом', () => {
@@ -547,5 +548,39 @@ describe('generateFilter', () => {
     const text = generateFilter(snapshot([mirror]), config)
     expect(text).not.toContain('Mirror of Kalandra')
     expect(text).toContain('Rarity <= Magic\n    AreaLevel >= 70')
+  })
+})
+
+describe('путевые камни', () => {
+  const text = (change: Partial<typeof DEFAULT_WAYSTONES> = {}) => waystoneBlocks({ ...DEFAULT_WAYSTONES, ...change }).join('\n\n')
+
+  it('по умолчанию — как NeverSink: особые камни первыми, затем группы тиров, без скрытия', () => {
+    const all = text()
+    expect(all.indexOf('HasExplicitMod >=7')).toBeLessThan(all.indexOf('AnyEnchantment True'))
+    expect(all.indexOf('AnyEnchantment True')).toBeLessThan(all.indexOf('WaystoneTier >= 16'))
+    expect(all).toContain('Show # Waystones / T16\n    Class == "Waystones"\n    WaystoneTier >= 16\n')
+    expect(all).toContain('Show # Waystones / T12-14\n    Class == "Waystones"\n    WaystoneTier >= 12\n    WaystoneTier <= 14\n')
+    expect(all).toContain('    MinimapIcon 0 Purple Square')
+    expect(all).not.toContain('Hide')
+  })
+
+  it('камень выше области получает красную рамку вместо рамки группы', () => {
+    const all = text()
+    expect(all).toContain('Show # Waystones / T1 above area level\n    Class == "Waystones"\n    WaystoneTier 1\n    AreaLevel < 65\n')
+    expect(all).toContain('WaystoneTier 14\n    AreaLevel < 78\n    SetFontSize 40\n    SetTextColor 0 0 0 255\n    SetBorderColor 220 50 0 255')
+    expect(text({ upgradeBorder: false })).not.toContain('AreaLevel')
+  })
+
+  it('порог тира обрезает группы и скрывает камни ниже, кроме уникальных', () => {
+    const all = text({ minTier: 14, enchanted: null, corrupted: null })
+    expect(all).toContain('Show # Waystones / T14\n    Class == "Waystones"\n    WaystoneTier 14\n')
+    expect(all).not.toContain('WaystoneTier 13')
+    expect(all).not.toContain('AnyEnchantment')
+    expect(all.endsWith('Hide # Waystones / below T14\n    Class == "Waystones"\n    WaystoneTier < 14\n    Rarity <= Rare')).toBe(true)
+  })
+
+  it('выключенные правила в фильтр не попадают', () => {
+    expect(waystoneBlocks({ ...DEFAULT_WAYSTONES, enabled: false })).toEqual([])
+    expect(generateFilter(snapshot([]), DEFAULT_CONFIG)).toContain('Class == "Waystones"')
   })
 })

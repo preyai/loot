@@ -39,7 +39,6 @@ export const SECTIONS: Section[] = [
   { id: 'lineage', label: 'Lineage Supports', ninja: ['LineageSupportGems'], trade: ['LineageSupportGems'], unstackable: true },
   { id: 'gems', label: 'Uncut Gems', ninja: ['UncutGems'], trade: ['UncutGems'], unstackable: true },
   { id: 'tablets', label: 'Tablets', ninja: ['PrecursorTablets'], bases: true, unstackable: true },
-  { id: 'waystones', label: 'Waystones', ninja: [], trade: ['Waystones'], unstackable: true },
   {
     id: 'uq-weapons',
    

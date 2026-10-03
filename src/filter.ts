@@ -1,7 +1,19 @@
 import { GEAR_CLASSES, ruleStyle } from './bases'
 import { SECTIONS } from './sections'
 import { itemDisplay } from './tiering'
-import { RARITIES, TIER_IDS, type BaseRule, type Config, type MarketItem, type MarketSnapshot, type Rgba, type TierId, type TierStyle } from './types'
+import { MAX_WAYSTONE_TIER, UPGRADE_AREA_LEVEL, UPGRADE_BORDER, WAYSTONE_BANDS } from './waystones'
+import {
+  RARITIES,
+  TIER_IDS,
+  type BaseRule,
+  type Config,
+  type MarketItem,
+  type MarketSnapshot,
+  type Rgba,
+  type TierId,
+  type TierStyle,
+  type WaystoneConfig,
+} from './types'
 
 const INDENT = '    '
 const quote = (names: string[]) => names.map((n) => `"${n}"`).join(' ')
@@ -79,6 +91,56 @@ export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tier
   return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(ruleStyle(rule, tiers))] : lines)
 }
 
+const tierRange = (from: number, to: number) =>
+  // Верхняя группа — без верхней границы, как у NeverSink: на случай, если в игре появятся тиры выше 16.
+  to === MAX_WAYSTONE_TIER ? [`WaystoneTier >= ${from}`] : from === to ? [`WaystoneTier ${from}`] : [`WaystoneTier >= ${from}`, `WaystoneTier <= ${to}`]
+
+/**
+ * Путевые камни по образцу NeverSink: сначала особые камни, затем группы тиров (каждая — со своим
+ * оформлением и, если нужно, вариантом с красной рамкой для камня выше текущей области), в конце — скрытие низких тиров.
+ */
+export function waystoneBlocks(w: WaystoneConfig): string[] {
+  if (!w.enabled) return []
+  const waystones = 'Class == "Waystones"'
+  const out: string[] = []
+  if (w.corrupted) {
+    // Любое свойство содержит гласную, поэтому «7 свойств с одной из гласных» — это просто 7+ свойств. Приём NeverSink.
+    out.push(
+      block('Show', 'Waystones / corrupted, 7+ mods', [
+        waystones,
+        'Corrupted True',
+        'HasExplicitMod >=7 "a" "o" "e" "u" "i" "y"',
+        ...styleLines(w.corrupted),
+      ]),
+    )
+  }
+  if (w.enchanted) out.push(block('Show', 'Waystones / enchanted', [waystones, 'AnyEnchantment True', ...styleLines(w.enchanted)]))
+
+  for (const band of WAYSTONE_BANDS) {
+    const from = Math.max(band.from, w.minTier)
+    if (from > band.to) continue
+    const style = w.styles[band.id]
+    if (w.upgradeBorder) {
+      for (let tier = from; tier <= band.to; tier++) {
+        out.push(
+          block('Show', `Waystones / T${tier} above area level`, [
+            waystones,
+            `WaystoneTier ${tier}`,
+            `AreaLevel < ${UPGRADE_AREA_LEVEL[tier - 1]}`,
+            ...styleLines({ ...style, border: UPGRADE_BORDER }),
+          ]),
+        )
+      }
+    }
+    out.push(block('Show', `Waystones / T${from}${band.to > from ? '-' + band.to : ''}`, [waystones, ...tierRange(from, band.to), ...styleLines(style)]))
+  }
+
+  if (w.minTier > 1) {
+    out.push(block('Hide', `Waystones / below T${w.minTier}`, [waystones, `WaystoneTier < ${w.minTier}`, 'Rarity <= Rare']))
+  }
+  return out
+}
+
 function push<K, V>(map: Map<K, V[]>, key: K, value: V) {
   const list = map.get(key)
   if (list) list.push(value)
@@ -146,6 +208,8 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
       out.push(block('Hide', `${section.label} / hidden`, [...rarity, ...conditions]))
     }
   }
+
+  out.push(...waystoneBlocks(config.waystones))
 
   config.baseRules.forEach((rule, index) => {
     const text = baseRuleBlock(rule, index, config.tiers)

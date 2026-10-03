@@ -139,7 +139,6 @@ export function SectionView({ section, snapshot, config, update }: Props) {
 
       {section.unique && <p className="note">{t('items.uniqueNote')}</p>}
       {section.bases && <p className="note">{t('items.basesNote')}</p>}
-      {section.ninja.length === 0 && <p className="note">{t('items.noPricesNote')}</p>}
       {!enabled && <p className="note">{t('items.disabled')}</p>}
       {failed && <p className="note note--error">{t('items.failed')}</p>}
       {!failed && groups.size === 0 && <p className="note">{query ? t('items.notFound') : t('items.empty')}</p>}

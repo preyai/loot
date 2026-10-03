@@ -3,6 +3,7 @@ import { BasesView } from './components/BasesView'
 import { downloadFilter, ExportView } from './components/ExportView'
 import { SectionView } from './components/SectionView'
 import { StylesView } from './components/StylesView'
+import { WaystonesView } from './components/WaystonesView'
 import { CURRENCIES } from './defaults'
 import { generateFilter } from './filter'
 import { keyOf, LANGUAGE_TITLES, LANGUAGES, translateOr, type Lang } from './i18n'
@@ -12,7 +13,7 @@ import { useConfig, useMarket, type UpdateConfig } from './store'
 import { convertCurrency, perDivine } from './tiering'
 import type { Config, Currency } from './types'
 
-const PAGES = ['bases', 'styles', 'export'] as const
+const PAGES = ['waystones', 'bases', 'styles', 'export'] as const
 type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number]
 
 function readRoute(): Route {
@@ -87,6 +88,10 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
               </a>
             </Fragment>
           ))}
+          <div className="nav-group">{t('nav.maps')}</div>
+          <a href="#/waystones" className={[route === 'waystones' && 'active', !config.waystones.enabled && 'off'].filter(Boolean).join(' ')}>
+            {t('nav.waystones')}
+          </a>
           <div className="nav-group">{t('nav.gear')}</div>
           <a href="#/bases" className={route === 'bases' ? 'active' : ''}>
             {t('nav.bases')}
@@ -161,6 +166,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
             </p>
           )}
           {!snapshot && market.loading && <p className="note">{t('top.loading')}</p>}
+          {route === 'waystones' && <WaystonesView config={config} update={update} />}
           {route === 'bases' && <BasesView config={config} update={update} snapshot={snapshot} />}
           {route === 'styles' && <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />}
           {snapshot && route === 'export' && <ExportView snapshot={snapshot} config={config} />}

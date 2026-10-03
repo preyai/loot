@@ -944,6 +944,46 @@ main {
   gap: 8px 24px;
 }
 
+/* Путевые камни: строка — название группы, образец плашки и кнопка оформления. */
+.waystone-row + .waystone-row {
+  margin-top: 8px;
+}
+
+.waystone-row-head {
+  display: grid;
+  grid-template-columns: auto minmax(140px, 1fr) auto minmax(220px, 1.4fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.waystone-row-title {
+  grid-column: 2;
+}
+
+.waystone-row-head > .count {
+  grid-column: 3;
+}
+
+.waystone-row-head > .ground {
+  grid-column: 4;
+}
+
+.waystone-row-head > button {
+  grid-column: 5;
+}
+
+fieldset.plain {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+fieldset.plain:disabled {
+  opacity: 0.55;
+}
+
 .rule-summary {
   opacity: 0.55;
 }

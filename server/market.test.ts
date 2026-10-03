@@ -104,7 +104,7 @@ describe('catalogItems', () => {
         { name: 'Stone Rune', icon: 'stone.png' },
         { name: 'Iron Rune', icon: 'iron.png' },
       ],
-      Waystones: [{ name: 'Waystone (Tier 1)', icon: '' }],
+      Verisium: [{ name: 'Liquid Verisium', icon: '' }],
     },
   }
   const section = (id: string) => SECTIONS.find((s) => s.id === id)!
@@ -113,7 +113,7 @@ describe('catalogItems', () => {
     const seen = new Set(['Iron Rune'])
     expect(catalogItems(catalog, section('runes'), seen)).toEqual([{ name: 'Stone Rune', icon: 'stone.png', section: 'runes', divine: null }])
     expect(catalogItems(catalog, section('runes'), seen)).toEqual([])
-    expect(catalogItems(catalog, section('waystones'), seen)).toMatchObject([{ name: 'Waystone (Tier 1)', section: 'waystones' }])
+    expect(catalogItems(catalog, section('verisium'), seen)).toMatchObject([{ name: 'Liquid Verisium', section: 'verisium' }])
     // Раздел без групп справочника и группа, которой в справочнике нет.
     expect(catalogItems(catalog, section('idols'), seen)).toEqual([])
     expect(catalogItems(catalog, section('currency'), seen)).toEqual([])

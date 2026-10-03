@@ -16,7 +16,6 @@ export type SectionId =
   | 'lineage'
   | 'gems'
   | 'tablets'
-  | 'waystones'
   | 'uq-weapons'
   | 'uq-armour'
   | 'uq-accessories'
@@ -184,6 +183,23 @@ export interface BaseRule {
   source?: 'trade'
 }
 
+/** Группа тиров путевых камней с общим оформлением: t16 — тир 16, t12 — тиры 12–14 и т. д. */
+export type WaystoneBandId = 't16' | 't15' | 't12' | 't7' | 't1'
+
+export interface WaystoneConfig {
+  /** Выключено — игра показывает камни как обычно. */
+  enabled: boolean
+  /** Обычные, магические и редкие камни ниже этого тира скрываются; 1 — показывать все. */
+  minTier: number
+  styles: Record<WaystoneBandId, TierStyle>
+  /** Особые камни — выделяются на любом тире; null — без отдельного выделения. */
+  enchanted: TierStyle | null
+  /** Осквернённые с 7+ свойствами. */
+  corrupted: TierStyle | null
+  /** Красная рамка у камня, тир которого выше текущей области. */
+  upgradeBorder: boolean
+}
+
 export interface Config {
   /** Язык интерфейса и названий предметов. В файле фильтра имена всегда английские. */
   language: Lang
@@ -201,4 +217,5 @@ export interface Config {
   /** Разделы со своими настройками показа вместо общих. */
   sectionVisibility: Partial<Record<SectionId, Visibility>>
   gear: { hideLowRarity: boolean; areaLevel: number }
+  waystones: WaystoneConfig
 }

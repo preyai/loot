@@ -349,7 +349,8 @@ export const pt: Dictionary = {
   'rules.deleteAllConfirm': 'Excluir todas as regras de bases ({n})? Não dá para desfazer.',
   'preset.leveling.title': 'Leveling',
   'preset.leveling.summary': 'Para a campanha: raros, joias, botas e frascos. As regras não valem nos mapas.',
-  'preset.leveling.details': 'Raros; com tier de modificadores alto — mais visíveis|Joias: raras, normais e mágicas|Botas mágicas até o nível de área 32|Frascos e patuás|Itens com qualidade ou encaixes — para reciclar|Vale até o nível de área 64',
+  'preset.leveling.details':
+    'Raros; com tier de modificadores alto — mais visíveis|Joias: raras, normais e mágicas|Botas mágicas até o nível de área 32|Frascos e patuás|Itens com qualidade ou encaixes — para reciclar|Todo o resto — discreto, na cor da raridade|As regras de leveling valem até o nível de área 64',
   'rule.levelingRareJewellery': 'Leveling: joias raras',
   'rule.levelingRareTier': 'Leveling: raros com tier de modificadores {n}+',
   'rule.levelingRare': 'Leveling: demais raros',
@@ -361,16 +362,23 @@ export const pt: Dictionary = {
   'preset.soft.title': 'Suave',
   'preset.soft.summary': 'Para os primeiros mapas: destaca o que tem valor e não oculta nada.',
   'preset.soft.details':
-    'Bases brancas para tentar únicos caros com o Orbe da Chance|Itens excepcionais: encaixes extras, qualidade 21%+|Raros com tier de modificadores 2+ em bases populares|Todas as joias raras|Bases de criação brancas e azuis, nível do item 82+, em bases populares',
+    'Bases brancas para tentar únicos caros com o Orbe da Chance|Itens excepcionais: encaixes extras, qualidade 21%+|Raros com tier de modificadores 2+ em bases populares|Todas as joias raras|Bases de criação brancas e azuis, nível do item 82+, em bases populares|Frascos e patuás nível 83+, joias|Todo o resto — discreto, na cor da raridade',
   'preset.balanced.title': 'Equilibrado',
   'preset.balanced.summary': 'A opção principal: o que tem valor em destaque, tralha branca e azul oculta.',
   'preset.balanced.details':
-    'Bases brancas para tentar únicos caros com o Orbe da Chance|Itens excepcionais: encaixes extras, qualidade 21%+|Raros com tier de modificadores 3+ em bases populares|Todas as joias raras|Bases de criação, nível do item 82+, em bases populares|Demais armas e armaduras normais e mágicas ocultas',
+    'Bases brancas para tentar únicos caros com o Orbe da Chance|Itens excepcionais: encaixes extras, qualidade 21%+|Raros com tier de modificadores 3+ em bases populares|Todas as joias raras|Bases de criação, nível do item 82+, em bases populares|Demais armas e armaduras normais e mágicas ocultas|Frascos e patuás nível 83+, joias|Demais frascos e patuás ocultos nos mapas|Todo o resto — discreto, na cor da raridade',
   'preset.strict.title': 'Estrito',
   'preset.strict.summary': 'Para limpar rápido: só o que vale a pena parar para pegar.',
   'preset.strict.details':
-    'Bases brancas para tentar únicos caros com o Orbe da Chance|Itens excepcionais: encaixes extras, qualidade 27%+ e 21%+ em bases populares|Raros com tier de modificadores 3+ em bases populares|Joias raras com tier de modificadores 3+|Demais armas e armaduras raras ocultas (a partir do nível de área 75)|Demais armas e armaduras normais e mágicas ocultas',
+    'Bases brancas para tentar únicos caros com o Orbe da Chance|Itens excepcionais: encaixes extras, qualidade 27%+ e 21%+ em bases populares|Raros com tier de modificadores 3+ em bases populares|Joias raras com tier de modificadores 3+|Demais armas e armaduras raras ocultas (a partir do nível de área 75)|Demais armas e armaduras normais e mágicas ocultas|Frascos e patuás nível 83+, joias|Demais frascos e patuás ocultos nos mapas|Joias normais e mágicas ocultas nos mapas|Todo o resto — discreto, na cor da raridade',
 
+  'rule.restRare': 'Todo o resto: raros',
+  'rule.restMagic': 'Todo o resto: mágicos',
+  'rule.restNormal': 'Todo o resto: normais',
+  'rule.hideNormalMagic': 'Ocultar armas e armaduras normais e mágicas nos mapas',
+  'rule.hideFlasks': 'Ocultar demais frascos e patuás nos mapas',
+  'rule.hideJewellery': 'Ocultar joias normais e mágicas nos mapas',
+  'rule.jewelsMagic': 'Joias normais e mágicas',
   'rule.sockets3': 'Excepcional: 3+ encaixes (peitorais, armas de duas mãos)',
   'rule.sockets2': 'Excepcional: 2+ encaixes (resto do equipamento)',
   'rule.quality27': 'Qualidade 27%+ em bases populares',

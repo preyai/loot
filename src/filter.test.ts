@@ -3,7 +3,9 @@ import { chanceOf, chancingBases, chancingRule, dropSource, topUnique, uniquesBy
 import { DEFAULT_CONFIG } from './defaults'
 import { BASE_CLASSES, baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, GEAR_CLASSES, moveItem, RULE_TEMPLATES, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
-import { applyPreset, RULE_PRESETS } from './presets'
+import { applyPreset, restRules, RULE_PRESETS } from './presets'
+import { evaluate, parseFilter } from './filterEval'
+import { generateLoot } from './lootSim'
 import { baseRuleBlock, extraBlocks, generateFilter, goldBlocks, matchConditions, styleLines, waystoneBlocks } from './filter'
 import { DEFAULT_GOLD } from './gold'
 import { DEFAULT_WAYSTONES } from './waystones'
@@ -386,7 +388,7 @@ describe('готовые наборы', () => {
 
   it('строгий набор скрывает прочие редкие только с высокого уровня области', () => {
     const strict = RULE_PRESETS.find((p) => p.id === 'strict')!
-    const hide = strict.make(shares, t).at(-1)!
+    const hide = strict.make(shares, t).find((r) => r.name === t('rule.hideRares'))!
     expect(hide.action).toBe('hide')
     expect(hide.minAreaLevel).toBe(75)
     expect(hide.rarities).toEqual(['Rare'])
@@ -674,13 +676,14 @@ describe('набор «Прокачка»', () => {
   const leveling = RULE_PRESETS.find((p) => p.id === 'leveling')!
   const rules = leveling.make(null, t).map((rule, i) => ({ ...rule, id: String(i) }))
 
-  it('все правила — только для кампании, ничего не скрывают', () => {
-    expect(rules.length).toBeGreaterThan(5)
-    for (const rule of rules) {
-      expect(rule.action).toBe('show')
+  it('правила прокачки — только для кампании; набор ничего не скрывает', () => {
+    const levelingOnly = rules.filter((r) => r.name.startsWith('Прокачка:'))
+    expect(levelingOnly.length).toBeGreaterThan(5)
+    for (const rule of levelingOnly) {
       expect(rule.maxAreaLevel, rule.name).toBeGreaterThan(0)
       expect(rule.maxAreaLevel, rule.name).toBeLessThanOrEqual(64)
     }
+    expect(rules.every((r) => r.action === 'show')).toBe(true)
     expect(leveling.hideLowRarity).toBe(false)
   })
 
@@ -690,5 +693,42 @@ describe('набор «Прокачка»', () => {
     expect(describeRule(boots, t)).toContain('до уровня области 32')
     const flasks = rules.find((r) => r.name === 'Прокачка: флаконы и обереги')!
     expect(flasks.classes.sort()).toEqual(['Charms', 'Life Flasks', 'Mana Flasks'])
+  })
+})
+
+describe('наборы покрывают все предметы', () => {
+  /** Детерминированный генератор случайных чисел. */
+  const seeded = (seed: number) => () => {
+    seed = (seed * 1103515245 + 12345) % 2 ** 31
+    return seed / 2 ** 31
+  }
+  const items: MarketItem[] = [
+    item('Divine Orb', 1),
+    item('Scroll of Wisdom', 0.0001),
+    { ...item('Utility Belt', 300, 'uq-accessories'), uniques: [{ name: 'Mageblood', divine: 300 }] as MarketItem['uniques'] },
+  ]
+
+  it.each(RULE_PRESETS.map((p) => p.id))('%s: у любого выпавшего предмета есть правило на любом уровне области', (id) => {
+    const preset = RULE_PRESETS.find((p) => p.id === id)!
+    const config = applyPreset(DEFAULT_CONFIG, preset, null, t)
+    const blocks = parseFilter(generateFilter(snapshot(items), config))
+    for (const area of [2, 30, 64, 65, 75, 83]) {
+      const uncovered = generateLoot(items, area, 400, seeded(area))
+        .map((loot) => ({ loot, look: evaluate(blocks, loot, area) }))
+        .filter(({ look }) => look.block === null)
+        .map(({ loot }) => `${loot.label} (${loot.rarity}, ${loot.itemClass})`)
+      expect(uncovered, `уровень области ${area}`).toEqual([])
+    }
+  })
+
+  it('«всё остальное» идёт последним и выглядит неприметно, в цвете редкости', () => {
+    for (const preset of RULE_PRESETS) {
+      const rules = preset.make(null, t)
+      expect(rules.slice(-3).map((r) => r.name), preset.id).toEqual(restRules(t).map((r) => r.name))
+    }
+    const [rare, magic, normal] = restRules(t)
+    expect(rare.style?.text).toEqual({ r: 255, g: 255, b: 119, a: 255 })
+    expect(magic.style?.sound).toBeNull()
+    expect(baseRuleBlock({ ...normal, id: '1' }, 0, DEFAULT_CONFIG.tiers)).toContain('Rarity Normal\n    SetFontSize 30\n    SetTextColor 200 200 200 255')
   })
 })

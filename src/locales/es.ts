@@ -349,7 +349,8 @@ export const es: Dictionary = {
   'rules.deleteAllConfirm': '¿Borrar todas las reglas de bases ({n})? No se puede deshacer.',
   'preset.leveling.title': 'Subida de nivel',
   'preset.leveling.summary': 'Para la campaña: raros, joyería, botas y frascos. Las reglas no se aplican en los mapas.',
-  'preset.leveling.details': 'Raros; más visibles con un grado de modificadores alto|Joyería: rara, normal y mágica|Botas mágicas hasta el nivel de zona 32|Frascos y viales|Objetos con calidad o engarces — para reciclar|Se aplica hasta el nivel de zona 64',
+  'preset.leveling.details':
+    'Raros; más visibles con un grado de modificadores alto|Joyería: rara, normal y mágica|Botas mágicas hasta el nivel de zona 32|Frascos y viales|Objetos con calidad o engarces — para reciclar|Todo lo demás: discreto, con el color de su rareza|Las reglas de subida de nivel se aplican hasta el nivel de zona 64',
   'rule.levelingRareJewellery': 'Subida de nivel: joyería rara',
   'rule.levelingRareTier': 'Subida de nivel: raros con grado de modificadores {n}+',
   'rule.levelingRare': 'Subida de nivel: resto de raros',
@@ -361,16 +362,23 @@ export const es: Dictionary = {
   'preset.soft.title': 'Suave',
   'preset.soft.summary': 'Para los primeros mapas: resalta lo valioso y no oculta nada.',
   'preset.soft.details':
-    'Bases blancas para probar suerte con únicos caros usando el Orbe de azar|Objetos excepcionales: engarces adicionales, calidad 21 %+|Raros con grado de modificadores 2+ sobre bases populares|Toda la joyería rara|Bases de artesanía blancas y azules, nivel de objeto 82+, sobre bases populares',
+    'Bases blancas para probar suerte con únicos caros usando el Orbe de azar|Objetos excepcionales: engarces adicionales, calidad 21 %+|Raros con grado de modificadores 2+ sobre bases populares|Toda la joyería rara|Bases de artesanía blancas y azules, nivel de objeto 82+, sobre bases populares|Frascos y viales de nivel 83+, joyas|Todo lo demás: discreto, con el color de su rareza',
   'preset.balanced.title': 'Equilibrado',
   'preset.balanced.summary': 'La opción principal: lo valioso resaltado, la morralla blanca y azul oculta.',
   'preset.balanced.details':
-    'Bases blancas para probar suerte con únicos caros usando el Orbe de azar|Objetos excepcionales: engarces adicionales, calidad 21 %+|Raros con grado de modificadores 3+ sobre bases populares|Toda la joyería rara|Bases de artesanía, nivel de objeto 82+, sobre bases populares|Resto de armas y armaduras normales y mágicas ocultas',
+    'Bases blancas para probar suerte con únicos caros usando el Orbe de azar|Objetos excepcionales: engarces adicionales, calidad 21 %+|Raros con grado de modificadores 3+ sobre bases populares|Toda la joyería rara|Bases de artesanía, nivel de objeto 82+, sobre bases populares|Resto de armas y armaduras normales y mágicas ocultas|Frascos y viales de nivel 83+, joyas|Resto de frascos y viales ocultos en mapas|Todo lo demás: discreto, con el color de su rareza',
   'preset.strict.title': 'Estricto',
   'preset.strict.summary': 'Para limpiar rápido: solo lo que merece pararse.',
   'preset.strict.details':
-    'Bases blancas para probar suerte con únicos caros usando el Orbe de azar|Objetos excepcionales: engarces adicionales, calidad 27 %+ y 21 %+ sobre bases populares|Raros con grado de modificadores 3+ sobre bases populares|Joyería rara con grado de modificadores 3+|Resto de armas y armaduras raras ocultas (desde el nivel de zona 75)|Resto de armas y armaduras normales y mágicas ocultas',
+    'Bases blancas para probar suerte con únicos caros usando el Orbe de azar|Objetos excepcionales: engarces adicionales, calidad 27 %+ y 21 %+ sobre bases populares|Raros con grado de modificadores 3+ sobre bases populares|Joyería rara con grado de modificadores 3+|Resto de armas y armaduras raras ocultas (desde el nivel de zona 75)|Resto de armas y armaduras normales y mágicas ocultas|Frascos y viales de nivel 83+, joyas|Resto de frascos y viales ocultos en mapas|Joyería normal y mágica oculta en mapas|Todo lo demás: discreto, con el color de su rareza',
 
+  'rule.restRare': 'Todo lo demás: raros',
+  'rule.restMagic': 'Todo lo demás: mágicos',
+  'rule.restNormal': 'Todo lo demás: normales',
+  'rule.hideNormalMagic': 'Ocultar armas y armaduras normales y mágicas en mapas',
+  'rule.hideFlasks': 'Ocultar el resto de frascos y viales en mapas',
+  'rule.hideJewellery': 'Ocultar joyería normal y mágica en mapas',
+  'rule.jewelsMagic': 'Joyas normales y mágicas',
   'rule.sockets3': 'Excepcional: 3+ engarces (armaduras, armas a dos manos)',
   'rule.sockets2': 'Excepcional: 2+ engarces (resto del equipo)',
   'rule.quality27': 'Calidad 27 %+ sobre bases populares',

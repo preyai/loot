@@ -349,7 +349,8 @@ export const fr: Dictionary = {
   'rules.deleteAllConfirm': 'Supprimer toutes les règles de bases ({n}) ? Impossible d’annuler.',
   'preset.leveling.title': 'Montée en niveau',
   'preset.leveling.summary': 'Pour la campagne : rares, bijoux, bottes et flacons. Les règles ne s’appliquent pas en cartes.',
-  'preset.leveling.details': 'Rares ; plus visibles avec un palier de modificateurs élevé|Bijoux : rares, normaux et magiques|Bottes magiques jusqu’au niveau de zone 32|Flacons et charmes|Objets avec qualité ou châsses — à recycler|S’applique jusqu’au niveau de zone 64',
+  'preset.leveling.details':
+    'Rares ; plus visibles avec un palier de modificateurs élevé|Bijoux : rares, normaux et magiques|Bottes magiques jusqu’au niveau de zone 32|Flacons et charmes|Objets avec qualité ou châsses — à recycler|Tout le reste — discret, à la couleur de sa rareté|Règles de montée en niveau jusqu’au niveau de zone 64',
   'rule.levelingRareJewellery': 'Montée en niveau : bijoux rares',
   'rule.levelingRareTier': 'Montée en niveau : rares avec palier de modificateurs {n}+',
   'rule.levelingRare': 'Montée en niveau : autres rares',
@@ -361,16 +362,23 @@ export const fr: Dictionary = {
   'preset.soft.title': 'Doux',
   'preset.soft.summary': 'Pour les premières cartes : met en avant ce qui a de la valeur, ne masque rien.',
   'preset.soft.details':
-    'Bases blanches pour tenter des uniques chers à l’Orbe de chance|Objets exceptionnels : châsses supplémentaires, qualité 21 %+|Rares avec palier de modificateurs 2+ sur bases populaires|Tous les bijoux rares|Bases d’artisanat blanches et bleues, niveau d’objet 82+, sur bases populaires',
+    'Bases blanches pour tenter des uniques chers à l’Orbe de chance|Objets exceptionnels : châsses supplémentaires, qualité 21 %+|Rares avec palier de modificateurs 2+ sur bases populaires|Tous les bijoux rares|Bases d’artisanat blanches et bleues, niveau d’objet 82+, sur bases populaires|Flacons et charmes niv. 83+, joyaux|Tout le reste — discret, à la couleur de sa rareté',
   'preset.balanced.title': 'Équilibré',
   'preset.balanced.summary': 'L’option principale : ce qui a de la valeur est mis en avant, les objets blancs et bleus inutiles sont masqués.',
   'preset.balanced.details':
-    'Bases blanches pour tenter des uniques chers à l’Orbe de chance|Objets exceptionnels : châsses supplémentaires, qualité 21 %+|Rares avec palier de modificateurs 3+ sur bases populaires|Tous les bijoux rares|Bases d’artisanat, niveau d’objet 82+, sur bases populaires|Autres armes et armures normales et magiques masquées',
+    'Bases blanches pour tenter des uniques chers à l’Orbe de chance|Objets exceptionnels : châsses supplémentaires, qualité 21 %+|Rares avec palier de modificateurs 3+ sur bases populaires|Tous les bijoux rares|Bases d’artisanat, niveau d’objet 82+, sur bases populaires|Autres armes et armures normales et magiques masquées|Flacons et charmes niv. 83+, joyaux|Autres flacons et charmes masqués en cartes|Tout le reste — discret, à la couleur de sa rareté',
   'preset.strict.title': 'Strict',
   'preset.strict.summary': 'Pour nettoyer vite : seulement ce qui vaut la peine de s’arrêter.',
   'preset.strict.details':
-    'Bases blanches pour tenter des uniques chers à l’Orbe de chance|Objets exceptionnels : châsses supplémentaires, qualité 27 %+ et 21 %+ sur bases populaires|Rares avec palier de modificateurs 3+ sur bases populaires|Bijoux rares avec palier de modificateurs 3+|Autres armes et armures rares masquées (dès le niveau de zone 75)|Autres armes et armures normales et magiques masquées',
+    'Bases blanches pour tenter des uniques chers à l’Orbe de chance|Objets exceptionnels : châsses supplémentaires, qualité 27 %+ et 21 %+ sur bases populaires|Rares avec palier de modificateurs 3+ sur bases populaires|Bijoux rares avec palier de modificateurs 3+|Autres armes et armures rares masquées (dès le niveau de zone 75)|Autres armes et armures normales et magiques masquées|Flacons et charmes niv. 83+, joyaux|Autres flacons et charmes masqués en cartes|Bijoux normaux et magiques masqués en cartes|Tout le reste — discret, à la couleur de sa rareté',
 
+  'rule.restRare': 'Tout le reste : rares',
+  'rule.restMagic': 'Tout le reste : magiques',
+  'rule.restNormal': 'Tout le reste : normaux',
+  'rule.hideNormalMagic': 'Masquer armes et armures normales et magiques en cartes',
+  'rule.hideFlasks': 'Masquer les autres flacons et charmes en cartes',
+  'rule.hideJewellery': 'Masquer les bijoux normaux et magiques en cartes',
+  'rule.jewelsMagic': 'Joyaux normaux et magiques',
   'rule.sockets3': 'Exceptionnel : 3+ châsses (armures de torse, armes à deux mains)',
   'rule.sockets2': 'Exceptionnel : 2+ châsses (autre équipement)',
   'rule.quality27': 'Qualité 27 %+ sur bases populaires',

@@ -1,6 +1,6 @@
 import { BASE_CLASSES, classesOf, classNames, EMPTY_RULE, GEAR_CLASSES, POPULAR_SHARE, popularBases, topBases } from './bases'
 import type { T } from './i18n'
-import type { BaseRule, Config, TierId } from './types'
+import type { BaseRule, Config, Rarity, Rgba, TierId, TierStyle } from './types'
 
 type Draft = Omit<BaseRule, 'id'>
 
@@ -12,6 +12,28 @@ const ONE_SOCKET_CLASSES = known([
   'Boots', 'Bucklers', 'Foci', 'Gloves', 'Helmets', 'One Hand Maces', 'Sceptres', 'Shields', 'Spears', 'Wands',
 ])
 const JEWELLERY = classNames('jewellery')
+const FLASKS = classNames('flasks')
+const JEWELS = classNames('jewels')
+/** Все классы справочника баз: последние правила набора должны покрыть каждый. */
+const ALL_CLASSES = BASE_CLASSES.map((c) => c.name)
+/** С этого уровня области начинаются карты. */
+const MAPS = 65
+
+const rgba = (r: number, g: number, b: number, a = 255): Rgba => ({ r, g, b, a })
+/**
+ * Неприметный вид для «всего остального»: цвет редкости, как в игре, без рамки, звука и луча.
+ * Предмет попадает под правило фильтра, но выглядит почти как без фильтра.
+ */
+const QUIET_TEXT: Record<Rarity, Rgba> = { Normal: rgba(200, 200, 200), Magic: rgba(136, 136, 255), Rare: rgba(255, 255, 119) }
+const quiet = (rarity: Rarity): TierStyle => ({
+  fontSize: 30,
+  text: QUIET_TEXT[rarity],
+  border: null,
+  background: rgba(0, 0, 0, 200),
+  sound: null,
+  effect: null,
+  icon: null,
+})
 
 /** Кирпичики, из которых собраны наборы. Слои повторяют устройство фильтра NeverSink. */
 function blocks(shares: Record<string, number> | null, t: T) {
@@ -39,7 +61,39 @@ function blocks(shares: Record<string, number> | null, t: T) {
       rule(t('rule.crafting'), { ...onGood, rarities: ['Normal', 'Magic'], minItemLevel: 82, excludeCorrupted: true, tier }),
     rare82: rule(t('rule.rare82'), { ...onGood, rarities: ['Rare'], minItemLevel: 82, tier: 'D' }),
     hideRares: rule(t('rule.hideRares'), { action: 'hide', classes: GEAR_CLASSES, rarities: ['Rare'], minAreaLevel: 75 }),
+    // Флаконы, обереги и самоцветы — как в NeverSink для карт.
+    flasks: rule(t('template.flasks'), {
+      classes: known(['Life Flasks', 'Mana Flasks']),
+      bases: ['Ultimate Life Flask', 'Ultimate Mana Flask'],
+      rarities: ['Normal', 'Magic'],
+      minItemLevel: 83,
+      excludeCorrupted: true,
+      tier: 'C',
+    }),
+    charms: rule(t('template.charms'), { classes: known(['Charms']), rarities: ['Normal', 'Magic'], minItemLevel: 83, excludeCorrupted: true, tier: 'C' }),
+    jewelsRare: rule(t('template.jewels'), { classes: JEWELS, rarities: ['Rare'], tier: 'B' }),
+    jewelsMagic: rule(t('rule.jewelsMagic'), { classes: JEWELS, rarities: ['Normal', 'Magic'], tier: 'D' }),
+    // Скрытие в картах — правилами, а не галочкой «Остальная экипировка»: та стоит в фильтре после правил баз
+    // и не сработала бы из-за последних правил набора, которые показывают всё оставшееся.
+    hideNormalMagic: rule(t('rule.hideNormalMagic'), { action: 'hide', classes: GEAR_CLASSES, rarities: ['Normal', 'Magic'], minAreaLevel: MAPS }),
+    hideFlasks: rule(t('rule.hideFlasks'), { action: 'hide', classes: FLASKS, rarities: ['Normal', 'Magic'], minAreaLevel: MAPS }),
+    hideJewellery: rule(t('rule.hideJewellery'), { action: 'hide', classes: JEWELLERY, rarities: ['Normal', 'Magic'], minAreaLevel: MAPS }),
   }
+}
+
+/**
+ * Последние правила каждого набора: всё, что не попало под правила выше, показывается неприметно
+ * в цвете своей редкости. Так у любой вещи из справочника баз есть правило, и ничего не остаётся «как в игре».
+ */
+export function restRules(t: T): Draft[] {
+  const rule = (name: string, rarity: Rarity): Draft => ({
+    ...EMPTY_RULE,
+    name,
+    classes: ALL_CLASSES,
+    rarities: [rarity],
+    style: quiet(rarity),
+  })
+  return [rule(t('rule.restRare'), 'Rare'), rule(t('rule.restMagic'), 'Magic'), rule(t('rule.restNormal'), 'Normal')]
 }
 
 /** Последний уровень области кампании: с 65-го начинаются карты. */
@@ -61,6 +115,7 @@ function levelingRules(t: T): Draft[] {
     rule(t('rule.levelingFlasks'), { classes: FLASKS_AND_CHARMS, rarities: ['Normal', 'Magic'], tier: 'D' }),
     rule(t('rule.levelingQuality'), { classes: everything, rarities: ['Normal', 'Magic'], minQuality: 1, tier: 'E' }),
     rule(t('rule.levelingSockets'), { classes: everything, rarities: ['Normal', 'Magic'], minSockets: 1, tier: 'E' }),
+    ...restRules(t),
   ]
 }
 
@@ -97,12 +152,17 @@ export const RULE_PRESETS: RulePreset[] = [
         b.rareJewellery(0, 'C'),
         b.crafting('C'),
         b.rare82,
+        b.flasks,
+        b.charms,
+        b.jewelsRare,
+        b.jewelsMagic,
+        ...restRules(t),
       ]
     },
   },
   {
     id: 'balanced',
-    hideLowRarity: true,
+    hideLowRarity: false,
     make: (shares, t) => {
       const b = blocks(shares, t)
       return [
@@ -115,15 +175,39 @@ export const RULE_PRESETS: RulePreset[] = [
         b.rareJewellery(0, 'C'),
         b.crafting('D'),
         b.rare82,
+        b.flasks,
+        b.charms,
+        b.jewelsRare,
+        b.jewelsMagic,
+        b.hideNormalMagic,
+        b.hideFlasks,
+        ...restRules(t),
       ]
     },
   },
   {
     id: 'strict',
-    hideLowRarity: true,
+    hideLowRarity: false,
     make: (shares, t) => {
       const b = blocks(shares, t)
-      return [b.sockets3, b.sockets2, b.quality27, b.quality21Good, b.rareTier(4, 'B'), b.rareTier(3, 'C'), b.rareJewellery(3, 'C'), b.hideRares]
+      return [
+        b.sockets3,
+        b.sockets2,
+        b.quality27,
+        b.quality21Good,
+        b.rareTier(4, 'B'),
+        b.rareTier(3, 'C'),
+        b.rareJewellery(3, 'C'),
+        b.hideRares,
+        b.flasks,
+        b.charms,
+        b.jewelsRare,
+        b.jewelsMagic,
+        b.hideNormalMagic,
+        b.hideFlasks,
+        b.hideJewellery,
+        ...restRules(t),
+      ]
     },
   },
 ]

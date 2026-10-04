@@ -384,7 +384,8 @@ const ru = {
   'rules.deleteAllConfirm': 'Удалить все правила баз ({n})? Отменить это нельзя.',
   'preset.leveling.title': 'Прокачка',
   'preset.leveling.summary': 'Для кампании: редкие вещи, бижутерия, сапоги и флаконы. В картах правила не действуют.',
-  'preset.leveling.details': 'Редкие вещи; с высокой ступенью свойств — заметнее|Бижутерия: редкая, обычная и магическая|Магические сапоги до уровня области 32|Флаконы и обереги|Вещи с качеством или гнёздами — на разбор|Действует до уровня области 64',
+  'preset.leveling.details':
+    'Редкие вещи; с высокой ступенью свойств — заметнее|Бижутерия: редкая, обычная и магическая|Магические сапоги до уровня области 32|Флаконы и обереги|Вещи с качеством или гнёздами — на разбор|Всё остальное — неприметно, в цвете редкости|Правила прокачки — до уровня области 64',
   'rule.levelingRareJewellery': 'Прокачка: редкая бижутерия',
   'rule.levelingRareTier': 'Прокачка: редкие со ступенью свойств {n}+',
   'rule.levelingRare': 'Прокачка: остальные редкие',
@@ -396,16 +397,23 @@ const ru = {
   'preset.soft.title': 'Мягкий',
   'preset.soft.summary': 'Для начала карт: подсвечивает ценное, ничего не скрывает.',
   'preset.soft.details':
-    'Белые базы под шансинг дорогих уников|Исключительные вещи: лишние гнёзда, качество 21%+|Редкие со ступенью свойств 2+ на популярных базах|Вся редкая бижутерия|Белые и синие заготовки ур. 82+ на популярных базах',
+    'Белые базы под шансинг дорогих уников|Исключительные вещи: лишние гнёзда, качество 21%+|Редкие со ступенью свойств 2+ на популярных базах|Вся редкая бижутерия|Белые и синие заготовки ур. 82+ на популярных базах|Флаконы и обереги ур. 83+, самоцветы|Всё остальное — неприметно, в цвете редкости',
   'preset.balanced.title': 'Сбалансированный',
   'preset.balanced.summary': 'Основной вариант: ценное подсвечено, белый и синий мусор скрыт.',
   'preset.balanced.details':
-    'Белые базы под шансинг дорогих уников|Исключительные вещи: лишние гнёзда, качество 21%+|Редкие со ступенью свойств 3+ на популярных базах|Вся редкая бижутерия|Заготовки ур. 82+ на популярных базах|Скрыты прочие обычные и магические оружие и броня',
+    'Белые базы под шансинг дорогих уников|Исключительные вещи: лишние гнёзда, качество 21%+|Редкие со ступенью свойств 3+ на популярных базах|Вся редкая бижутерия|Заготовки ур. 82+ на популярных базах|Скрыты прочие обычные и магические оружие и броня|Флаконы и обереги ур. 83+, самоцветы|Прочие флаконы и обереги в картах скрыты|Всё остальное — неприметно, в цвете редкости',
   'preset.strict.title': 'Строгий',
   'preset.strict.summary': 'Для быстрой зачистки: только то, ради чего стоит остановиться.',
   'preset.strict.details':
-    'Белые базы под шансинг дорогих уников|Исключительные вещи: лишние гнёзда, качество 27%+ и 21%+ на популярных базах|Редкие со ступенью свойств 3+ на популярных базах|Редкая бижутерия со ступенью свойств 3+|Скрыты прочие редкие оружие и броня (с уровня области 75)|Скрыты прочие обычные и магические оружие и броня',
+    'Белые базы под шансинг дорогих уников|Исключительные вещи: лишние гнёзда, качество 27%+ и 21%+ на популярных базах|Редкие со ступенью свойств 3+ на популярных базах|Редкая бижутерия со ступенью свойств 3+|Скрыты прочие редкие оружие и броня (с уровня области 75)|Скрыты прочие обычные и магические оружие и броня|Флаконы и обереги ур. 83+, самоцветы|Прочие флаконы и обереги в картах скрыты|Обычная и магическая бижутерия в картах скрыта|Всё остальное — неприметно, в цвете редкости',
 
+  'rule.restRare': 'Всё остальное: редкие',
+  'rule.restMagic': 'Всё остальное: магические',
+  'rule.restNormal': 'Всё остальное: обычные',
+  'rule.hideNormalMagic': 'Скрыть обычные и магические оружие и броню в картах',
+  'rule.hideFlasks': 'Скрыть остальные флаконы и обереги в картах',
+  'rule.hideJewellery': 'Скрыть обычную и магическую бижутерию в картах',
+  'rule.jewelsMagic': 'Обычные и магические самоцветы',
   'rule.sockets3': 'Исключительные: 3+ гнезда (нагрудники, двуручное оружие)',
   'rule.sockets2': 'Исключительные: 2+ гнезда (остальная экипировка)',
   'rule.quality27': 'Качество 27%+ на популярных базах',
@@ -837,7 +845,8 @@ const en: Dictionary = {
   'rules.deleteAllConfirm': 'Delete all base rules ({n})? This cannot be undone.',
   'preset.leveling.title': 'Levelling',
   'preset.leveling.summary': 'For the campaign: rares, jewellery, boots and flasks. The rules do not apply in maps.',
-  'preset.leveling.details': 'Rares; those with a high mod tier stand out more|Jewellery: rare, normal and magic|Magic boots up to area level 32|Flasks and charms|Items with quality or sockets — for salvaging|Applies up to area level 64',
+  'preset.leveling.details':
+    'Rares; those with a high mod tier stand out more|Jewellery: rare, normal and magic|Magic boots up to area level 32|Flasks and charms|Items with quality or sockets — for salvaging|Everything else — subdued, in its rarity colour|Levelling rules apply up to area level 64',
   'rule.levelingRareJewellery': 'Levelling: rare jewellery',
   'rule.levelingRareTier': 'Levelling: rares with mod tier {n}+',
   'rule.levelingRare': 'Levelling: other rares',
@@ -849,16 +858,23 @@ const en: Dictionary = {
   'preset.soft.title': 'Soft',
   'preset.soft.summary': 'For early maps: highlights valuables, hides nothing.',
   'preset.soft.details':
-    'White bases for chancing expensive uniques|Exceptional items: extra sockets, quality 21%+|Rares with mod tier 2+ on popular bases|All rare jewellery|White and blue crafting bases, item level 82+, on popular bases',
+    'White bases for chancing expensive uniques|Exceptional items: extra sockets, quality 21%+|Rares with mod tier 2+ on popular bases|All rare jewellery|White and blue crafting bases, item level 82+, on popular bases|Flasks and charms of item level 83+, jewels|Everything else — subdued, in its rarity colour',
   'preset.balanced.title': 'Balanced',
   'preset.balanced.summary': 'The main option: valuables highlighted, white and blue junk hidden.',
   'preset.balanced.details':
-    'White bases for chancing expensive uniques|Exceptional items: extra sockets, quality 21%+|Rares with mod tier 3+ on popular bases|All rare jewellery|Crafting bases, item level 82+, on popular bases|Other normal and magic weapons and armour hidden',
+    'White bases for chancing expensive uniques|Exceptional items: extra sockets, quality 21%+|Rares with mod tier 3+ on popular bases|All rare jewellery|Crafting bases, item level 82+, on popular bases|Other normal and magic weapons and armour hidden|Flasks and charms of item level 83+, jewels|Other flasks and charms hidden in maps|Everything else — subdued, in its rarity colour',
   'preset.strict.title': 'Strict',
   'preset.strict.summary': 'For fast clearing: only what is worth stopping for.',
   'preset.strict.details':
-    'White bases for chancing expensive uniques|Exceptional items: extra sockets, quality 27%+ and 21%+ on popular bases|Rares with mod tier 3+ on popular bases|Rare jewellery with mod tier 3+|Other rare weapons and armour hidden (from area level 75)|Other normal and magic weapons and armour hidden',
+    'White bases for chancing expensive uniques|Exceptional items: extra sockets, quality 27%+ and 21%+ on popular bases|Rares with mod tier 3+ on popular bases|Rare jewellery with mod tier 3+|Other rare weapons and armour hidden (from area level 75)|Other normal and magic weapons and armour hidden|Flasks and charms of item level 83+, jewels|Other flasks and charms hidden in maps|Normal and magic jewellery hidden in maps|Everything else — subdued, in its rarity colour',
 
+  'rule.restRare': 'Everything else: rare',
+  'rule.restMagic': 'Everything else: magic',
+  'rule.restNormal': 'Everything else: normal',
+  'rule.hideNormalMagic': 'Hide normal and magic weapons and armour in maps',
+  'rule.hideFlasks': 'Hide other flasks and charms in maps',
+  'rule.hideJewellery': 'Hide normal and magic jewellery in maps',
+  'rule.jewelsMagic': 'Normal and magic jewels',
   'rule.sockets3': 'Exceptional: 3+ sockets (body armours, two-handed weapons)',
   'rule.sockets2': 'Exceptional: 2+ sockets (other gear)',
   'rule.quality27': 'Quality 27%+ on popular bases',

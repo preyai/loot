@@ -349,7 +349,8 @@ export const de: Dictionary = {
   'rules.deleteAllConfirm': 'Alle Basisregeln löschen ({n})? Das lässt sich nicht rückgängig machen.',
   'preset.leveling.title': 'Leveln',
   'preset.leveling.summary': 'Für die Kampagne: Seltenes, Schmuck, Stiefel und Fläschchen. In Karten gelten die Regeln nicht.',
-  'preset.leveling.details': 'Seltenes; mit hoher Modifikatorstufe auffälliger|Schmuck: selten, normal und magisch|Magische Stiefel bis Gebietsstufe 32|Fläschchen und Phiolen|Gegenstände mit Qualität oder Fassungen — zum Zerlegen|Gilt bis Gebietsstufe 64',
+  'preset.leveling.details':
+    'Seltenes; mit hoher Modifikatorstufe auffälliger|Schmuck: selten, normal und magisch|Magische Stiefel bis Gebietsstufe 32|Fläschchen und Phiolen|Gegenstände mit Qualität oder Fassungen — zum Zerlegen|Alles andere — unauffällig, in der Farbe der Seltenheit|Leveln-Regeln gelten bis Gebietsstufe 64',
   'rule.levelingRareJewellery': 'Leveln: seltener Schmuck',
   'rule.levelingRareTier': 'Leveln: Seltene mit Modifikatorstufe {n}+',
   'rule.levelingRare': 'Leveln: übrige Seltene',
@@ -361,16 +362,23 @@ export const de: Dictionary = {
   'preset.soft.title': 'Sanft',
   'preset.soft.summary': 'Für die ersten Karten: hebt Wertvolles hervor, blendet nichts aus.',
   'preset.soft.details':
-    'Weiße Basen zum Möglichkeiten-Rollen teurer Einzigartiger|Außergewöhnliche: zusätzliche Fassungen, Qualität 21 %+|Seltene mit Modifikatorstufe 2+ auf beliebten Basen|Aller seltene Schmuck|Weiße und blaue Handwerksbasen, Gegenstandsstufe 82+, auf beliebten Basen',
+    'Weiße Basen zum Möglichkeiten-Rollen teurer Einzigartiger|Außergewöhnliche: zusätzliche Fassungen, Qualität 21 %+|Seltene mit Modifikatorstufe 2+ auf beliebten Basen|Aller seltene Schmuck|Weiße und blaue Handwerksbasen, Gegenstandsstufe 82+, auf beliebten Basen|Fläschchen und Phiolen ab Stufe 83, Juwelen|Alles andere — unauffällig, in der Farbe der Seltenheit',
   'preset.balanced.title': 'Ausgewogen',
   'preset.balanced.summary': 'Die Hauptvariante: Wertvolles hervorgehoben, weißer und blauer Kram ausgeblendet.',
   'preset.balanced.details':
-    'Weiße Basen zum Möglichkeiten-Rollen teurer Einzigartiger|Außergewöhnliche: zusätzliche Fassungen, Qualität 21 %+|Seltene mit Modifikatorstufe 3+ auf beliebten Basen|Aller seltene Schmuck|Handwerksbasen, Gegenstandsstufe 82+, auf beliebten Basen|Übrige normale und magische Waffen und Rüstungen ausgeblendet',
+    'Weiße Basen zum Möglichkeiten-Rollen teurer Einzigartiger|Außergewöhnliche: zusätzliche Fassungen, Qualität 21 %+|Seltene mit Modifikatorstufe 3+ auf beliebten Basen|Aller seltene Schmuck|Handwerksbasen, Gegenstandsstufe 82+, auf beliebten Basen|Übrige normale und magische Waffen und Rüstungen ausgeblendet|Fläschchen und Phiolen ab Stufe 83, Juwelen|Übrige Fläschchen und Phiolen in Karten ausgeblendet|Alles andere — unauffällig, in der Farbe der Seltenheit',
   'preset.strict.title': 'Streng',
   'preset.strict.summary': 'Für schnelles Räumen: nur das, wofür sich Anhalten lohnt.',
   'preset.strict.details':
-    'Weiße Basen zum Möglichkeiten-Rollen teurer Einzigartiger|Außergewöhnliche: zusätzliche Fassungen, Qualität 27 %+ und 21 %+ auf beliebten Basen|Seltene mit Modifikatorstufe 3+ auf beliebten Basen|Seltener Schmuck mit Modifikatorstufe 3+|Übrige seltene Waffen und Rüstungen ausgeblendet (ab Gebietsstufe 75)|Übrige normale und magische Waffen und Rüstungen ausgeblendet',
+    'Weiße Basen zum Möglichkeiten-Rollen teurer Einzigartiger|Außergewöhnliche: zusätzliche Fassungen, Qualität 27 %+ und 21 %+ auf beliebten Basen|Seltene mit Modifikatorstufe 3+ auf beliebten Basen|Seltener Schmuck mit Modifikatorstufe 3+|Übrige seltene Waffen und Rüstungen ausgeblendet (ab Gebietsstufe 75)|Übrige normale und magische Waffen und Rüstungen ausgeblendet|Fläschchen und Phiolen ab Stufe 83, Juwelen|Übrige Fläschchen und Phiolen in Karten ausgeblendet|Normaler und magischer Schmuck in Karten ausgeblendet|Alles andere — unauffällig, in der Farbe der Seltenheit',
 
+  'rule.restRare': 'Alles andere: selten',
+  'rule.restMagic': 'Alles andere: magisch',
+  'rule.restNormal': 'Alles andere: normal',
+  'rule.hideNormalMagic': 'Normale und magische Waffen und Rüstungen in Karten ausblenden',
+  'rule.hideFlasks': 'Übrige Fläschchen und Phiolen in Karten ausblenden',
+  'rule.hideJewellery': 'Normalen und magischen Schmuck in Karten ausblenden',
+  'rule.jewelsMagic': 'Normale und magische Juwelen',
   'rule.sockets3': 'Außergewöhnlich: 3+ Fassungen (Körperrüstungen, Zweihandwaffen)',
   'rule.sockets2': 'Außergewöhnlich: 2+ Fassungen (übrige Ausrüstung)',
   'rule.quality27': 'Qualität 27 %+ auf beliebten Basen',

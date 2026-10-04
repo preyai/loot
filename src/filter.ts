@@ -11,6 +11,7 @@ import {
   type BaseRule,
   type Config,
   type GoldConfig,
+  type HiddenStyle,
   type MarketItem,
   type MarketSnapshot,
   type Rgba,
@@ -78,10 +79,23 @@ export function styleLines(style: TierStyle): string[] {
 }
 
 /**
- * Оформление скрытого предмета — его видно, если держать Alt. Как у NeverSink: мелкий шрифт,
+ * Оформление скрытого предмета по умолчанию — его видно, если держать Alt. Как у NeverSink: мелкий шрифт,
  * прозрачные рамка и фон, без звука падения; цвет текста остаётся цветом редкости.
  */
-export const HIDDEN_LINES = ['SetFontSize 18', 'SetBorderColor 0 0 0 0', 'SetBackgroundColor 20 20 0 0', 'DisableDropSound True']
+export const DEFAULT_HIDDEN_STYLE: HiddenStyle = { fontSize: 18, text: null, border: null, background: null }
+
+/** Строки оформления скрытого: прозрачная рамка и фон пишутся явно, иначе игра взяла бы свои. */
+export function hiddenLines(style: HiddenStyle): string[] {
+  return [
+    `SetFontSize ${style.fontSize}`,
+    ...(style.text ? [`SetTextColor ${color(style.text)}`] : []),
+    `SetBorderColor ${style.border ? color(style.border) : '0 0 0 0'}`,
+    `SetBackgroundColor ${style.background ? color(style.background) : '20 20 0 0'}`,
+    'DisableDropSound True',
+  ]
+}
+
+export const HIDDEN_LINES = hiddenLines(DEFAULT_HIDDEN_STYLE)
 
 function block(action: 'Show' | 'Hide', comment: string, lines: string[]): string {
   // У каждого Hide — своё оформление: без него предмет под Alt выглядел бы как без фильтра.
@@ -373,5 +387,10 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
   }
 
   out.push(...restBlocks())
-  return out.join('\n\n') + '\n'
+  // Своё оформление скрытых — вместо стандартного во всех блоках Hide (блоки пишет одна функция block).
+  const hidden = hiddenLines(config.hiddenStyle)
+  const blocks = out.map((text) =>
+    text.startsWith('Hide') ? text.replace(HIDDEN_LINES.map((l) => INDENT + l).join('\n'), hidden.map((l) => INDENT + l).join('\n')) : text,
+  )
+  return blocks.join('\n\n') + '\n'
 }

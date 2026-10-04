@@ -788,3 +788,21 @@ describe('своё оформление тиров раздела', () => {
     expect(text).toContain('Show # Breach / S\n    BaseType == "Breach Splinter"\n    SetFontSize 45')
   })
 })
+
+describe('своё оформление скрытых', () => {
+  it('заменяет стандартное во всех Hide; по умолчанию — как у NeverSink', () => {
+    const base: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'A', minPrice: 0, stacks: false }, gold: { ...DEFAULT_CONFIG.gold, hideSmall: true } }
+    const own: Config = {
+      ...base,
+      hiddenStyle: { fontSize: 25, text: { r: 255, g: 0, b: 0, a: 255 }, border: null, background: { r: 10, g: 20, b: 30, a: 200 } },
+    }
+    const text = generateFilter(snapshot([item('Scroll of Wisdom', 0.0001)]), own)
+    const hides = text.split('\n\n').filter((b) => b.startsWith('Hide'))
+    expect(hides.length).toBeGreaterThan(1)
+    for (const block of hides) {
+      expect(block, block.split('\n')[0]).toContain('SetFontSize 25\n    SetTextColor 255 0 0 255\n    SetBorderColor 0 0 0 0\n    SetBackgroundColor 10 20 30 200\n    DisableDropSound True')
+      expect(block).not.toContain('SetFontSize 18')
+    }
+    expect(generateFilter(snapshot([item('Scroll of Wisdom', 0.0001)]), base)).toContain('SetFontSize 18\n    SetBorderColor 0 0 0 0\n    SetBackgroundColor 20 20 0 0')
+  })
+})

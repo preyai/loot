@@ -22,6 +22,7 @@ function loadConfig(): Config {
       tiers: { ...DEFAULT_CONFIG.tiers, ...stored.tiers },
       visibility: { ...DEFAULT_CONFIG.visibility, ...stored.visibility },
       gear: { ...DEFAULT_CONFIG.gear, ...stored.gear },
+      hiddenStyle: { ...DEFAULT_CONFIG.hiddenStyle, ...stored.hiddenStyle },
       waystones: {
         ...DEFAULT_CONFIG.waystones,
         ...stored.waystones,

@@ -1,6 +1,6 @@
 import { BASE_CLASSES, GEAR_CLASSES, ruleStyle } from './bases'
 import { SECTIONS } from './sections'
-import { itemDisplay } from './tiering'
+import { itemDisplay, itemKey } from './tiering'
 import { isUnhideable } from './unhideable'
 import { EXTRA_GROUPS, extraKey } from './extras'
 import { GOLD_PILES, LEVELING_GOLD } from './gold'
@@ -288,9 +288,14 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
     const shown = new Map<TierId, MarketItem[]>()
     const stacks = new Map<string, { tier: TierId; stackSize: number; items: MarketItem[] }>()
     const hidden: MarketItem[] = []
+    const custom: MarketItem[] = []
     for (const item of snapshot.items) {
       if (item.section !== section.id) continue
       const display = itemDisplay(item, config, snapshot.rates)
+      if (display.kind === 'show' && display.custom) {
+        custom.push(item)
+        continue
+      }
       if (display.kind === 'show') {
         push(shown, display.tier, item)
         continue
@@ -307,6 +312,13 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
     // Без этого условия правило для базы уника задело бы и обычные предметы на той же базе.
     // И наоборот: правило для обычной плитки не должно задеть уникальную на той же базе.
     const rarity = section.unique ? ['Rarity Unique'] : section.bases ? ['Rarity <= Rare'] : []
+
+    // Своё оформление предмета — отдельным блоком перед тирами раздела.
+    for (const item of custom) {
+      for (const conditions of matchConditions([item])) {
+        out.push(block('Show', `${section.label} / custom style`, [...rarity, ...conditions, ...styleLines(config.itemStyles[itemKey(item)])]))
+      }
+    }
 
     for (const tier of TIER_IDS) {
       for (const conditions of matchConditions(shown.get(tier) ?? [])) {

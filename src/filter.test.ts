@@ -749,3 +749,28 @@ describe('оформление скрытого (под Alt)', () => {
     for (const text of blocks) expect(text.endsWith(HIDDEN_LINES.map((l) => '    ' + l).join('\n')), text.split('\n')[0]).toBe(true)
   })
 })
+
+describe('своё оформление предмета раздела', () => {
+  it('отдельный блок перед тирами, предмет показывается даже при «скрыть» и низкой цене', () => {
+    const style = { ...DEFAULT_CONFIG.tiers.E, fontSize: 44, sound: { id: 3, volume: 200 } }
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      visibility: { minTier: 'A', minPrice: 0, stacks: false },
+      itemStyles: { 'Scroll of Wisdom': style },
+      overrides: { 'Scroll of Wisdom': 'hide' },
+    }
+    const scroll = item('Scroll of Wisdom', 0.0001)
+    expect(itemDisplay(scroll, config, rates)).toMatchObject({ kind: 'show', custom: true })
+    const text = generateFilter(snapshot([scroll, mirror]), config)
+    expect(text).toContain('Show # Currency / custom style\n    BaseType == "Scroll of Wisdom"\n    SetFontSize 44')
+    expect(text).toContain('PlayAlertSound 3 200')
+    expect(text.indexOf('Currency / custom style')).toBeLessThan(text.indexOf('Currency / S'))
+    expect(text).not.toMatch(/Hide # Currency \/ hidden\n    BaseType == "Scroll of Wisdom"/)
+  })
+
+  it('у уника — с условием Rarity Unique', () => {
+    const robe: MarketItem = { ...item('Silk Robe', 71, 'uq-armour'), uniques: [{ name: 'Temporalis', divine: 71 }] as MarketItem['uniques'] }
+    const config: Config = { ...DEFAULT_CONFIG, itemStyles: { 'unique:Silk Robe': DEFAULT_CONFIG.tiers.C } }
+    expect(generateFilter(snapshot([robe]), config)).toContain('Show # Unique Armours / custom style\n    Rarity Unique\n    BaseType == "Silk Robe"')
+  })
+})

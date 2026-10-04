@@ -59,7 +59,13 @@ function useBlockTitle(config: Config, item: SimulatedItem) {
     const section = SECTIONS.find((s) => s.label === head)
     if (section) {
       // «Currency / A» → «Валюта: A — очень ценное», «… / stacks of 20+» и «… / hidden» — как есть.
-      const tier = /^[SABCDE]$/.test(tail) ? t(keyOf('tier', tail)) : tail
+      const tier = /^[SABCDE]$/.test(tail)
+        ? t(keyOf('tier', tail))
+        : tail === 'custom style'
+          ? t('items.customStyle')
+          : tail.startsWith('hidden, but')
+            ? t('items.unhideable')
+            : tail
       // Ключ строки — как в разделе (itemKey): у уников — «unique:<база>».
       const key = section.unique ? `unique:${item.baseType}` : item.label
       return { title: `${t(keyOf('section', section.id))}: ${tier}`, href: focusHref(section.id, key) }

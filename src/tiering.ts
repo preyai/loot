@@ -53,13 +53,18 @@ export function cutoffPrice(visibility: Visibility, thresholds: Config['threshol
 }
 
 export type Display =
-  | { kind: 'show'; tier: TierId }
+  /** custom — у предмета своё оформление (config.itemStyles), оно важнее стиля тира. */
+  | { kind: 'show'; tier: TierId; custom?: true }
   /** Показывать только стопки от stackSize штук; tier — стиль по стоимости такой стопки. */
   | { kind: 'stack'; tier: TierId; stackSize: number }
   | { kind: 'hide' }
 
 export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Display {
   const override = config.overrides[itemKey(item)]
+  // Своё оформление — значит, предмет нужен: показываем всегда, тир — только для группы на экране.
+  if (config.itemStyles[itemKey(item)]) {
+    return { kind: 'show', tier: override && override !== 'hide' ? override : autoTier(item, config, rates), custom: true }
+  }
   if (override === 'hide') return { kind: 'hide' }
   const tier = override ?? autoTier(item, config, rates)
   // Без цены нельзя судить о ценности — лучше показать лишнее, чем скрыть дорогую новинку.

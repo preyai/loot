@@ -134,6 +134,8 @@ export const es: Dictionary = {
   'items.stackFrom': 'desde {n} uds.',
   'items.auto': 'Auto',
   'items.autoHint': 'Nivel según el precio',
+  'items.customStyle': 'Estilo propio para este objeto',
+  'items.customReset': 'Quitar el estilo propio',
   'items.hide': 'Ocultar objeto',
   'items.tierFor': 'Nivel para {name}',
   'items.fewListings': 'pocos anuncios',

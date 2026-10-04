@@ -134,6 +134,8 @@ export const ko: Dictionary = {
   'items.stackFrom': '{n}개부터',
   'items.auto': '자동',
   'items.autoHint': '가격으로 등급 결정',
+  'items.customStyle': '이 아이템의 사용자 스타일',
+  'items.customReset': '사용자 스타일 제거',
   'items.hide': '아이템 숨기기',
   'items.tierFor': '{name}의 등급',
   'items.fewListings': '매물 적음',

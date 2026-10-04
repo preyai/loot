@@ -11,11 +11,13 @@ import {
   type MarketItem,
   type MarketSnapshot,
   type TierChoice,
+  type TierStyle,
   type UniqueInfo,
   type Visibility,
 } from '../types'
 import { isUnhideable } from '../unhideable'
 import { ItemLabel } from './ItemLabel'
+import { StyleFields } from './StyleFields'
 import { EnglishName } from './ItemName'
 import { UniqueCard } from './UniqueCard'
 import { VisibilityFields } from './VisibilityFields'
@@ -50,6 +52,8 @@ export function SectionView({ section, snapshot, config, update }: Props) {
   const { t, name } = useI18n()
   const [query, setQuery] = useState('')
   const [opened, setOpened] = useState<{ unique: UniqueInfo; base: string } | null>(null)
+  // Строка, у которой раскрыты поля своего оформления.
+  const [editing, setEditing] = useState<string | null>(null)
   const enabled = !config.disabledSections.includes(section.id)
   const ownVisibility = config.sectionVisibility[section.id]
 
@@ -76,7 +80,14 @@ export function SectionView({ section, snapshot, config, update }: Props) {
       const overrides = { ...c.overrides }
       if (choice === null) delete overrides[key]
       else overrides[key] = choice
-      return { ...c, overrides }
+      // Выбор тира или скрытия заменяет своё оформление: у предмета либо тир, либо своё.
+      const { [key]: _own, ...itemStyles } = c.itemStyles
+      return { ...c, overrides, itemStyles }
+    })
+  const setItemStyle = (key: string, style: TierStyle | null) =>
+    update((c) => {
+      const { [key]: _old, ...itemStyles } = c.itemStyles
+      return { ...c, itemStyles: style ? { ...itemStyles, [key]: style } : itemStyles }
     })
 
   const toggleSection = () =>
@@ -158,6 +169,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
               {rows.map(({ item, display }) => {
                 const key = itemKey(item)
                 const override = config.overrides[key]
+                const own = config.itemStyles[key]
                 return (
                   <li key={key} className="item" data-focus={key}>
                     {/* Без иконки или с недоступной — пустое место того же размера вместо значка «битой картинки». */}
@@ -178,7 +190,16 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                         {/* «Скрытый» предмет, который игра всё равно покажет, — так, как он и будет выглядеть. */}
                         <ItemLabel
                           name={name(item.name)}
-                          style={display.kind !== 'hide' ? config.tiers[display.tier] : isUnhideable(item.name) ? (section.unique ? REST_STYLES.unique : REST_STYLES.other) : null}
+                          style={
+                            own ??
+                            (display.kind !== 'hide'
+                              ? config.tiers[display.tier]
+                              : isUnhideable(item.name)
+                                ? section.unique
+                                  ? REST_STYLES.unique
+                                  : REST_STYLES.other
+                                : null)
+                          }
                         />
                         {display.kind === 'stack' && <span className="stack">{t('items.stackFrom', { n: display.stackSize })}</span>}
                         <EnglishName name={item.name} />
@@ -205,7 +226,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                     <span className="price">{formatPrice(item.divine, snapshot.rates, config.currency, t)}</span>
                     <div className="tier-picker" role="group" aria-label={t('items.tierFor', { name: name(item.name) })}>
                       <button
-                        className={override === undefined ? 'active' : ''}
+                        className={override === undefined && !own ? 'active' : ''}
                         title={t('items.autoHint')}
                         onClick={() => setTier(key, null)}
                       >
@@ -214,14 +235,41 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                       {CHOICES.map((c) => (
                         <button
                           key={c}
-                          className={override === c ? 'active' : ''}
+                          className={override === c && !own ? 'active' : ''}
                           title={c === 'hide' ? t('items.hide') : t(keyOf('tier', c))}
                           onClick={() => setTier(key, c)}
                         >
                           {c === 'hide' ? <TrashIcon /> : c}
                         </button>
                       ))}
+                      <button
+                        className={own ? 'active' : ''}
+                        title={t('items.customStyle')}
+                        aria-expanded={editing === key}
+                        onClick={() => {
+                          // Первое нажатие — копия текущего вида предмета, чтобы править, а не собирать с нуля.
+                          if (!own) setItemStyle(key, structuredClone(display.kind === 'hide' ? config.tiers.E : config.tiers[display.tier]))
+                          setEditing(editing === key ? null : key)
+                        }}
+                      >
+                        ✎
+                      </button>
                     </div>
+                    {editing === key && own && (
+                      <div className="rule-style item-style">
+                        <StyleFields id={`item-${key}`} style={own} onChange={(style) => setItemStyle(key, style)} />
+                        <div className="actions">
+                          <button
+                            onClick={() => {
+                              setItemStyle(key, null)
+                              setEditing(null)
+                            }}
+                          >
+                            {t('items.customReset')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </li>
                 )
               })}

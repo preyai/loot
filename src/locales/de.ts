@@ -134,6 +134,8 @@ export const de: Dictionary = {
   'items.stackFrom': 'ab {n} Stk.',
   'items.auto': 'Auto',
   'items.autoHint': 'Stufe nach Preis',
+  'items.customStyle': 'Eigener Stil für diesen Gegenstand',
+  'items.customReset': 'Eigenen Stil entfernen',
   'items.hide': 'Gegenstand ausblenden',
   'items.tierFor': 'Stufe für {name}',
   'items.fewListings': 'wenige Angebote',

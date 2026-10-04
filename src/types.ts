@@ -233,6 +233,8 @@ export interface Config {
   tiers: Record<TierId, TierStyle>
   /** Ручной выбор тира по ключу предмета (itemKey). */
   overrides: Record<string, TierChoice>
+  /** Своё оформление предмета раздела рынка по ключу (itemKey): важнее тира, предмет всегда показывается. */
+  itemStyles: Record<string, TierStyle>
   disabledSections: SectionId[]
   /** Применяются по порядку: первое подошедшее правило побеждает. */
   baseRules: BaseRule[]

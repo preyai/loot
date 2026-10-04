@@ -134,6 +134,8 @@ export const ja: Dictionary = {
   'items.stackFrom': '{n} 個から',
   'items.auto': '自動',
   'items.autoHint': '価格でティアを決める',
+  'items.customStyle': 'このアイテム専用のスタイル',
+  'items.customReset': '専用スタイルを解除',
   'items.hide': 'アイテムを非表示',
   'items.tierFor': '{name} のティア',
   'items.fewListings': '出品が少ない',

@@ -1292,6 +1292,12 @@ label.button-like:hover {
   white-space: nowrap;
 }
 
+/* Своё оформление предмета раздела: поля под строкой на всю её ширину. */
+.item-style {
+  grid-column: 1 / -1;
+  margin: 4px 0 6px;
+}
+
 .presets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

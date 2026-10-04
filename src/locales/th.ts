@@ -134,6 +134,8 @@ export const th: Dictionary = {
   'items.stackFrom': 'ตั้งแต่ {n} ชิ้น',
   'items.auto': 'อัตโนมัติ',
   'items.autoHint': 'ระดับตามราคา',
+  'items.customStyle': 'สไตล์ของตัวเองสำหรับไอเทมนี้',
+  'items.customReset': 'เอาสไตล์ของตัวเองออก',
   'items.hide': 'ซ่อนไอเทม',
   'items.tierFor': 'ระดับของ {name}',
   'items.fewListings': 'รายการขายน้อย',

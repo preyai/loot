@@ -4,7 +4,7 @@ import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
 import type { Section } from '../sections'
 import type { UpdateConfig } from '../store'
-import { formatPrice, itemDisplay, itemKey, sectionTierStyle, visibilityFor, type Display } from '../tiering'
+import { autoTier, formatPrice, itemDisplay, itemKey, sectionTierStyle, visibilityFor, type Display } from '../tiering'
 import {
   TIER_IDS,
   type Config,
@@ -222,7 +222,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                       <span />
                     )}
                     <div>
-                      <div className="ground">
+                      <div className={display.kind === 'hide' && !own && !isUnhideable(item.name) ? 'ground ground--hidden' : 'ground'}>
                         {/* «Скрытый» предмет, который игра всё равно покажет, — так, как он и будет выглядеть. */}
                         <ItemLabel
                           name={name(item.name)}
@@ -234,7 +234,8 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                                 ? section.unique
                                   ? REST_STYLES.unique
                                   : REST_STYLES.other
-                                : null)
+                                : // Скрытый — так, как игра покажет его под Alt: в оформлении тира, в котором он был бы.
+                                  sectionTierStyle(config, section.id, override && override !== 'hide' ? override : autoTier(item, config, snapshot.rates)))
                           }
                         />
                         {display.kind === 'stack' && <span className="stack">{t('items.stackFrom', { n: display.stackSize })}</span>}

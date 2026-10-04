@@ -65,7 +65,9 @@ function useBlockTitle(config: Config, item: SimulatedItem) {
           ? t('items.customStyle')
           : tail.startsWith('hidden, but')
             ? t('items.unhideable')
-            : tail
+            : /^hidden \/ [SABCDE]$/.test(tail)
+              ? `${t('group.hide')} · ${t(keyOf('tier', tail.slice(-1)))}`
+              : tail
       // Ключ строки — как в разделе (itemKey): у уников — «unique:<база>».
       const key = section.unique ? `unique:${item.baseType}` : item.label
       return { title: `${t(keyOf('section', section.id))}: ${tier}`, href: focusHref(section.id, key) }

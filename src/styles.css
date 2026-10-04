@@ -1306,6 +1306,11 @@ label.button-like:hover {
   letter-spacing: 0.05em;
 }
 
+/* Скрытый предмет в списке раздела: его вид под Alt, приглушённо. */
+.ground--hidden .item-label {
+  opacity: 0.45;
+}
+
 .presets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

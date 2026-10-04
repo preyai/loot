@@ -1,6 +1,6 @@
 import { BASE_CLASSES, GEAR_CLASSES, ruleStyle } from './bases'
 import { SECTIONS } from './sections'
-import { itemDisplay, itemKey, sectionTierStyle } from './tiering'
+import { autoTier, itemDisplay, itemKey, sectionTierStyle } from './tiering'
 import { isUnhideable } from './unhideable'
 import { EXTRA_GROUPS, extraKey } from './extras'
 import { GOLD_PILES, LEVELING_GOLD } from './gold'
@@ -78,14 +78,24 @@ export function styleLines(style: TierStyle): string[] {
 }
 
 /**
- * Оформление скрытого предмета — его видно, если держать Alt. Как у NeverSink: мелкий шрифт,
+ * Оформление скрытого предмета без тира (его видно, если держать Alt). Как у NeverSink: мелкий шрифт,
  * прозрачные рамка и фон, без звука падения; цвет текста остаётся цветом редкости.
  */
 export const HIDDEN_LINES = ['SetFontSize 18', 'SetBorderColor 0 0 0 0', 'SetBackgroundColor 20 20 0 0', 'DisableDropSound True']
 
-function block(action: 'Show' | 'Hide', comment: string, lines: string[]): string {
-  // У каждого Hide — своё оформление: без него предмет под Alt выглядел бы как без фильтра.
-  const all = action === 'Hide' ? [...lines, ...HIDDEN_LINES] : lines
+/**
+ * Строки оформления скрытого предмета: вид того тира, в котором предмет показывался бы, —
+ * но без звука, луча и значка на карте и без звука падения: скрытый предмет не должен привлекать внимание.
+ * Без тира (null) — оформление NeverSink.
+ */
+export function hiddenLines(style: TierStyle | null): string[] {
+  if (!style) return HIDDEN_LINES
+  return [...styleLines({ ...style, sound: null, effect: null, icon: null }), 'DisableDropSound True']
+}
+
+/** Блок фильтра. У Hide — оформление скрытого: без него предмет под Alt выглядел бы как без фильтра. */
+function block(action: 'Show' | 'Hide', comment: string, lines: string[], hidden: TierStyle | null = null): string {
+  const all = action === 'Hide' ? [...lines, ...hiddenLines(hidden)] : lines
   return [`${action} # ${comment}`, ...all.map((l) => INDENT + l)].join('\n')
 }
 
@@ -107,7 +117,8 @@ export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tier
   if (rule.maxAreaLevel > 0) lines.push(`AreaLevel <= ${rule.maxAreaLevel}`)
   const show = rule.action === 'show'
   // Название правила в комментарий не идёт: оно может быть не на латинице.
-  return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(ruleStyle(rule, tiers))] : lines)
+  // Скрытое правилом — под Alt в оформлении тира правила.
+  return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(ruleStyle(rule, tiers))] : lines, ruleStyle(rule, tiers))
 }
 
 /**
@@ -134,7 +145,11 @@ export function goldBlocks(gold: GoldConfig): string[] {
       )
     }
   }
-  out.push(gold.hideSmall ? block('Hide', 'Gold / small piles', [base]) : block('Show', 'Gold / small piles', [base, ...styleLines(gold.styles.small)]))
+  out.push(
+    gold.hideSmall
+      ? block('Hide', 'Gold / small piles', [base], gold.styles.small)
+      : block('Show', 'Gold / small piles', [base, ...styleLines(gold.styles.small)]),
+  )
   return out
 }
 
@@ -152,7 +167,8 @@ export function extraBlocks(config: Config): string[] {
             ? // Скрыть нельзя (игра всё равно покажет) — тогда хотя бы неприметно и явно.
               rule.unhideable
               ? block('Show', `Other / ${group.id} / ${rule.id} (cannot be hidden)`, [...conditions, ...styleLines(REST_STYLES.other)])
-              : block('Hide', `Other / ${group.id} / ${rule.id}`, conditions)
+              : // Под Alt — в оформлении тира правила по умолчанию.
+                block('Hide', `Other / ${group.id} / ${rule.id}`, conditions, rule.tier === 'hide' || rule.tier === 'off' ? null : config.tiers[rule.tier])
             : block('Show', `Other / ${group.id} / ${rule.id}`, [...conditions, ...styleLines(config.tiers[choice])]),
         )
       }
@@ -250,8 +266,13 @@ export function waystoneBlocks(w: WaystoneConfig): string[] {
     out.push(block('Show', `Waystones / T${from}${band.to > from ? '-' + band.to : ''}`, [waystones, ...tierRange(from, band.to), ...styleLines(style)]))
   }
 
-  if (w.minTier > 1) {
-    out.push(block('Hide', `Waystones / below T${w.minTier}`, [waystones, `WaystoneTier < ${w.minTier}`, 'Rarity <= Rare']))
+  // Ниже порога — скрыть, а под Alt — в оформлении своей группы тиров.
+  for (const band of WAYSTONE_BANDS) {
+    const to = Math.min(band.to, w.minTier - 1)
+    if (band.from > to) continue
+    out.push(
+      block('Hide', `Waystones / below T${w.minTier} / T${band.from}${to > band.from ? '-' + to : ''}`, [waystones, ...tierRange(band.from, to), 'Rarity <= Rare'], w.styles[band.id]),
+    )
   }
   return out
 }
@@ -349,8 +370,16 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
       const style = section.unique ? REST_STYLES.unique : REST_STYLES.other
       out.push(block('Show', `${section.label} / hidden, but the game always shows it`, [...rarity, ...conditions, ...styleLines(style)]))
     }
-    for (const conditions of matchConditions(hidden.filter((item) => !isUnhideable(item.name)))) {
-      out.push(block('Hide', `${section.label} / hidden`, [...rarity, ...conditions]))
+    // Скрытые — по тирам, в которых они показывались бы: под Alt у них оформление этого тира.
+    const hiddenByTier = new Map<TierId, MarketItem[]>()
+    for (const item of hidden.filter((item) => !isUnhideable(item.name))) {
+      const override = config.overrides[itemKey(item)]
+      push(hiddenByTier, override && override !== 'hide' ? override : autoTier(item, config, snapshot.rates), item)
+    }
+    for (const tier of TIER_IDS) {
+      for (const conditions of matchConditions(hiddenByTier.get(tier) ?? [])) {
+        out.push(block('Hide', `${section.label} / hidden / ${tier}`, [...rarity, ...conditions], sectionTierStyle(config, section.id, tier)))
+      }
     }
   }
 

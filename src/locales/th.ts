@@ -139,6 +139,8 @@ export const th: Dictionary = {
   'items.ownTiers': 'สไตล์ของระดับในหมวดนี้',
   'items.ownTiersNote': 'ติ๊กระดับเพื่อกำหนดหน้าตาของตัวเองในหมวดนี้ ระดับที่ไม่ได้ติ๊กจะเหมือนในหน้า “ระดับและสไตล์”',
   'items.ownTier': 'ของตัวเอง',
+  'items.ownHidden': 'สไตล์ของไอเทมที่ซ่อนในหมวดนี้',
+  'items.ownHiddenNote': 'ไอเทมที่ซ่อนในหมวดนี้ (เห็นเมื่อกด Alt) ใช้สไตล์จากหน้า',
   'items.hide': 'ซ่อนไอเทม',
   'items.tierFor': 'ระดับของ {name}',
   'items.fewListings': 'รายการขายน้อย',

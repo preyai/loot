@@ -139,6 +139,8 @@ export const ja: Dictionary = {
   'items.ownTiers': 'このセクションのティアのスタイル',
   'items.ownTiersNote': 'チェックしたティアはこのセクション専用のスタイルになります。チェックしていないティアは「ティアとスタイル」ページと同じです。',
   'items.ownTier': '専用',
+  'items.ownHidden': 'このセクションの非表示アイテム専用のスタイル',
+  'items.ownHiddenNote': 'このセクションの非表示アイテム（Alt で表示）はこのページのスタイルです:',
   'items.hide': 'アイテムを非表示',
   'items.tierFor': '{name} のティア',
   'items.fewListings': '出品が少ない',

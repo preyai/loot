@@ -139,6 +139,8 @@ export const pt: Dictionary = {
   'items.ownTiers': 'Estilo dos tiers nesta seção',
   'items.ownTiersNote': 'Marque um tier para dar a ele um visual próprio nesta seção; os não marcados ficam como na página “Tiers e estilos”.',
   'items.ownTier': 'próprio',
+  'items.ownHidden': 'Estilo próprio para itens ocultos nesta seção',
+  'items.ownHiddenNote': 'Os itens ocultos desta seção (visíveis com Alt) seguem o estilo da página',
   'items.hide': 'Ocultar item',
   'items.tierFor': 'Tier de {name}',
   'items.fewListings': 'poucos anúncios',

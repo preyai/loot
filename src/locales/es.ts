@@ -139,6 +139,8 @@ export const es: Dictionary = {
   'items.ownTiers': 'Estilo de los niveles en esta sección',
   'items.ownTiersNote': 'Marca un nivel para darle su propio aspecto en esta sección; los no marcados se ven como en la página «Niveles y estilos».',
   'items.ownTier': 'propio',
+  'items.ownHidden': 'Estilo propio para los objetos ocultos de esta sección',
+  'items.ownHiddenNote': 'Los objetos ocultos de esta sección (visibles con Alt) tienen el estilo de la página',
   'items.hide': 'Ocultar objeto',
   'items.tierFor': 'Nivel para {name}',
   'items.fewListings': 'pocos anuncios',

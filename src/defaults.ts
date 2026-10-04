@@ -90,6 +90,7 @@ export const DEFAULT_CONFIG: Config = {
   overrides: {},
   itemStyles: {},
   hiddenStyle: { fontSize: 18, text: null, border: null, background: null },
+  sectionHidden: {},
   disabledSections: [],
   baseRules: [],
   visibility: { minTier: 'E', minPrice: 0, stacks: true },

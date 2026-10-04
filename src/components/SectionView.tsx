@@ -8,6 +8,7 @@ import { formatPrice, itemDisplay, itemKey, sectionTierStyle, visibilityFor, typ
 import {
   TIER_IDS,
   type Config,
+  type HiddenStyle,
   type MarketItem,
   type MarketSnapshot,
   type TierChoice,
@@ -17,6 +18,7 @@ import {
   type Visibility,
 } from '../types'
 import { isUnhideable } from '../unhideable'
+import { HiddenStyleFields } from './HiddenStyleFields'
 import { ItemLabel } from './ItemLabel'
 import { StyleFields } from './StyleFields'
 import { StyleRow } from './StyleRow'
@@ -93,6 +95,11 @@ export function SectionView({ section, snapshot, config, update }: Props) {
       const { [section.id]: _section, ...others } = c.sectionTiers
       return { ...c, sectionTiers: Object.keys(tiers).length ? { ...others, [section.id]: tiers } : others }
     })
+  const setSectionHidden = (style: HiddenStyle | null) =>
+    update((c) => {
+      const { [section.id]: _old, ...others } = c.sectionHidden
+      return { ...c, sectionHidden: style ? { ...others, [section.id]: style } : others }
+    })
   const setItemStyle = (key: string, style: TierStyle | null) =>
     update((c) => {
       const { [key]: _old, ...itemStyles } = c.itemStyles
@@ -155,6 +162,25 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         {ownVisibility === undefined && (
           <p className="note">
             {t('items.globalNote')} <a href="#/styles">«{t('nav.styles')}»</a>.
+          </p>
+        )}
+
+        <h3 className="section-tiers-title">
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={config.sectionHidden[section.id] !== undefined}
+              // Своё оформление скрытых начинается с копии общего.
+              onChange={(e) => setSectionHidden(e.target.checked ? structuredClone(config.hiddenStyle) : null)}
+            />
+            {t('items.ownHidden')}
+          </label>
+        </h3>
+        {config.sectionHidden[section.id] ? (
+          <HiddenStyleFields id={`hidden-${section.id}`} value={config.sectionHidden[section.id]!} onChange={setSectionHidden} />
+        ) : (
+          <p className="note">
+            {t('items.ownHiddenNote')} <a href="#/styles">«{t('nav.styles')}»</a>.
           </p>
         )}
 

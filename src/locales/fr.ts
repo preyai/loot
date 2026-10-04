@@ -471,6 +471,8 @@ export const fr: Dictionary = {
   'export.savedSounds': 'sons copiés : {n}',
   'export.soundsMissing': 'Ces sons sont absents de la bibliothèque et ne joueront pas en jeu : {files}',
   'rest.title': 'Tout le reste (fin du filtre) : discret, à la couleur de sa rareté',
+  'items.unhideable': 'le jeu ne permet pas de le masquer',
+  'preview.unhideable': 'le jeu ne permet pas de masquer cet objet : Hide est sans effet, il reste au sol avec le style de la règle',
   'export.copy': 'Copier',
   'export.copied': 'Copié',
   'export.download': 'Télécharger {file}',

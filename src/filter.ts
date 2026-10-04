@@ -1,6 +1,7 @@
 import { BASE_CLASSES, GEAR_CLASSES, ruleStyle } from './bases'
 import { SECTIONS } from './sections'
 import { itemDisplay } from './tiering'
+import { isUnhideable } from './unhideable'
 import { EXTRA_GROUPS, extraKey } from './extras'
 import { GOLD_PILES, LEVELING_GOLD } from './gold'
 import { MAX_WAYSTONE_TIER, UPGRADE_AREA_LEVEL, UPGRADE_BORDER, WAYSTONE_BANDS } from './waystones'
@@ -140,7 +141,10 @@ export function extraBlocks(config: Config): string[] {
       for (const conditions of rule.blocks) {
         out.push(
           choice === 'hide'
-            ? block('Hide', `Other / ${group.id} / ${rule.id}`, conditions)
+            ? // Скрыть нельзя (игра всё равно покажет) — тогда хотя бы неприметно и явно.
+              rule.unhideable
+              ? block('Show', `Other / ${group.id} / ${rule.id} (cannot be hidden)`, [...conditions, ...styleLines(REST_STYLES.other)])
+              : block('Hide', `Other / ${group.id} / ${rule.id}`, conditions)
             : block('Show', `Other / ${group.id} / ${rule.id}`, [...conditions, ...styleLines(config.tiers[choice])]),
         )
       }
@@ -319,7 +323,13 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
       }
     }
 
-    for (const conditions of matchConditions(hidden)) {
+    // Ключи реликвария и реликвии игра скрыть не даёт: вместо бесполезного Hide — неприметный Show.
+    const shownAnyway = hidden.filter((item) => isUnhideable(item.name))
+    for (const conditions of matchConditions(shownAnyway)) {
+      const style = section.unique ? REST_STYLES.unique : REST_STYLES.other
+      out.push(block('Show', `${section.label} / hidden, but the game always shows it`, [...rarity, ...conditions, ...styleLines(style)]))
+    }
+    for (const conditions of matchConditions(hidden.filter((item) => !isUnhideable(item.name)))) {
       out.push(block('Hide', `${section.label} / hidden`, [...rarity, ...conditions]))
     }
   }

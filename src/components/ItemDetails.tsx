@@ -125,6 +125,7 @@ export function ItemDetails({ item, title, look, entries, config, onClose }: Pro
           <h3>{t('preview.result')}</h3>
           <p>
             {look.visible ? t('preview.shown') : t('preview.hidden')}
+            {look.forcedVisible && ` · ${t('preview.unhideable')}`}
             {look.visible && look.style.effect && ` · ${t('styles.beam')}: ${t(keyOf('color', look.style.effect.color))}`}
             {look.visible && look.style.icon && ` · ${t('styles.icon')}: ${t(keyOf('color', look.style.icon.color))}, ${t(keyOf('shape', look.style.icon.shape))}`}
             {look.visible && look.style.sound && (

@@ -471,6 +471,8 @@ export const ko: Dictionary = {
   'export.savedSounds': '복사한 소리: {n}',
   'export.soundsMissing': '이 소리들은 라이브러리에 없어 게임에서 들리지 않습니다: {files}',
   'rest.title': '그 밖의 모든 것 (필터 끝): 눈에 띄지 않게, 희귀도 색으로',
+  'items.unhideable': '게임에서 숨길 수 없음',
+  'preview.unhideable': '게임에서 이 아이템은 숨길 수 없습니다: Hide가 적용되지 않고 규칙의 스타일로 바닥에 남습니다',
   'export.copy': '복사',
   'export.copied': '복사됨',
   'export.download': '{file} 다운로드',

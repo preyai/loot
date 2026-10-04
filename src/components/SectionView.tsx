@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { REST_STYLES } from '../filter'
 import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
 import type { Section } from '../sections'
@@ -13,6 +14,7 @@ import {
   type UniqueInfo,
   type Visibility,
 } from '../types'
+import { isUnhideable } from '../unhideable'
 import { ItemLabel } from './ItemLabel'
 import { EnglishName } from './ItemName'
 import { UniqueCard } from './UniqueCard'
@@ -173,9 +175,19 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                     )}
                     <div>
                       <div className="ground">
-                        <ItemLabel name={name(item.name)} style={display.kind === 'hide' ? null : config.tiers[display.tier]} />
+                        {/* «Скрытый» предмет, который игра всё равно покажет, — так, как он и будет выглядеть. */}
+                        <ItemLabel
+                          name={name(item.name)}
+                          style={display.kind !== 'hide' ? config.tiers[display.tier] : isUnhideable(item.name) ? (section.unique ? REST_STYLES.unique : REST_STYLES.other) : null}
+                        />
                         {display.kind === 'stack' && <span className="stack">{t('items.stackFrom', { n: display.stackSize })}</span>}
                         <EnglishName name={item.name} />
+                        {/* Пометка нужна только «скрытому» предмету: объясняет, почему он всё равно виден. */}
+                        {display.kind === 'hide' && isUnhideable(item.name) && (
+                          <span className="count unhideable" title={t('preview.unhideable')}>
+                            {t('items.unhideable')}
+                          </span>
+                        )}
                       </div>
                       {item.uniques && (
                         <ul className="uniques">

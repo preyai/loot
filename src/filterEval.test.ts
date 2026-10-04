@@ -208,7 +208,7 @@ describe('генератор лута', () => {
     const loot = generateLoot(keys, 80, 50, seeded(3), (name) => name.includes('Reliquary Key'))
     expect(loot).toHaveLength(50)
     expect(new Set(loot.map((i) => i.label))).toEqual(new Set(['Twilight Reliquary Key', "Olroth's Reliquary Key"]))
-    expect(loot.every((i) => i.itemClass === 'Map Fragments')).toBe(true)
+    expect(loot.every((i) => i.itemClass === 'Vault Keys')).toBe(true)
     const withUniques = [{ ...market('Utility Belt', 300, 'uq-accessories'), uniques: [{ name: 'Mageblood' }] as MarketItem['uniques'] }]
     expect(generateLoot(withUniques, 80, 5, seeded(4), (name) => name === 'Mageblood').every((i) => i.rarity === 'Unique')).toBe(true)
     expect(generateLoot(keys, 80, 10, seeded(5), () => false)).toEqual([])
@@ -248,5 +248,33 @@ Show # other
       ['single', 'decisive', []],
       ['later', 'unreached', []],
     ])
+  })
+})
+
+describe('предметы, которые игра не даёт скрыть', () => {
+  it('ключ реликвария: в фильтре вместо Hide — неприметный Show, предпросмотр его показывает', () => {
+    const key = market('Twilight Reliquary Key', 0.001, 'fragments')
+    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'A', minPrice: 0, stacks: false } }
+    const text = generateFilter(snapshot([key, market('Scroll of Wisdom', 0.0001)]), config)
+    expect(text).toContain('Show # Fragments / hidden, but the game always shows it\n    BaseType == "Twilight Reliquary Key"\n    SetFontSize 30')
+    expect(text).not.toMatch(/Hide # Fragments \/ hidden\n    BaseType == "Twilight Reliquary Key"/)
+    const loot = generateLoot([key], 70, 3, seeded(9), (name) => name.includes('Reliquary'))
+    expect(loot.every((i) => i.itemClass === 'Vault Keys')).toBe(true)
+    expect(evaluate(parseFilter(text), loot[0], 70)).toMatchObject({ visible: true, block: { action: 'Show' } })
+  })
+
+  it('Hide на ключ реликвария или реликвию предпросмотр не выполняет — как игра', () => {
+    const blocks = parseFilter('Hide # all\n    BaseType "Reliquary Key" "Relic"\n    SetFontSize 20\n')
+    const key = evaluate(blocks, drop({ itemClass: 'Vault Keys', baseType: 'Twilight Reliquary Key' }), 70)
+    expect(key).toMatchObject({ visible: true, forcedVisible: true })
+    expect(key.style.fontSize).toBe(20)
+    expect(evaluate(blocks, drop({ itemClass: 'Relics', baseType: 'Vase Relic' }), 70).visible).toBe(true)
+    expect(evaluate(parseFilter('Hide # all\n    Class "Boots"\n'), drop({ itemClass: 'Boots', baseType: 'X' }), 70).visible).toBe(false)
+  })
+
+  it('реликвии в прочих предметах: «скрывать» превращается в неприметный показ', () => {
+    const text = generateFilter(snapshot([]), { ...DEFAULT_CONFIG, extras: { 'relics.any': 'hide' } })
+    expect(text).toContain('Show # Other / relics / any (cannot be hidden)')
+    expect(text).not.toContain('Hide # Other / relics')
   })
 })

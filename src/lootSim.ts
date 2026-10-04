@@ -66,6 +66,8 @@ function gearRarity(random: Random): ItemRarity {
 const MODS: Record<ItemRarity, [number, number]> = { Normal: [0, 0], Magic: [1, 2], Rare: [3, 6], Unique: [3, 6] }
 
 type Drop = DroppedItem & { label: string }
+
+const RELICS = ['Amphora Relic', 'Coffer Relic', 'Incense Relic', 'Seal Relic', 'Tapestry Relic', 'Urn Relic', 'Vase Relic']
 type Base = { c: (typeof BASE_CLASSES)[number]; b: (typeof BASE_CLASSES)[number]['bases'][number] }
 
 function gearDrop({ c, b }: Base, area: number, random: Random): Drop {
@@ -88,7 +90,12 @@ function gearDrop({ c, b }: Base, area: number, random: Random): Drop {
 function marketDrop(item: MarketItem, random: Random): Drop {
   const price = item.divine ?? 0.05
   const gem = /^(Uncut \w+ Gem) \(Level (\d+)\)$/.exec(item.name)
-  const itemClass = item.name.startsWith('Omen') ? 'Omen' : (SECTION_CLASS[item.section] ?? 'Stackable Currency')
+  // Ключи реликвария в игре — отдельный класс (Vault Keys), хоть poe.ninja и держит их среди фрагментов.
+  const itemClass = / Reliquary Key\b/.test(item.name)
+    ? 'Vault Keys'
+    : item.name.startsWith('Omen')
+      ? 'Omen'
+      : (SECTION_CLASS[item.section] ?? 'Stackable Currency')
   const stackable = itemClass === 'Stackable Currency' || itemClass === 'Omen'
   return {
     ...blank({ itemClass, baseType: gem ? gem[1] : item.name }),
@@ -101,8 +108,9 @@ function marketDrop(item: MarketItem, random: Random): Drop {
 
 function uniqueDrop(item: MarketItem, random: Random): Drop {
   const base = BASE_CLASS.get(item.name)
+  const itemClass = base?.itemClass ?? (RELICS.includes(item.name) ? 'Relics' : 'Unique')
   return {
-    ...blank({ itemClass: base?.itemClass ?? 'Unique', baseType: item.name, dropLevel: base?.drop ?? 1 }),
+    ...blank({ itemClass, baseType: item.name, dropLevel: base?.drop ?? 1 }),
     label: item.name,
     rarity: 'Unique',
     explicitMods: between(3, 6, random),
@@ -131,7 +139,6 @@ function goldDrop(area: number, random: Random): Drop {
   return { ...blank({ itemClass: 'Gold', baseType: 'Gold' }), label: 'Gold', stackSize: stack }
 }
 
-const RELICS = ['Amphora Relic', 'Coffer Relic', 'Incense Relic', 'Seal Relic', 'Tapestry Relic', 'Urn Relic', 'Vase Relic']
 const TRIAL_KEYS = ['Djinn Barya', 'Inscribed Ultimatum']
 
 const relicDrop = (name: string, area: number, random: Random): Drop => ({

@@ -471,6 +471,8 @@ export const ja: Dictionary = {
   'export.savedSounds': 'コピーした効果音: {n}',
   'export.soundsMissing': 'これらの効果音はライブラリになく、ゲームでは鳴りません: {files}',
   'rest.title': 'その他すべて（フィルター末尾）: 控えめに、レアリティの色で',
+  'items.unhideable': 'ゲームでは非表示にできません',
+  'preview.unhideable': 'このアイテムはゲームで非表示にできません: Hide は効かず、ルールのスタイルで地面に表示されます',
   'export.copy': 'コピー',
   'export.copied': 'コピーしました',
   'export.download': '{file} をダウンロード',

@@ -471,6 +471,8 @@ export const th: Dictionary = {
   'export.savedSounds': 'คัดลอกเสียงแล้ว: {n}',
   'export.soundsMissing': 'เสียงเหล่านี้ไม่มีในคลังและจะไม่ดังในเกม: {files}',
   'rest.title': 'ที่เหลือทั้งหมด (ท้ายฟิลเตอร์): แสดงแบบเรียบ ๆ ตามสีความหายาก',
+  'items.unhideable': 'เกมไม่ให้ซ่อน',
+  'preview.unhideable': 'เกมไม่ให้ซ่อนไอเทมนี้: Hide ไม่มีผล ไอเทมจะอยู่บนพื้นด้วยสไตล์ของกฎ',
   'export.copy': 'คัดลอก',
   'export.copied': 'คัดลอกแล้ว',
   'export.download': 'ดาวน์โหลด {file}',

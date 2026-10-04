@@ -1,4 +1,5 @@
 import type { Rgba, TierStyle } from './types'
+import { UNHIDEABLE_CLASSES } from './unhideable'
 
 /**
  * Разбор и применение готового текста фильтра к предмету — для предпросмотра.
@@ -148,8 +149,10 @@ export function matchCondition(condition: string, item: DroppedItem, area: numbe
 }
 
 export interface Appearance {
-  /** null — предмет скрыт. */
+  /** false — предмет скрыт. */
   visible: boolean
+  /** Блок велел скрыть, но игра такие предметы не скрывает (ключи реликвария, реликвии). */
+  forcedVisible?: true
   style: TierStyle
   /** Блок, решивший судьбу предмета; null — ни один не подошёл, игра показывает как обычно. */
   block: FilterBlock | null
@@ -202,10 +205,17 @@ export function evaluate(blocks: FilterBlock[], item: DroppedItem, area: number)
     if (!block.conditions.every((condition) => matchCondition(condition, item, area))) continue
     style = applyActions(style, block.actions)
     last = block
-    if (!block.continues) return { visible: block.action !== 'Hide', style, block }
+    if (!block.continues) return decide(block, item, style)
   }
   // Последний подошедший блок с Continue тоже решает, показывать ли предмет.
-  return { visible: last ? last.action !== 'Hide' : true, style, block: last }
+  return last ? decide(last, item, style) : { visible: true, style, block: null }
+}
+
+function decide(block: FilterBlock, item: DroppedItem, style: TierStyle): Appearance {
+  if (block.action !== 'Hide') return { visible: true, style, block }
+  // Hide на такие предметы игра не применяет: предмет лежит на земле с оформлением блока.
+  if (UNHIDEABLE_CLASSES.includes(item.itemClass)) return { visible: true, forcedVisible: true, style, block }
+  return { visible: false, style, block }
 }
 
 /** Роль блока для предмета: решает, добавляет оформление, подходит, но решение уже принято выше, или почти подошёл. */

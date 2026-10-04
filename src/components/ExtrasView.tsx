@@ -50,7 +50,10 @@ export function ExtrasView({ config, update }: Props) {
                 return (
                   <div key={key} className="style-row" data-focus={key}>
                     <div className="style-row-head extra-row">
-                      <span className="style-row-title">{label}</span>
+                      <span className="style-row-title">
+                        {label}
+                        {rule.unhideable && <span className="count unhideable"> · {t('items.unhideable')}</span>}
+                      </span>
                       <div className="ground">
                         <ItemLabel
                           name={rule.sample ? name(rule.sample) : label}
@@ -62,7 +65,7 @@ export function ExtrasView({ config, update }: Props) {
                         value={choice}
                         onChange={(e) => setChoice(key, e.target.value as ExtraChoice, rule.tier)}
                       >
-                        {CHOICES.map((c) => (
+                        {CHOICES.filter((c) => !(rule.unhideable && c === 'hide')).map((c) => (
                           <option key={c} value={c}>
                             {c === 'hide' ? t('extras.hide') : c === 'off' ? t('extras.off') : t(keyOf('tier', c))}
                             {c === rule.tier ? ` ${t('extras.default')}` : ''}

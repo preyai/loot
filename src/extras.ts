@@ -14,6 +14,8 @@ export interface ExtraRule {
   tier: ExtraChoice
   /** Английское название предмета для образца плашки; без него на плашке — подпись правила. */
   sample?: string
+  /** Игра не даёт скрыть такие предметы (unhideable.ts): вместо скрытия — неприметный показ. */
+  unhideable?: true
 }
 
 export interface ExtraGroup {
@@ -58,6 +60,7 @@ export const EXTRA_GROUPS: ExtraGroup[] = [
         id: 'any',
         tier: 'D',
         sample: 'Vase Relic',
+        unhideable: true,
         blocks: [
           [
             'Rarity Normal Magic',

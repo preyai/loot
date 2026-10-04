@@ -806,3 +806,24 @@ describe('своё оформление тиров раздела', () => {
     expect(text).toContain('Show # Breach / S\n    BaseType == "Breach Splinter"\n    SetFontSize 45')
   })
 })
+
+describe('оформление правил наборов', () => {
+  it('у каждого правила каждого набора — своё оформление, не тир валюты', () => {
+    for (const preset of RULE_PRESETS) {
+      for (const rule of preset.make(null, t)) {
+        expect(rule.style, preset.id + ': ' + rule.name).toBeDefined()
+        expect(Object.values(DEFAULT_CONFIG.tiers), rule.name).not.toContainEqual(rule.style)
+      }
+    }
+  })
+
+  it('исключительные — как у NeverSink: красное с оранжевым лучом и бирюзовое с синим', () => {
+    const balanced = RULE_PRESETS.find((p) => p.id === 'balanced')!.make(null, t)
+    const sockets3 = baseRuleBlock({ ...balanced.find((r) => r.name === t('rule.sockets3'))!, id: '1' }, 0, DEFAULT_CONFIG.tiers)!
+    expect(sockets3).toContain('SetTextColor 240 0 0 255\n    SetBorderColor 240 0 0 255\n    SetBackgroundColor 70 0 20 255')
+    expect(sockets3).toContain('PlayEffect Orange\n    MinimapIcon 0 Orange Pentagon')
+    const sockets2 = baseRuleBlock({ ...balanced.find((r) => r.name === t('rule.sockets2'))!, id: '2' }, 1, DEFAULT_CONFIG.tiers)!
+    expect(sockets2).toContain('SetTextColor 0 240 190 255')
+    expect(chancingRule(['Utility Belt'], '10 div', t).style?.text).toEqual({ r: 125, g: 255, b: 89, a: 255 })
+  })
+})

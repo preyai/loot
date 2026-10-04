@@ -1,4 +1,5 @@
 import catalog from './data/bases.json'
+import { GEAR_STYLES } from './gearStyles'
 import { keyOf, type Lang, type T } from './i18n'
 import { RARITIES, type BaseRule, type TierId, type TierStyle } from './types'
 
@@ -229,6 +230,7 @@ export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule
       minItemLevel: 83,
       excludeCorrupted: true,
       tier: 'C',
+      style: GEAR_STYLES.flasks,
     }),
   },
   {
@@ -241,11 +243,12 @@ export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule
       minItemLevel: 83,
       excludeCorrupted: true,
       tier: 'C',
+      style: GEAR_STYLES.flasks,
     }),
   },
   {
     title: 'template.jewels',
-    make: (t) => ({ ...EMPTY_RULE, name: t('template.jewels'), classes: ['Jewels'], rarities: ['Rare'], tier: 'B' }),
+    make: (t) => ({ ...EMPTY_RULE, name: t('template.jewels'), classes: ['Jewels'], rarities: ['Rare'], tier: 'B', style: GEAR_STYLES.jewelsRare }),
   },
   { title: 'template.empty', make: (t) => ({ ...EMPTY_RULE, name: t('template.emptyName') }) },
 ]

@@ -1,4 +1,5 @@
 import { BASE_CLASSES, classesOf, EMPTY_RULE } from './bases'
+import { GEAR_STYLES } from './gearStyles'
 import drops from './data/unique-drops.json'
 import type { T } from './i18n'
 import type { BaseRule, MarketItem, UniqueInfo } from './types'
@@ -70,5 +71,7 @@ export function chancingRule(bases: string[], priceLabel: string, t: T): Omit<Ba
     rarities: ['Normal'],
     excludeCorrupted: true,
     tier: 'B',
+    // Как у NeverSink для баз под шансинг: салатовое на зелёном — сразу видно, что это не валюта.
+    style: GEAR_STYLES.chancing,
   }
 }

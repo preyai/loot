@@ -1,4 +1,5 @@
 import { BASE_CLASSES, classesOf, classNames, EMPTY_RULE, GEAR_CLASSES, POPULAR_SHARE, popularBases, topBases } from './bases'
+import { GEAR_STYLES } from './gearStyles'
 import type { T } from './i18n'
 import type { BaseRule, Config, Rarity, Rgba, TierId, TierStyle } from './types'
 
@@ -43,24 +44,41 @@ function blocks(shares: Record<string, number> | null, t: T) {
   const rule = (name: string, fields: Partial<Draft>): Draft => ({ ...EMPTY_RULE, name, ...fields })
 
   return {
-    sockets3: rule(t('rule.sockets3'), { classes: TWO_SOCKET_CLASSES, minSockets: 3, excludeCorrupted: true, tier: 'A' }),
-    sockets2: rule(t('rule.sockets2'), { classes: ONE_SOCKET_CLASSES, minSockets: 2, excludeCorrupted: true, tier: 'B' }),
-    quality27: rule(t('rule.quality27'), { ...onGood, minQuality: 27, excludeCorrupted: true, tier: 'A' }),
-    quality21: rule(t('rule.quality21'), { classes: GEAR_CLASSES, minQuality: 21, excludeCorrupted: true, tier: 'C' }),
-    quality21Good: rule(t('rule.quality21Good'), { ...onGood, minQuality: 21, excludeCorrupted: true, tier: 'C' }),
+    // У каждого правила — своё оформление по стилям NeverSink для экипировки (gearStyles.ts):
+    // так вещи на земле не путаются с валютой того же тира.
+    sockets3: rule(t('rule.sockets3'), { classes: TWO_SOCKET_CLASSES, minSockets: 3, excludeCorrupted: true, tier: 'A', style: GEAR_STYLES.exceptionalTop }),
+    sockets2: rule(t('rule.sockets2'), { classes: ONE_SOCKET_CLASSES, minSockets: 2, excludeCorrupted: true, tier: 'B', style: GEAR_STYLES.exceptional }),
+    quality27: rule(t('rule.quality27'), { ...onGood, minQuality: 27, excludeCorrupted: true, tier: 'A', style: GEAR_STYLES.exceptionalTop }),
+    quality21: rule(t('rule.quality21'), { classes: GEAR_CLASSES, minQuality: 21, excludeCorrupted: true, tier: 'C', style: GEAR_STYLES.exceptional }),
+    quality21Good: rule(t('rule.quality21Good'), { ...onGood, minQuality: 21, excludeCorrupted: true, tier: 'C', style: GEAR_STYLES.exceptional }),
     rareTier: (min: number, tier: TierId) =>
-      rule(t('rule.rareTier', { n: min }), { ...onGood, rarities: ['Rare'], minUnidentifiedTier: min, tier }),
+      rule(t('rule.rareTier', { n: min }), {
+        ...onGood,
+        rarities: ['Rare'],
+        minUnidentifiedTier: min,
+        tier,
+        style: min >= 4 ? GEAR_STYLES.exceptional : min === 3 ? GEAR_STYLES.notable : GEAR_STYLES.rare,
+      }),
     rareJewellery: (min: number, tier: TierId) =>
       rule(min ? t('rule.rareJewelleryTier', { n: min }) : t('rule.rareJewellery'), {
         classes: JEWELLERY,
         rarities: ['Rare'],
         minUnidentifiedTier: min,
         tier,
+        style: min ? GEAR_STYLES.jewelleryTiered : GEAR_STYLES.jewellery,
       }),
     crafting: (tier: TierId) =>
-      rule(t('rule.crafting'), { ...onGood, rarities: ['Normal', 'Magic'], minItemLevel: 82, excludeCorrupted: true, tier }),
-    rare82: rule(t('rule.rare82'), { ...onGood, rarities: ['Rare'], minItemLevel: 82, tier: 'D' }),
-    hideRares: rule(t('rule.hideRares'), { action: 'hide', classes: GEAR_CLASSES, rarities: ['Rare'], minAreaLevel: 75 }),
+      rule(t('rule.crafting'), {
+        ...onGood,
+        rarities: ['Normal', 'Magic'],
+        minItemLevel: 82,
+        excludeCorrupted: true,
+        tier,
+        style: GEAR_STYLES.crafting,
+      }),
+    rare82: rule(t('rule.rare82'), { ...onGood, rarities: ['Rare'], minItemLevel: 82, tier: 'D', style: GEAR_STYLES.rare }),
+    // У правил скрытия оформление видно только под Alt — неприметное, в цвете редкости.
+    hideRares: rule(t('rule.hideRares'), { action: 'hide', classes: GEAR_CLASSES, rarities: ['Rare'], minAreaLevel: 75, style: GEAR_STYLES.hiddenRare }),
     // Флаконы, обереги и самоцветы — как в NeverSink для карт.
     flasks: rule(t('template.flasks'), {
       classes: known(['Life Flasks', 'Mana Flasks']),
@@ -69,15 +87,35 @@ function blocks(shares: Record<string, number> | null, t: T) {
       minItemLevel: 83,
       excludeCorrupted: true,
       tier: 'C',
+      style: GEAR_STYLES.flasks,
     }),
-    charms: rule(t('template.charms'), { classes: known(['Charms']), rarities: ['Normal', 'Magic'], minItemLevel: 83, excludeCorrupted: true, tier: 'C' }),
-    jewelsRare: rule(t('template.jewels'), { classes: JEWELS, rarities: ['Rare'], tier: 'B' }),
-    jewelsMagic: rule(t('rule.jewelsMagic'), { classes: JEWELS, rarities: ['Normal', 'Magic'], tier: 'D' }),
+    charms: rule(t('template.charms'), {
+      classes: known(['Charms']),
+      rarities: ['Normal', 'Magic'],
+      minItemLevel: 83,
+      excludeCorrupted: true,
+      tier: 'C',
+      style: GEAR_STYLES.flasks,
+    }),
+    jewelsRare: rule(t('template.jewels'), { classes: JEWELS, rarities: ['Rare'], tier: 'B', style: GEAR_STYLES.jewelsRare }),
+    jewelsMagic: rule(t('rule.jewelsMagic'), { classes: JEWELS, rarities: ['Normal', 'Magic'], tier: 'D', style: GEAR_STYLES.jewelsMagic }),
     // Скрытие в картах — правилами, а не галочкой «Остальная экипировка»: та стоит в фильтре после правил баз
     // и не сработала бы из-за последних правил набора, которые показывают всё оставшееся.
-    hideNormalMagic: rule(t('rule.hideNormalMagic'), { action: 'hide', classes: GEAR_CLASSES, rarities: ['Normal', 'Magic'], minAreaLevel: MAPS }),
-    hideFlasks: rule(t('rule.hideFlasks'), { action: 'hide', classes: FLASKS, rarities: ['Normal', 'Magic'], minAreaLevel: MAPS }),
-    hideJewellery: rule(t('rule.hideJewellery'), { action: 'hide', classes: JEWELLERY, rarities: ['Normal', 'Magic'], minAreaLevel: MAPS }),
+    hideNormalMagic: rule(t('rule.hideNormalMagic'), {
+      action: 'hide',
+      classes: GEAR_CLASSES,
+      rarities: ['Normal', 'Magic'],
+      minAreaLevel: MAPS,
+      style: GEAR_STYLES.hiddenNormal,
+    }),
+    hideFlasks: rule(t('rule.hideFlasks'), { action: 'hide', classes: FLASKS, rarities: ['Normal', 'Magic'], minAreaLevel: MAPS, style: GEAR_STYLES.hiddenNormal }),
+    hideJewellery: rule(t('rule.hideJewellery'), {
+      action: 'hide',
+      classes: JEWELLERY,
+      rarities: ['Normal', 'Magic'],
+      minAreaLevel: MAPS,
+      style: GEAR_STYLES.hiddenNormal,
+    }),
   }
 }
 
@@ -105,16 +143,22 @@ function levelingRules(t: T): Draft[] {
   const rule = (name: string, fields: Partial<Draft>): Draft => ({ ...EMPTY_RULE, name, maxAreaLevel: CAMPAIGN_END, ...fields })
   const everything = [...GEAR_CLASSES, ...JEWELLERY]
   return [
-    rule(t('rule.levelingRareJewellery'), { classes: JEWELLERY, rarities: ['Rare'], tier: 'B' }),
-    rule(t('rule.levelingRareTier', { n: 4 }), { classes: GEAR_CLASSES, rarities: ['Rare'], minUnidentifiedTier: 4, tier: 'B' }),
-    rule(t('rule.levelingRareTier', { n: 3 }), { classes: GEAR_CLASSES, rarities: ['Rare'], minUnidentifiedTier: 3, tier: 'C' }),
-    rule(t('rule.levelingRare'), { classes: GEAR_CLASSES, rarities: ['Rare'], tier: 'D' }),
+    rule(t('rule.levelingRareJewellery'), { classes: JEWELLERY, rarities: ['Rare'], tier: 'B', style: GEAR_STYLES.jewellery }),
+    rule(t('rule.levelingRareTier', { n: 4 }), {
+      classes: GEAR_CLASSES,
+      rarities: ['Rare'],
+      minUnidentifiedTier: 4,
+      tier: 'B',
+      style: GEAR_STYLES.exceptional,
+    }),
+    rule(t('rule.levelingRareTier', { n: 3 }), { classes: GEAR_CLASSES, rarities: ['Rare'], minUnidentifiedTier: 3, tier: 'C', style: GEAR_STYLES.notable }),
+    rule(t('rule.levelingRare'), { classes: GEAR_CLASSES, rarities: ['Rare'], tier: 'D', style: GEAR_STYLES.rare }),
     // Скорость передвижения на ранних сапогах — главное, что ищут в начале кампании.
-    rule(t('rule.levelingBoots'), { classes: known(['Boots']), rarities: ['Magic'], maxAreaLevel: 32, tier: 'C' }),
-    rule(t('rule.levelingJewellery'), { classes: JEWELLERY, rarities: ['Normal', 'Magic'], tier: 'D' }),
-    rule(t('rule.levelingFlasks'), { classes: FLASKS_AND_CHARMS, rarities: ['Normal', 'Magic'], tier: 'D' }),
-    rule(t('rule.levelingQuality'), { classes: everything, rarities: ['Normal', 'Magic'], minQuality: 1, tier: 'E' }),
-    rule(t('rule.levelingSockets'), { classes: everything, rarities: ['Normal', 'Magic'], minSockets: 1, tier: 'E' }),
+    rule(t('rule.levelingBoots'), { classes: known(['Boots']), rarities: ['Magic'], maxAreaLevel: 32, tier: 'C', style: GEAR_STYLES.magicPick }),
+    rule(t('rule.levelingJewellery'), { classes: JEWELLERY, rarities: ['Normal', 'Magic'], tier: 'D', style: GEAR_STYLES.jewelleryPick }),
+    rule(t('rule.levelingFlasks'), { classes: FLASKS_AND_CHARMS, rarities: ['Normal', 'Magic'], tier: 'D', style: GEAR_STYLES.flasksLeveling }),
+    rule(t('rule.levelingQuality'), { classes: everything, rarities: ['Normal', 'Magic'], minQuality: 1, tier: 'E', style: GEAR_STYLES.salvage }),
+    rule(t('rule.levelingSockets'), { classes: everything, rarities: ['Normal', 'Magic'], minSockets: 1, tier: 'E', style: GEAR_STYLES.salvage }),
     ...restRules(t),
   ]
 }

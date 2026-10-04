@@ -806,19 +806,3 @@ describe('своё оформление скрытых', () => {
     expect(generateFilter(snapshot([item('Scroll of Wisdom', 0.0001)]), base)).toContain('SetFontSize 18\n    SetBorderColor 0 0 0 0\n    SetBackgroundColor 20 20 0 0')
   })
 })
-
-describe('своё оформление скрытых в разделе', () => {
-  it('у валюты — своё, у других разделов и правил — общее', () => {
-    const config: Config = {
-      ...DEFAULT_CONFIG,
-      visibility: { minTier: 'A', minPrice: 0, stacks: false },
-      gold: { ...DEFAULT_CONFIG.gold, hideSmall: true },
-      sectionHidden: { currency: { fontSize: 30, text: null, border: { r: 1, g: 2, b: 3, a: 255 }, background: null } },
-    }
-    const text = generateFilter(snapshot([item('Scroll of Wisdom', 0.0001), item('Breach Splinter', 0.0001, 'breach')]), config)
-    const block = (prefix: string) => text.split('\n\n').find((b) => b.startsWith(prefix))!
-    expect(block('Hide # Currency / hidden')).toContain('SetFontSize 30\n    SetBorderColor 1 2 3 255')
-    expect(block('Hide # Breach / hidden')).toContain('SetFontSize 18\n    SetBorderColor 0 0 0 0')
-    expect(block('Hide # Gold / small piles')).toContain('SetFontSize 18')
-  })
-})

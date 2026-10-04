@@ -387,16 +387,10 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
   }
 
   out.push(...restBlocks())
-  // Своё оформление скрытых — вместо стандартного во всех блоках Hide (блоки пишет одна функция block):
-  // у раздела рынка со своим оформлением скрытых — его, у остальных — общее.
-  const standard = HIDDEN_LINES.map((l) => INDENT + l).join('\n')
-  const lines = (style: HiddenStyle) => hiddenLines(style).map((l) => INDENT + l).join('\n')
-  const general = lines(config.hiddenStyle)
-  const bySection = SECTIONS.filter((s) => config.sectionHidden[s.id]).map((s) => [`Hide # ${s.label} / `, lines(config.sectionHidden[s.id]!)] as const)
-  const blocks = out.map((text) => {
-    if (!text.startsWith('Hide')) return text
-    const own = bySection.find(([prefix]) => text.startsWith(prefix))
-    return text.replace(standard, own ? own[1] : general)
-  })
+  // Своё оформление скрытых — вместо стандартного во всех блоках Hide (блоки пишет одна функция block).
+  const hidden = hiddenLines(config.hiddenStyle)
+  const blocks = out.map((text) =>
+    text.startsWith('Hide') ? text.replace(HIDDEN_LINES.map((l) => INDENT + l).join('\n'), hidden.map((l) => INDENT + l).join('\n')) : text,
+  )
   return blocks.join('\n\n') + '\n'
 }

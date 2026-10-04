@@ -247,8 +247,6 @@ export interface Config {
   /** Своё оформление предмета раздела рынка по ключу (itemKey): важнее тира, предмет всегда показывается. */
   itemStyles: Record<string, TierStyle>
   hiddenStyle: HiddenStyle
-  /** Своё оформление скрытых в разделе рынка; разделов, которых здесь нет, — общее (hiddenStyle). */
-  sectionHidden: Partial<Record<SectionId, HiddenStyle>>
   disabledSections: SectionId[]
   /** Применяются по порядку: первое подошедшее правило побеждает. */
   baseRules: BaseRule[]

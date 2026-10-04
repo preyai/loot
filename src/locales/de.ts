@@ -139,8 +139,6 @@ export const de: Dictionary = {
   'items.ownTiers': 'Stufenstile in diesem Abschnitt',
   'items.ownTiersNote': 'Hake eine Stufe an, um ihr in diesem Abschnitt ein eigenes Aussehen zu geben; nicht angehakte Stufen sehen aus wie auf der Seite „Stufen & Stile“.',
   'items.ownTier': 'eigen',
-  'items.ownHidden': 'Eigener Stil für ausgeblendete Gegenstände in diesem Abschnitt',
-  'items.ownHiddenNote': 'Ausgeblendete Gegenstände dieses Abschnitts (mit Alt sichtbar) sind gestaltet wie auf der Seite',
   'items.hide': 'Gegenstand ausblenden',
   'items.tierFor': 'Stufe für {name}',
   'items.fewListings': 'wenige Angebote',

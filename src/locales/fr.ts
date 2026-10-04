@@ -139,8 +139,6 @@ export const fr: Dictionary = {
   'items.ownTiers': 'Style des paliers dans cette section',
   'items.ownTiersNote': 'Cochez un palier pour lui donner son propre style dans cette section ; les autres gardent celui de la page « Paliers et styles ».',
   'items.ownTier': 'perso',
-  'items.ownHidden': 'Style propre aux objets masqués de cette section',
-  'items.ownHiddenNote': 'Les objets masqués de cette section (visibles avec Alt) ont le style de la page',
   'items.hide': 'Masquer l’objet',
   'items.tierFor': 'Palier pour {name}',
   'items.fewListings': 'peu d’annonces',

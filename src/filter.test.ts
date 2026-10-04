@@ -6,7 +6,7 @@ import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } 
 import { applyPreset, restRules, RULE_PRESETS } from './presets'
 import { evaluate, parseFilter } from './filterEval'
 import { generateLoot } from './lootSim'
-import { baseRuleBlock, extraBlocks, generateFilter, goldBlocks, matchConditions, styleLines, waystoneBlocks } from './filter'
+import { baseRuleBlock, extraBlocks, generateFilter, goldBlocks, HIDDEN_LINES, matchConditions, styleLines, waystoneBlocks } from './filter'
 import { DEFAULT_GOLD } from './gold'
 import { DEFAULT_WAYSTONES } from './waystones'
 import { keyOf, LANGUAGES, translator } from './i18n'
@@ -216,14 +216,14 @@ describe('правила баз', () => {
     )
   })
 
-  it('с базами — по BaseType; любая редкость не задевает уники; Hide без стиля', () => {
+  it('с базами — по BaseType; любая редкость не задевает уники; Hide — с оформлением скрытого', () => {
     const hide: BaseRule = { ...rule, action: 'hide', bases: ['Gemini Bow'], rarities: [], minItemLevel: 0, minQuality: 20, minSockets: 2 }
     expect(baseRuleBlock(hide, 2, tiers)).toBe(
-      ['Hide # Bases / rule 3', '    BaseType == "Gemini Bow"', '    Rarity <= Rare', '    Quality >= 20', '    Sockets >= 2'].join('\n'),
+      ['Hide # Bases / rule 3', '    BaseType == "Gemini Bow"', '    Rarity <= Rare', '    Quality >= 20', '    Sockets >= 2', ...HIDDEN_LINES.map((l) => `    ${l}`)].join('\n'),
     )
   })
 
-  it('своё оформление правила важнее тира; у правила скрытия оно не пишется', () => {
+  it('своё оформление правила важнее тира; у правила скрытия — оформление скрытого', () => {
     const style = { ...tiers.E, fontSize: 30, sound: { id: 9, volume: 150 }, background: { r: 1, g: 2, b: 3, a: 255 } }
     const custom: BaseRule = { ...rule, tier: 'S', style }
     const text = baseRuleBlock(custom, 0, tiers)!
@@ -233,7 +233,8 @@ describe('правила баз', () => {
     // Ни одной строки из стиля тира S, на который правило формально ссылается.
     expect(text).not.toContain('SetFontSize 45')
     expect(text).not.toContain('MinimapIcon 0 Red Star')
-    expect(baseRuleBlock({ ...custom, action: 'hide' }, 0, tiers)).not.toContain('SetFontSize')
+    expect(baseRuleBlock({ ...custom, action: 'hide' }, 0, tiers)).not.toContain('SetFontSize 30')
+    expect(baseRuleBlock({ ...custom, action: 'hide' }, 0, tiers)).toContain('SetFontSize 18')
     expect(describeRule(custom, t)).toContain('своё оформление')
   })
 
@@ -265,6 +266,7 @@ describe('правила баз', () => {
         '    Corrupted False',
         '    Mirrored False',
         '    AreaLevel >= 75',
+        ...HIDDEN_LINES.map((l) => `    ${l}`),
       ].join('\n'),
     )
   })
@@ -585,7 +587,7 @@ describe('путевые камни', () => {
     expect(all).toContain('Show # Waystones / T14\n    Class == "Waystones"\n    WaystoneTier 14\n')
     expect(all).not.toContain('WaystoneTier 13')
     expect(all).not.toContain('AnyEnchantment')
-    expect(all.endsWith('Hide # Waystones / below T14\n    Class == "Waystones"\n    WaystoneTier < 14\n    Rarity <= Rare')).toBe(true)
+    expect(all.endsWith('Hide # Waystones / below T14\n    Class == "Waystones"\n    WaystoneTier < 14\n    Rarity <= Rare\n    SetFontSize 18\n    SetBorderColor 0 0 0 0\n    SetBackgroundColor 20 20 0 0\n    DisableDropSound True')).toBe(true)
   })
 
   it('выключенные правила в фильтр не попадают', () => {
@@ -609,7 +611,7 @@ describe('золото', () => {
   it('без прокачки и со скрытием мелкого; порог прокачки выше обычного не пишется', () => {
     const all = text({ leveling: false, hideSmall: true })
     expect(all).not.toContain('AreaLevel')
-    expect(all.endsWith('Hide # Gold / small piles\n    BaseType == "Gold"')).toBe(true)
+    expect(all.endsWith('Hide # Gold / small piles\n    BaseType == "Gold"\n    SetFontSize 18\n    SetBorderColor 0 0 0 0\n    SetBackgroundColor 20 20 0 0\n    DisableDropSound True')).toBe(true)
     expect(text({ sizes: { huge: 5000, large: 800, medium: 200 } })).not.toContain('StackSize >= 1000')
     expect(text({ sizes: { huge: 5000, large: 800, medium: 200 } })).not.toContain('StackSize >= 250\n')
   })
@@ -730,5 +732,20 @@ describe('наборы покрывают все предметы', () => {
     expect(rare.style?.text).toEqual({ r: 255, g: 255, b: 119, a: 255 })
     expect(magic.style?.sound).toBeNull()
     expect(baseRuleBlock({ ...normal, id: '1' }, 0, DEFAULT_CONFIG.tiers)).toContain('Rarity Normal\n    SetFontSize 30\n    SetTextColor 200 200 200 255')
+  })
+})
+
+describe('оформление скрытого (под Alt)', () => {
+  it('у каждого Hide в фильтре — мелкий шрифт, прозрачные рамка и фон, без звука падения, как у NeverSink', () => {
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      visibility: { minTier: 'A', minPrice: 0, stacks: false },
+      gear: { hideLowRarity: true, areaLevel: 70 },
+      gold: { ...DEFAULT_CONFIG.gold, hideSmall: true },
+      waystones: { ...DEFAULT_CONFIG.waystones, minTier: 5 },
+    }
+    const blocks = generateFilter(snapshot([item('Scroll of Wisdom', 0.0001)]), config).split('\n\n').filter((b) => b.startsWith('Hide'))
+    expect(blocks.length).toBeGreaterThan(3)
+    for (const text of blocks) expect(text.endsWith(HIDDEN_LINES.map((l) => '    ' + l).join('\n')), text.split('\n')[0]).toBe(true)
   })
 })

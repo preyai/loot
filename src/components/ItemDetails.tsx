@@ -104,7 +104,7 @@ export function ItemDetails({ item, title, look, entries, config, onClose }: Pro
       <div className="unique-card-body">
         <header>
           <div className="ground ground--wide">
-            <ItemLabel name={title} style={look.visible ? look.style : null} />
+            <ItemLabel name={title} style={look.style} />
           </div>
           <div className="unique-card-english">{item.label}</div>
           <button className="unique-card-close" aria-label={t('unique.close')} onClick={onClose}>

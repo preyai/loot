@@ -77,8 +77,16 @@ export function styleLines(style: TierStyle): string[] {
   return lines
 }
 
+/**
+ * Оформление скрытого предмета — его видно, если держать Alt. Как у NeverSink: мелкий шрифт,
+ * прозрачные рамка и фон, без звука падения; цвет текста остаётся цветом редкости.
+ */
+export const HIDDEN_LINES = ['SetFontSize 18', 'SetBorderColor 0 0 0 0', 'SetBackgroundColor 20 20 0 0', 'DisableDropSound True']
+
 function block(action: 'Show' | 'Hide', comment: string, lines: string[]): string {
-  return [`${action} # ${comment}`, ...lines.map((l) => INDENT + l)].join('\n')
+  // У каждого Hide — своё оформление: без него предмет под Alt выглядел бы как без фильтра.
+  const all = action === 'Hide' ? [...lines, ...HIDDEN_LINES] : lines
+  return [`${action} # ${comment}`, ...all.map((l) => INDENT + l)].join('\n')
 }
 
 /** Блок фильтра для правила баз; null — правило выключено или ничего не выбирает. */

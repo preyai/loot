@@ -149,7 +149,7 @@ export function PreviewView({ config, snapshot }: Props) {
                 style={{ background: COLORS[look.style.effect.color] ?? '#fff' }}
               />
             )}
-            <ItemLabel name={title(item)} style={look.visible ? look.style : null} />
+            <ItemLabel name={title(item)} style={look.style} />
             {look.visible && (look.style.icon || look.style.sound) && (
               <span className="preview-marks">
                 {look.style.icon && (

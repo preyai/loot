@@ -65,10 +65,10 @@ function gearRarity(random: Random): ItemRarity {
 
 const MODS: Record<ItemRarity, [number, number]> = { Normal: [0, 0], Magic: [1, 2], Rare: [3, 6], Unique: [3, 6] }
 
-function gear(area: number, random: Random): DroppedItem & { label: string } {
-  // Базы, которые уже выпадают на этом уровне области.
-  const bases = BASE_CLASSES.flatMap((c) => c.bases.filter((b) => b.drop <= Math.max(area, 1)).map((b) => ({ c, b })))
-  const { c, b } = pick(bases.length ? bases : BASE_CLASSES.flatMap((c) => c.bases.map((b) => ({ c, b }))), random)
+type Drop = DroppedItem & { label: string }
+type Base = { c: (typeof BASE_CLASSES)[number]; b: (typeof BASE_CLASSES)[number]['bases'][number] }
+
+function gearDrop({ c, b }: Base, area: number, random: Random): Drop {
   const rarity = gearRarity(random)
   const corrupted = chance(0.03, random)
   return {
@@ -85,9 +85,7 @@ function gear(area: number, random: Random): DroppedItem & { label: string } {
   }
 }
 
-function market(items: MarketItem[], random: Random): DroppedItem & { label: string } {
-  // Дешёвое падает чаще дорогого; у предметов без цены — средний шанс.
-  const item = weighted(items, (i) => 1 / Math.sqrt(Math.max(i.divine ?? 0.05, 0.0005)), random)
+function marketDrop(item: MarketItem, random: Random): Drop {
   const price = item.divine ?? 0.05
   const gem = /^(Uncut \w+ Gem) \(Level (\d+)\)$/.exec(item.name)
   const itemClass = item.name.startsWith('Omen') ? 'Omen' : (SECTION_CLASS[item.section] ?? 'Stackable Currency')
@@ -101,8 +99,7 @@ function market(items: MarketItem[], random: Random): DroppedItem & { label: str
   }
 }
 
-function unique(items: MarketItem[], random: Random): DroppedItem & { label: string } {
-  const item = weighted(items, (i) => 1 / Math.sqrt(Math.max(i.divine ?? 0.05, 0.0005)), random)
+function uniqueDrop(item: MarketItem, random: Random): Drop {
   const base = BASE_CLASS.get(item.name)
   return {
     ...blank({ itemClass: base?.itemClass ?? 'Unique', baseType: item.name, dropLevel: base?.drop ?? 1 }),
@@ -112,13 +109,14 @@ function unique(items: MarketItem[], random: Random): DroppedItem & { label: str
   }
 }
 
-function waystone(area: number, random: Random): DroppedItem & { label: string } {
-  const tier = Math.max(1, Math.min(16, area - 64 + between(-2, 2, random)))
+const waystoneName = (tier: number) => `Waystone (Tier ${tier})`
+
+function waystoneDrop(tier: number, area: number, random: Random): Drop {
   const rarity = weighted<ItemRarity>(['Normal', 'Magic', 'Rare'], (r) => ({ Normal: 4, Magic: 3, Rare: 3, Unique: 0 })[r], random)
   const corrupted = chance(0.1, random)
   return {
-    ...blank({ itemClass: 'Waystones', baseType: `Waystone (Tier ${tier})` }),
-    label: `Waystone (Tier ${tier})`,
+    ...blank({ itemClass: 'Waystones', baseType: waystoneName(tier) }),
+    label: waystoneName(tier),
     rarity,
     waystoneTier: tier,
     itemLevel: area,
@@ -128,26 +126,27 @@ function waystone(area: number, random: Random): DroppedItem & { label: string }
   }
 }
 
-function gold(area: number, random: Random): DroppedItem & { label: string } {
+function goldDrop(area: number, random: Random): Drop {
   const stack = Math.max(1, Math.round((20 + area * area * 0.3) * (0.3 + random() * 2.7)))
   return { ...blank({ itemClass: 'Gold', baseType: 'Gold' }), label: 'Gold', stackSize: stack }
 }
 
 const RELICS = ['Amphora Relic', 'Coffer Relic', 'Incense Relic', 'Seal Relic', 'Tapestry Relic', 'Urn Relic', 'Vase Relic']
+const TRIAL_KEYS = ['Djinn Barya', 'Inscribed Ultimatum']
 
-function trial(area: number, random: Random): DroppedItem & { label: string } {
-  const kind = pick(['Djinn Barya', 'Inscribed Ultimatum', 'relic'], random)
-  if (kind === 'relic') {
-    const name = pick(RELICS, random)
-    return { ...blank({ itemClass: 'Relics', baseType: name }), label: name, rarity: chance(0.5, random) ? 'Magic' : 'Normal', itemLevel: area }
-  }
-  return {
-    ...blank({ itemClass: 'Map Fragments', baseType: kind }),
-    label: kind,
-    itemLevel: Math.max(1, area + between(-3, 3, random)),
-    rarity: kind === 'Inscribed Ultimatum' && chance(0.2, random) ? 'Magic' : 'Normal',
-  }
-}
+const relicDrop = (name: string, area: number, random: Random): Drop => ({
+  ...blank({ itemClass: 'Relics', baseType: name }),
+  label: name,
+  rarity: chance(0.5, random) ? 'Magic' : 'Normal',
+  itemLevel: area,
+})
+
+const trialKeyDrop = (name: string, area: number, random: Random): Drop => ({
+  ...blank({ itemClass: 'Map Fragments', baseType: name }),
+  label: name,
+  itemLevel: Math.max(1, area + between(-3, 3, random)),
+  rarity: name === 'Inscribed Ultimatum' && chance(0.2, random) ? 'Magic' : 'Normal',
+})
 
 /** Доли родов лута: в картах добавляются путевые камни и плитки. */
 function kinds(area: number): [string, number][] {
@@ -162,24 +161,73 @@ function kinds(area: number): [string, number][] {
   ]
 }
 
-export function generateLoot(snapshotItems: MarketItem[], area: number, count: number, random: Random = Math.random): SimulatedItem[] {
+/** Шаблон предмета для поиска: английские названия, по которым его можно найти, и как его создать. */
+export interface LootTemplate {
+  /** Первое — название предмета; дальше — другие имена (у базы уника — сами уники). */
+  names: string[]
+  make: (random: Random) => Drop
+}
+
+const ALL_BASES: Base[] = BASE_CLASSES.flatMap((c) => c.bases.map((b) => ({ c, b })))
+
+/** Всё, что умеет создавать генератор, — для лута «только с таким названием». */
+export function lootTemplates(snapshotItems: MarketItem[], area: number): LootTemplate[] {
+  return [
+    { names: ['Gold'], make: (r) => goldDrop(area, r) },
+    ...snapshotItems.filter((i) => !i.uniques).map((item) => ({ names: [item.name], make: (r: Random) => marketDrop(item, r) })),
+    ...snapshotItems
+      .filter((i) => i.uniques)
+      .map((item) => ({ names: [item.name, ...(item.uniques ?? []).map((u) => u.name)], make: (r: Random) => uniqueDrop(item, r) })),
+    ...ALL_BASES.map((base) => ({ names: [base.b.name], make: (r: Random) => gearDrop(base, area, r) })),
+    ...Array.from({ length: 16 }, (_, i) => ({ names: [waystoneName(i + 1)], make: (r: Random) => waystoneDrop(i + 1, area, r) })),
+    ...RELICS.map((name) => ({ names: [name], make: (r: Random) => relicDrop(name, area, r) })),
+    ...TRIAL_KEYS.map((name) => ({ names: [name], make: (r: Random) => trialKeyDrop(name, area, r) })),
+  ]
+}
+
+/**
+ * Случайный лут. С match — только предметы, у которых подходит хоть одно название
+ * (поиск по имени: «ключ реликвария» — одни ключи); каждый подходящий вариант равновероятен.
+ */
+export function generateLoot(
+  snapshotItems: MarketItem[],
+  area: number,
+  count: number,
+  random: Random = Math.random,
+  match?: (name: string) => boolean,
+): SimulatedItem[] {
+  if (match) {
+    const pool = lootTemplates(snapshotItems, area).filter((template) => template.names.some(match))
+    if (pool.length === 0) return []
+    return Array.from({ length: count }, (_, id) => ({ ...pick(pool, random).make(random), id }))
+  }
+
   const marketItems = snapshotItems.filter((i) => !i.uniques)
   const uniqueItems = snapshotItems.filter((i) => i.uniques)
-  const table = kinds(area).filter(([kind, weight]) => weight > 0 && (kind !== 'market' || marketItems.length) && (kind !== 'unique' || uniqueItems.length))
+  // Базы, которые уже выпадают на этом уровне области.
+  const bases = ALL_BASES.filter(({ b }) => b.drop <= Math.max(area, 1))
+  // Дешёвое падает чаще дорогого; у предметов без цены — средний шанс.
+  const byPrice = (i: MarketItem) => 1 / Math.sqrt(Math.max(i.divine ?? 0.05, 0.0005))
+  const table = kinds(area).filter(
+    ([kind, weight]) => weight > 0 && (kind !== 'market' || marketItems.length) && (kind !== 'unique' || uniqueItems.length),
+  )
+
   return Array.from({ length: count }, (_, id) => {
     const [kind] = weighted(table, ([, w]) => w, random)
     const item =
       kind === 'gold'
-        ? gold(area, random)
+        ? goldDrop(area, random)
         : kind === 'market'
-          ? market(marketItems, random)
+          ? marketDrop(weighted(marketItems, byPrice, random), random)
           : kind === 'unique'
-            ? unique(uniqueItems, random)
+            ? uniqueDrop(weighted(uniqueItems, byPrice, random), random)
             : kind === 'waystone'
-              ? waystone(area, random)
+              ? waystoneDrop(Math.max(1, Math.min(16, area - 64 + between(-2, 2, random))), area, random)
               : kind === 'trial'
-                ? trial(area, random)
-                : gear(area, random)
+                ? chance(1 / 3, random)
+                  ? relicDrop(pick(RELICS, random), area, random)
+                  : trialKeyDrop(pick(TRIAL_KEYS, random), area, random)
+                : gearDrop(pick(bases.length ? bases : ALL_BASES, random), area, random)
     return { ...item, id }
   })
 }

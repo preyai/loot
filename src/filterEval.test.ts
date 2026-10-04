@@ -178,6 +178,17 @@ describe('генератор лута', () => {
     expect(loot.some((i) => i.itemClass === 'Waystones')).toBe(true)
   })
 
+  it('только предметы с названием: подходит любое имя, в том числе уника на базе', () => {
+    const keys = [market('Twilight Reliquary Key', 2, 'fragments'), market("Olroth's Reliquary Key", 5, 'fragments'), ...items]
+    const loot = generateLoot(keys, 80, 50, seeded(3), (name) => name.includes('Reliquary Key'))
+    expect(loot).toHaveLength(50)
+    expect(new Set(loot.map((i) => i.label))).toEqual(new Set(['Twilight Reliquary Key', "Olroth's Reliquary Key"]))
+    expect(loot.every((i) => i.itemClass === 'Map Fragments')).toBe(true)
+    const withUniques = [{ ...market('Utility Belt', 300, 'uq-accessories'), uniques: [{ name: 'Mageblood' }] as MarketItem['uniques'] }]
+    expect(generateLoot(withUniques, 80, 5, seeded(4), (name) => name === 'Mageblood').every((i) => i.rarity === 'Unique')).toBe(true)
+    expect(generateLoot(keys, 80, 10, seeded(5), () => false)).toEqual([])
+  })
+
   it('путевые камни — только в картах, базы — не старше уровня области', () => {
     const loot = generateLoot(items, 10, 300, seeded(2))
     expect(loot.some((i) => i.itemClass === 'Waystones')).toBe(false)

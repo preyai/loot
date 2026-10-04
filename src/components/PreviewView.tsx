@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { evaluate, parseFilter, trace, type Appearance } from '../filterEval'
 import { generateFilter } from '../filter'
 import { useI18n } from '../i18n-react'
-import { generateLoot, type SimulatedItem } from '../lootSim'
+import { generateLoot, lootTemplates, type SimulatedItem } from '../lootSim'
 import type { Config, MarketSnapshot } from '../types'
 import { ItemDetails } from './ItemDetails'
 import { ItemLabel } from './ItemLabel'
@@ -51,11 +51,24 @@ export function PreviewView({ config, snapshot }: Props) {
   const [seed, setSeed] = useState(0)
   const [showHidden, setShowHidden] = useState(true)
   const [opened, setOpened] = useState<SimulatedItem | null>(null)
+  // «Только предметы с названием»: все слова запроса — в русском или английском имени, в любом порядке
+  // («ключ реликвария» находит «Ключ от Сумеречного Реликвария»), без учёта регистра.
+  const [only, setOnly] = useState('')
+  const words = useMemo(() => only.toLowerCase().split(/\s+/).filter(Boolean), [only])
+  const match = useMemo(() => {
+    if (words.length === 0) return undefined
+    const has = (text: string) => words.every((word) => text.toLowerCase().includes(word))
+    return (english: string) => has(english) || has(name(english))
+  }, [words, name])
+  const variants = useMemo(
+    () => (match ? lootTemplates(snapshot.items, area).filter((template) => template.names.some(match)).length : null),
+    [match, snapshot, area],
+  )
 
   // Тот же текст, что уйдёт в файл: предпросмотр не может разойтись с фильтром.
   const blocks = useMemo(() => parseFilter(generateFilter(snapshot, config)), [snapshot, config])
   // seed — только чтобы кнопка давала новую выборку.
-  const loot = useMemo(() => generateLoot(snapshot.items, area, count), [snapshot, area, count, seed])
+  const loot = useMemo(() => generateLoot(snapshot.items, area, count, Math.random, match), [snapshot, area, count, seed, match])
   const shown = useMemo(() => loot.map((item) => ({ item, look: evaluate(blocks, item, area) })), [loot, blocks, area])
 
   const hidden = shown.filter(({ look }) => !look.visible).length
@@ -114,6 +127,11 @@ export function PreviewView({ config, snapshot }: Props) {
         <button className="primary" onClick={() => setSeed(seed + 1)}>
           {t('preview.generate')}
         </button>
+        <label className="check preview-only">
+          {t('preview.only')}
+          <input type="search" value={only} placeholder={t('preview.onlyPlaceholder')} onChange={(e) => setOnly(e.target.value)} />
+          {variants !== null && <span className="count">{variants > 0 ? t('preview.variants', { n: variants }) : t('preview.noVariants')}</span>}
+        </label>
         <span className="count">{t('preview.stats', { shown: loot.length - hidden, hidden, none: unmatched })}</span>
       </section>
 

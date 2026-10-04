@@ -4,13 +4,14 @@ import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
 import type { Section } from '../sections'
 import type { UpdateConfig } from '../store'
-import { formatPrice, itemDisplay, itemKey, visibilityFor, type Display } from '../tiering'
+import { formatPrice, itemDisplay, itemKey, sectionTierStyle, visibilityFor, type Display } from '../tiering'
 import {
   TIER_IDS,
   type Config,
   type MarketItem,
   type MarketSnapshot,
   type TierChoice,
+  type TierId,
   type TierStyle,
   type UniqueInfo,
   type Visibility,
@@ -18,6 +19,7 @@ import {
 import { isUnhideable } from '../unhideable'
 import { ItemLabel } from './ItemLabel'
 import { StyleFields } from './StyleFields'
+import { StyleRow } from './StyleRow'
 import { EnglishName } from './ItemName'
 import { UniqueCard } from './UniqueCard'
 import { VisibilityFields } from './VisibilityFields'
@@ -84,6 +86,13 @@ export function SectionView({ section, snapshot, config, update }: Props) {
       const { [key]: _own, ...itemStyles } = c.itemStyles
       return { ...c, overrides, itemStyles }
     })
+  const setSectionTier = (tier: TierId, style: TierStyle | null) =>
+    update((c) => {
+      const { [tier]: _old, ...rest } = c.sectionTiers[section.id] ?? {}
+      const tiers = style ? { ...rest, [tier]: style } : rest
+      const { [section.id]: _section, ...others } = c.sectionTiers
+      return { ...c, sectionTiers: Object.keys(tiers).length ? { ...others, [section.id]: tiers } : others }
+    })
   const setItemStyle = (key: string, style: TierStyle | null) =>
     update((c) => {
       const { [key]: _old, ...itemStyles } = c.itemStyles
@@ -148,6 +157,33 @@ export function SectionView({ section, snapshot, config, update }: Props) {
             {t('items.globalNote')} <a href="#/styles">«{t('nav.styles')}»</a>.
           </p>
         )}
+
+        <h3 className="section-tiers-title">{t('items.ownTiers')}</h3>
+        <p className="note">{t('items.ownTiersNote')}</p>
+        {TIER_IDS.map((tier) => {
+          const own = config.sectionTiers[section.id]?.[tier]
+          return (
+            <StyleRow
+              key={tier}
+              id={`section-${section.id}-${tier}`}
+              title={t(keyOf('tier', tier))}
+              sample={t('tier.label', { tier })}
+              style={sectionTierStyle(config, section.id, tier)}
+              onChange={(style) => setSectionTier(tier, style)}
+              locked={!own}
+            >
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={own !== undefined}
+                  // Своё оформление начинается с копии общего — так понятно, от чего отталкиваться.
+                  onChange={(e) => setSectionTier(tier, e.target.checked ? structuredClone(config.tiers[tier]) : null)}
+                />
+                {t('items.ownTier')}
+              </label>
+            </StyleRow>
+          )
+        })}
       </section>
 
       {section.unique && <p className="note">{t('items.uniqueNote')}</p>}
@@ -193,7 +229,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                           style={
                             own ??
                             (display.kind !== 'hide'
-                              ? config.tiers[display.tier]
+                              ? sectionTierStyle(config, section.id, display.tier)
                               : isUnhideable(item.name)
                                 ? section.unique
                                   ? REST_STYLES.unique
@@ -248,7 +284,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                         aria-expanded={editing === key}
                         onClick={() => {
                           // Первое нажатие — копия текущего вида предмета, чтобы править, а не собирать с нуля.
-                          if (!own) setItemStyle(key, structuredClone(display.kind === 'hide' ? config.tiers.E : config.tiers[display.tier]))
+                          if (!own) setItemStyle(key, structuredClone(sectionTierStyle(config, section.id, display.kind === 'hide' ? 'E' : display.tier)))
                           setEditing(editing === key ? null : key)
                         }}
                       >

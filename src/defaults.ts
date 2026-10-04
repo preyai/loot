@@ -93,6 +93,7 @@ export const DEFAULT_CONFIG: Config = {
   baseRules: [],
   visibility: { minTier: 'E', minPrice: 0, stacks: true },
   sectionVisibility: {},
+  sectionTiers: {},
   gear: { hideLowRarity: false, areaLevel: 65 },
   waystones: DEFAULT_WAYSTONES,
   gold: DEFAULT_GOLD,

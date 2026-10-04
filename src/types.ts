@@ -241,6 +241,8 @@ export interface Config {
   visibility: Visibility
   /** Разделы со своими настройками показа вместо общих. */
   sectionVisibility: Partial<Record<SectionId, Visibility>>
+  /** Своё оформление тиров в разделе рынка; тиров, которых здесь нет, — общее оформление (tiers). */
+  sectionTiers: Partial<Record<SectionId, Partial<Record<TierId, TierStyle>>>>
   gear: { hideLowRarity: boolean; areaLevel: number }
   waystones: WaystoneConfig
   gold: GoldConfig

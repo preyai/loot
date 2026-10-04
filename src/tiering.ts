@@ -9,6 +9,7 @@ import {
   type MarketSnapshot,
   type SectionId,
   type TierId,
+  type TierStyle,
   type Visibility,
 } from './types'
 
@@ -42,6 +43,10 @@ export function autoTier(item: MarketItem, config: Config, rates: Rates): TierId
   if (item.divine === null) return UNPRICED_TIER
   return tierByValue(item.divine * perDivine(config.currency, rates), config.thresholds)
 }
+
+/** Оформление тира в разделе: своё для раздела, если задано, иначе общее. */
+export const sectionTierStyle = (config: Config, section: SectionId, tier: TierId): TierStyle =>
+  config.sectionTiers[section]?.[tier] ?? config.tiers[tier]
 
 export function visibilityFor(config: Config, section: SectionId): Visibility {
   return config.sectionVisibility[section] ?? config.visibility

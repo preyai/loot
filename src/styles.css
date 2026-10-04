@@ -1298,6 +1298,14 @@ label.button-like:hover {
   margin: 4px 0 6px;
 }
 
+.section-tiers-title {
+  margin: 18px 0 4px;
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.05em;
+}
+
 .presets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

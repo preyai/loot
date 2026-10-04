@@ -1,6 +1,6 @@
 import { BASE_CLASSES, GEAR_CLASSES, ruleStyle } from './bases'
 import { SECTIONS } from './sections'
-import { itemDisplay, itemKey } from './tiering'
+import { itemDisplay, itemKey, sectionTierStyle } from './tiering'
 import { isUnhideable } from './unhideable'
 import { EXTRA_GROUPS, extraKey } from './extras'
 import { GOLD_PILES, LEVELING_GOLD } from './gold'
@@ -322,7 +322,7 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
 
     for (const tier of TIER_IDS) {
       for (const conditions of matchConditions(shown.get(tier) ?? [])) {
-        out.push(block('Show', `${section.label} / ${tier}`, [...rarity, ...conditions, ...styleLines(config.tiers[tier])]))
+        out.push(block('Show', `${section.label} / ${tier}`, [...rarity, ...conditions, ...styleLines(sectionTierStyle(config, section.id, tier))]))
       }
     }
 
@@ -337,7 +337,7 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
             ...rarity,
             ...conditions,
             `StackSize >= ${stackSize}`,
-            ...styleLines(config.tiers[tier]),
+            ...styleLines(sectionTierStyle(config, section.id, tier)),
           ]),
         )
       }

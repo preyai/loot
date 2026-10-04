@@ -774,3 +774,17 @@ describe('своё оформление предмета раздела', () => 
     expect(generateFilter(snapshot([robe]), config)).toContain('Show # Unique Armours / custom style\n    Rarity Unique\n    BaseType == "Silk Robe"')
   })
 })
+
+describe('своё оформление тиров раздела', () => {
+  it('в блоках тиров и стопок раздела — его оформление, в других разделах — общее', () => {
+    const own = { ...DEFAULT_CONFIG.tiers.S, fontSize: 33, background: { r: 9, g: 8, b: 7, a: 255 } }
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      sectionTiers: { currency: { S: own } },
+    }
+    const text = generateFilter(snapshot([mirror, item('Breach Splinter', 10, 'breach')]), config)
+    expect(text).toContain('Show # Currency / S\n    BaseType == "Mirror of Kalandra"\n    SetFontSize 33')
+    expect(text).toContain('SetBackgroundColor 9 8 7 255')
+    expect(text).toContain('Show # Breach / S\n    BaseType == "Breach Splinter"\n    SetFontSize 45')
+  })
+})

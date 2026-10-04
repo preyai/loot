@@ -16,10 +16,12 @@ interface Props {
   children?: React.ReactNode
   /** Ключ для перехода к строке из предпросмотра (focus.ts). */
   focusKey?: string
+  /** Образец показывается, но поля оформления не открываются (вид задан в другом месте). */
+  locked?: boolean
 }
 
 /** Строка с образцом плашки и раскрывающимися полями оформления. */
-export function StyleRow({ id, title, sample, style, note, onChange, children, focusKey }: Props) {
+export function StyleRow({ id, title, sample, style, note, onChange, children, focusKey, locked }: Props) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   return (
@@ -31,11 +33,11 @@ export function StyleRow({ id, title, sample, style, note, onChange, children, f
         <div className="ground">
           <ItemLabel name={sample} style={style} />
         </div>
-        <button disabled={!style} aria-expanded={open && !!style} onClick={() => setOpen(!open)}>
+        <button disabled={!style || locked} aria-expanded={open && !!style && !locked} onClick={() => setOpen(!open)}>
           {t('waystones.style')}
         </button>
       </div>
-      {open && style && (
+      {open && style && !locked && (
         <div className="rule-style">
           <StyleFields id={id} style={style} onChange={onChange} />
         </div>

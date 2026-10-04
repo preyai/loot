@@ -16,9 +16,9 @@ const fromHex = (hex: string, a: number): Rgba => ({
 const OPAQUE_BLACK: Rgba = { r: 0, g: 0, b: 0, a: 255 }
 const ICON_SIZES = [0, 1, 2] as const
 
-export function ColorField(props: { label: string; value: Rgba; onChange: (v: Rgba) => void }): React.ReactNode
-export function ColorField(props: { label: string; value: Rgba | null; onChange: (v: Rgba | null) => void; optional: true }): React.ReactNode
-export function ColorField({
+function ColorField(props: { label: string; value: Rgba; onChange: (v: Rgba) => void }): React.ReactNode
+function ColorField(props: { label: string; value: Rgba | null; onChange: (v: Rgba | null) => void; optional: true }): React.ReactNode
+function ColorField({
   label,
   value,
   onChange,

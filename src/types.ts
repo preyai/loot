@@ -221,17 +221,6 @@ export interface GoldConfig {
 /** Выбор для правила прочих предметов: тир, скрытие или «без правила». */
 export type ExtraChoice = TierId | 'hide' | 'off'
 
-/**
- * Оформление скрытых предметов — так игра показывает их, если держать Alt.
- * text = null — цвет текста по редкости (как у игры); border и background = null — прозрачные.
- */
-export interface HiddenStyle {
-  fontSize: number
-  text: Rgba | null
-  border: Rgba | null
-  background: Rgba | null
-}
-
 export interface Config {
   /** Название фильтра — имя файла и строка в списке фильтров игры. */
   filterName: string
@@ -246,7 +235,6 @@ export interface Config {
   overrides: Record<string, TierChoice>
   /** Своё оформление предмета раздела рынка по ключу (itemKey): важнее тира, предмет всегда показывается. */
   itemStyles: Record<string, TierStyle>
-  hiddenStyle: HiddenStyle
   disabledSections: SectionId[]
   /** Применяются по порядку: первое подошедшее правило побеждает. */
   baseRules: BaseRule[]

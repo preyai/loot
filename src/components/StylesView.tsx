@@ -4,7 +4,6 @@ import { useI18n } from '../i18n-react'
 import type { UpdateConfig } from '../store'
 import { convertThresholds, perDivine } from '../tiering'
 import { TIER_IDS, type Config, type MarketSnapshot, type TierId, type TierStyle } from '../types'
-import { HiddenStyleFields } from './HiddenStyleFields'
 import { ItemLabel } from './ItemLabel'
 import { SoundLibrary } from './SoundLibrary'
 import { StyleFields } from './StyleFields'
@@ -87,8 +86,6 @@ export function StylesView({ config, update, rates }: Props) {
       </section>
 
       <SoundLibrary />
-
-      <HiddenStyleFields config={config} update={update} />
 
       <div className="tier-editors">
         {TIER_IDS.map((id) => (

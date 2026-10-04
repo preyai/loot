@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { EFFECT_COLORS, FONT_SIZE, ICON_SHAPES, SOUND_IDS, SOUND_VOLUME_MAX } from '../defaults'
 import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
-import { playAlertSound } from '../sound'
+import { playStyleSound } from '../sound'
+import { useSoundLibrary } from '../soundLibrary'
 import type { Rgba, TierStyle } from '../types'
 
 const toHex = ({ r, g, b }: Rgba) => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')
@@ -73,9 +74,10 @@ export function StyleFields({ id, style, onChange }: Props) {
   const { t } = useI18n()
   const set = <K extends keyof TierStyle>(key: K, value: TierStyle[K]) => onChange({ ...style, [key]: value })
   const [soundError, setSoundError] = useState(false)
-  const listen = (soundId: number, volume: number) => {
+  const library = useSoundLibrary()
+  const listen = (sound: NonNullable<TierStyle['sound']>) => {
     setSoundError(false)
-    playAlertSound(soundId, volume).catch((e: unknown) => {
+    playStyleSound(sound).catch((e: unknown) => {
       // Новый звук обрывает предыдущий — это не ошибка, а обычное переключение.
       if (!(e instanceof DOMException && e.name === 'AbortError')) setSoundError(true)
     })
@@ -117,19 +119,37 @@ export function StyleFields({ id, style, onChange }: Props) {
           <>
             <select
               aria-label={t('styles.soundNumber')}
-              value={style.sound.id}
+              value={style.sound.file ? `file:${style.sound.file}` : style.sound.id}
               onChange={(e) => {
-                const soundId = Number(e.target.value)
-                set('sound', { ...style.sound!, id: soundId })
+                const value = e.target.value
+                // Свой звук — «file:<имя>», звук игры — номер.
+                const { file: _old, ...rest } = style.sound!
+                const sound = value.startsWith('file:') ? { ...rest, file: value.slice(5) } : { ...rest, id: Number(value) }
+                set('sound', sound)
                 // Звуки выбирают на слух: проигрываем сразу, не заставляя жать отдельную кнопку.
-                listen(soundId, style.sound!.volume)
+                listen(sound)
               }}
             >
-              {SOUND_IDS.map((n) => (
-                <option key={n} value={n}>
-                  № {n}
-                </option>
-              ))}
+              <optgroup label={t('styles.gameSounds')}>
+                {SOUND_IDS.map((n) => (
+                  <option key={n} value={n}>
+                    № {n}
+                  </option>
+                ))}
+              </optgroup>
+              {(library.length > 0 || style.sound.file) && (
+                <optgroup label={t('styles.customSounds')}>
+                  {library.map((file) => (
+                    <option key={file} value={`file:${file}`}>
+                      {file}
+                    </option>
+                  ))}
+                  {/* Звук выбран, но его нет в библиотеке (например, удалён) — показываем, чтобы выбор не потерялся. */}
+                  {style.sound.file && !library.includes(style.sound.file) && (
+                    <option value={`file:${style.sound.file}`}>{t('styles.soundMissing', { file: style.sound.file })}</option>
+                  )}
+                </optgroup>
+              )}
             </select>
             <input
               type="range"
@@ -142,9 +162,9 @@ export function StyleFields({ id, style, onChange }: Props) {
             />
             <button
               className="sound-play"
-              aria-label={t('styles.listen', { n: style.sound.id })}
+              aria-label={style.sound.file ? t('preview.customSound', { file: style.sound.file }) : t('styles.listen', { n: style.sound.id })}
               title={t('styles.listenHint')}
-              onClick={() => listen(style.sound!.id, style.sound!.volume)}
+              onClick={() => listen(style.sound!)}
             >
               ▶
             </button>

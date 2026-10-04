@@ -5,6 +5,7 @@ import type { UpdateConfig } from '../store'
 import { convertThresholds, perDivine } from '../tiering'
 import { TIER_IDS, type Config, type MarketSnapshot, type TierId, type TierStyle } from '../types'
 import { ItemLabel } from './ItemLabel'
+import { SoundLibrary } from './SoundLibrary'
 import { StyleFields } from './StyleFields'
 import { VisibilityFields } from './VisibilityFields'
 
@@ -83,6 +84,8 @@ export function StylesView({ config, update, rates }: Props) {
           onChange={(visibility) => update((c) => ({ ...c, visibility }))}
         />
       </section>
+
+      <SoundLibrary />
 
       <div className="tier-editors">
         {TIER_IDS.map((id) => (

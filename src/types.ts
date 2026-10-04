@@ -145,7 +145,8 @@ export interface TierStyle {
   text: Rgba
   border: Rgba | null
   background: Rgba | null
-  sound: { id: number; volume: number } | null
+  /** Звук игры по номеру или свой файл (file) — он лежит рядом с фильтром в папке игры. */
+  sound: { id: number; volume: number; file?: string } | null
   effect: { color: string; temp: boolean } | null
   icon: { size: 0 | 1 | 2; color: string; shape: string } | null
 }

@@ -1249,6 +1249,38 @@ button.danger:not(:disabled):hover {
   color: #8fbf6a;
 }
 
+/* Свои звуки: список файлов с прослушиванием и удалением. */
+.sound-list {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sound-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+label.button-like {
+  display: inline-block;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+label.button-like:hover {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
+.icon-button {
+  padding: 2px 8px;
+}
+
 .presets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

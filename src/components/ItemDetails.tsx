@@ -7,7 +7,7 @@ import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
 import type { SimulatedItem } from '../lootSim'
 import { SECTIONS } from '../sections'
-import { playAlertSound } from '../sound'
+import { playStyleSound } from '../sound'
 import type { Config } from '../types'
 import { ItemLabel } from './ItemLabel'
 
@@ -128,8 +128,8 @@ export function ItemDetails({ item, title, look, entries, config, onClose }: Pro
             {look.visible && look.style.sound && (
               <>
                 {' · '}
-                <button className="sound-play" onClick={() => playAlertSound(look.style.sound!.id, look.style.sound!.volume).catch(() => {})}>
-                  ▶ {t('preview.sound', { n: look.style.sound.id })}
+                <button className="sound-play" onClick={() => playStyleSound(look.style.sound!).catch(() => {})}>
+                  ▶ {look.style.sound.file ? t('preview.customSound', { file: look.style.sound.file }) : t('preview.sound', { n: look.style.sound.id })}
                 </button>
               </>
             )}

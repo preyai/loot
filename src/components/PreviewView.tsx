@@ -142,7 +142,7 @@ export function PreviewView({ config, snapshot }: Props) {
                     {SHAPES[look.style.icon.shape] ?? '●'}
                   </span>
                 )}
-                {look.style.sound && <span aria-hidden="true">♪{look.style.sound.id}</span>}
+                {look.style.sound && <span aria-hidden="true">♪{look.style.sound.file ? '★' : look.style.sound.id}</span>}
               </span>
             )}
           </button>

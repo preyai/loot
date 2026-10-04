@@ -64,7 +64,13 @@ export function styleLines(style: TierStyle): string[] {
   const lines = [`SetFontSize ${style.fontSize}`, `SetTextColor ${color(style.text)}`]
   if (style.border) lines.push(`SetBorderColor ${color(style.border)}`)
   if (style.background) lines.push(`SetBackgroundColor ${color(style.background)}`)
-  if (style.sound) lines.push(`PlayAlertSound ${style.sound.id} ${style.sound.volume}`)
+  if (style.sound) {
+    lines.push(
+      style.sound.file
+        ? `CustomAlertSound "${style.sound.file}" ${style.sound.volume}`
+        : `PlayAlertSound ${style.sound.id} ${style.sound.volume}`,
+    )
+  }
   if (style.effect) lines.push(`PlayEffect ${style.effect.color}${style.effect.temp ? ' Temp' : ''}`)
   if (style.icon) lines.push(`MinimapIcon ${style.icon.size} ${style.icon.color} ${style.icon.shape}`)
   return lines

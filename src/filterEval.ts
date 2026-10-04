@@ -183,6 +183,11 @@ function applyActions(style: TierStyle, actions: string[]): TierStyle {
     else if (name === 'SetBorderColor') next.border = color(args)
     else if (name === 'SetBackgroundColor') next.background = color(args)
     else if (name === 'PlayAlertSound') next.sound = { id: Number(args[0]), volume: Number(args[1] ?? 300) }
+    else if (name === 'CustomAlertSound' || name === 'CustomAlertSoundOptional') {
+      // Имя файла в кавычках может содержать пробелы: «CustomAlertSound "my sound.mp3" 200».
+      const [, file, volume] = /^\S+\s+"([^"]*)"\s*(\d+)?/.exec(action) ?? []
+      if (file) next.sound = { id: 0, volume: Number(volume ?? 300), file }
+    }
     else if (name === 'PlayEffect') next.effect = args[0] === 'None' ? null : { color: args[0], temp: args[1] === 'Temp' }
     else if (name === 'MinimapIcon') next.icon = Number(args[0]) < 0 ? null : { size: Number(args[0]) as 0 | 1 | 2, color: args[1], shape: args[2] }
   }

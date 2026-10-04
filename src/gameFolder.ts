@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { idb } from './idb'
+import { getSound, soundsInFilter } from './soundLibrary'
 
 /**
  * Сохранение фильтра прямо в папку игры через File System Access API (Chrome, Edge, Opera).
@@ -29,33 +31,15 @@ export function filterFileName(name: string): string {
   return `${safe || DEFAULT_NAME}.filter`
 }
 
-// --- IndexedDB: одна запись с «ручкой» папки.
-const DB = 'loot-filter-editor'
-const STORE = 'handles'
 const KEY = 'gameFolder'
+const loadFolder = () => idb<FolderHandle | undefined>('handles', 'readonly', (s) => s.get(KEY)).catch(() => undefined)
+const storeFolder = (handle: FolderHandle) => idb('handles', 'readwrite', (s) => s.put(handle, KEY))
 
-function open(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB, 1)
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE)
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
-  })
-}
-
-async function idb<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest): Promise<T> {
-  const db = await open()
-  return new Promise((resolve, reject) => {
-    const request = run(db.transaction(STORE, mode).objectStore(STORE))
-    request.onsuccess = () => resolve(request.result as T)
-    request.onerror = () => reject(request.error)
-  })
-}
-
-const loadFolder = () => idb<FolderHandle | undefined>('readonly', (s) => s.get(KEY)).catch(() => undefined)
-const storeFolder = (handle: FolderHandle) => idb('readwrite', (s) => s.put(handle, KEY))
-
-export type SaveStatus = { kind: 'saved'; file: string; at: Date } | { kind: 'error'; message: string } | null
+export type SaveStatus =
+  /** sounds — сколько своих звуков скопировано; missing — нужны фильтру, но их нет в библиотеке. */
+  | { kind: 'saved'; file: string; at: Date; sounds: number; missing: string[] }
+  | { kind: 'error'; message: string }
+  | null
 
 export interface GameFolder {
   supported: boolean
@@ -100,11 +84,25 @@ export function useGameFolder(): GameFolder {
         if ((await handle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
           if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') throw new Error('permission denied')
         }
-        const fileHandle = await handle.getFileHandle(file, { create: true })
-        const writable = await fileHandle.createWritable()
-        await writable.write(text)
-        await writable.close()
-        setStatus({ kind: 'saved', file, at: new Date() })
+        const write = async (name: string, data: string | Blob) => {
+          const writable = await (await handle.getFileHandle(name, { create: true })).createWritable()
+          await writable.write(data)
+          await writable.close()
+        }
+        // Свои звуки игра ищет рядом с фильтром: кладём их туда же, заменяя старые копии.
+        const missing: string[] = []
+        let sounds = 0
+        for (const sound of soundsInFilter(text)) {
+          const blob = await getSound(sound)
+          if (!blob) {
+            missing.push(sound)
+            continue
+          }
+          await write(sound, blob)
+          sounds++
+        }
+        await write(file, text)
+        setStatus({ kind: 'saved', file, at: new Date(), sounds, missing })
       } catch (e) {
         setStatus({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
       }

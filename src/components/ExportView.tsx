@@ -2,17 +2,20 @@ import { useMemo, useState } from 'react'
 import { generateFilter } from '../filter'
 import { filterFileName, GAME_FOLDER_NAME, type GameFolder } from '../gameFolder'
 import { useI18n } from '../i18n-react'
+import { getSound, soundsInFilter, useSoundLibrary } from '../soundLibrary'
 import type { UpdateConfig } from '../store'
 import type { Config, MarketSnapshot } from '../types'
 
-export function downloadFilter(text: string, name: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
+function download(data: Blob, fileName: string) {
+  const url = URL.createObjectURL(data)
   const a = document.createElement('a')
   a.href = url
-  a.download = filterFileName(name)
+  a.download = fileName
   a.click()
   URL.revokeObjectURL(url)
 }
+
+export const downloadFilter = (text: string, name: string) => download(new Blob([text], { type: 'text/plain' }), filterFileName(name))
 
 interface Props {
   snapshot: MarketSnapshot
@@ -28,6 +31,8 @@ export function ExportView({ snapshot, config, update, gameFolder }: Props) {
   const file = filterFileName(config.filterName)
   const name = file.replace(/\.filter$/, '')
   const { supported, folder, choose, save, status } = gameFolder
+  const sounds = useMemo(() => soundsInFilter(text), [text])
+  const library = useSoundLibrary()
 
   const copy = async () => {
     await navigator.clipboard.writeText(text)
@@ -77,10 +82,37 @@ export function ExportView({ snapshot, config, update, gameFolder }: Props) {
           <p className="note">{t('export.noFolderApi')}</p>
         )}
         {status?.kind === 'saved' && (
-          <p className="note note--ok">{t('export.saved', { file: status.file, time: status.at.toLocaleTimeString(locale) })}</p>
+          <p className="note note--ok">
+            {t('export.saved', { file: status.file, time: status.at.toLocaleTimeString(locale) })}
+            {status.sounds > 0 && ` · ${t('export.savedSounds', { n: status.sounds })}`}
+          </p>
+        )}
+        {status?.kind === 'saved' && status.missing.length > 0 && (
+          <p className="note note--error">{t('export.soundsMissing', { files: status.missing.join(', ') })}</p>
         )}
         {status?.kind === 'error' && <p className="note note--error">{t('export.saveError', { error: status.message })}</p>}
       </section>
+
+      {sounds.length > 0 && (
+        <section className="panel">
+          <h2>{t('export.sounds')}</h2>
+          <p className="note">{t('export.soundsNote')}</p>
+          <ul className="sound-list">
+            {sounds.map((sound) => (
+              <li key={sound}>
+                <span>{sound}</span>
+                {library.includes(sound) ? (
+                  <button onClick={() => getSound(sound).then((blob) => blob && download(blob, sound))}>
+                    {t('export.download', { file: sound })}
+                  </button>
+                ) : (
+                  <span className="note--error">{t('export.soundMissing')}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <ol className="note steps">
         <li>

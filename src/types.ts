@@ -221,6 +221,8 @@ export interface GoldConfig {
 export type ExtraChoice = TierId | 'hide' | 'off'
 
 export interface Config {
+  /** Название фильтра — имя файла и строка в списке фильтров игры. */
+  filterName: string
   /** Язык интерфейса и названий предметов. В файле фильтра имена всегда английские. */
   language: Lang
   league: string | null

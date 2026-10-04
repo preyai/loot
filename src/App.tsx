@@ -10,6 +10,7 @@ import { WaystonesView } from './components/WaystonesView'
 import { CURRENCIES } from './defaults'
 import { generateFilter } from './filter'
 import { useFocus, useFocusScroll } from './focus'
+import { useGameFolder } from './gameFolder'
 import { keyOf, LANGUAGE_TITLES, LANGUAGES, translateOr, type Lang } from './i18n'
 import { I18nProvider, useI18n } from './i18n-react'
 import { SECTIONS } from './sections'
@@ -50,6 +51,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
   const { t, locale, name } = useI18n()
   const market = useMarket(config.league, (league) => update((c) => ({ ...c, league })))
   const route = useRoute()
+  const gameFolder = useGameFolder()
   useFocusScroll(useFocus(), route)
   const { snapshot } = market
 
@@ -169,9 +171,21 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
               ? t('top.loading')
               : snapshot && t('top.pricesAt', { time: new Date(snapshot.fetchedAt).toLocaleString(locale) })}
           </span>
-          <button className="primary" disabled={!snapshot} onClick={() => snapshot && downloadFilter(generateFilter(snapshot, config))}>
-            {t('top.download')}
-          </button>
+          {/* Папка игры выбрана — сохраняем прямо туда, иначе скачиваем файл. */}
+          {gameFolder.supported && gameFolder.folder ? (
+            <button
+              className="primary"
+              disabled={!snapshot}
+              title={gameFolder.status?.kind === 'saved' ? t('export.saved', { file: gameFolder.status.file, time: gameFolder.status.at.toLocaleTimeString(locale) }) : undefined}
+              onClick={() => snapshot && gameFolder.save(generateFilter(snapshot, config), config.filterName)}
+            >
+              {gameFolder.status?.kind === 'saved' ? `✓ ${t('export.save')}` : t('export.save')}
+            </button>
+          ) : (
+            <button className="primary" disabled={!snapshot} onClick={() => snapshot && downloadFilter(generateFilter(snapshot, config), config.filterName)}>
+              {t('top.download')}
+            </button>
+          )}
         </div>
 
         <main>
@@ -186,7 +200,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
           {route === 'extras' && <ExtrasView config={config} update={update} />}
           {route === 'bases' && <BasesView config={config} update={update} snapshot={snapshot} />}
           {route === 'styles' && <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />}
-          {snapshot && route === 'export' && <ExportView snapshot={snapshot} config={config} />}
+          {snapshot && route === 'export' && <ExportView snapshot={snapshot} config={config} update={update} gameFolder={gameFolder} />}
           {snapshot && route === 'preview' && <PreviewView snapshot={snapshot} config={config} />}
           {snapshot && section && <SectionView key={section.id} section={section} snapshot={snapshot} config={config} update={update} />}
         </main>

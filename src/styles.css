@@ -1237,6 +1237,18 @@ button.danger:not(:disabled):hover {
   }
 }
 
+.export-settings input[type='text'] {
+  width: min(320px, 100%);
+}
+
+.export-settings .actions {
+  align-items: center;
+}
+
+.note--ok {
+  color: #8fbf6a;
+}
+
 .presets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

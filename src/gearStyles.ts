@@ -120,7 +120,7 @@ export const GEAR_STYLES = {
   jewelleryPick: style({ text: NORMAL_TEXT, background: rgba(30, 0, 70) }),
   /** Вещи на разбор: с качеством или гнёздами (itemproperty_salvagelvl1). */
   salvage: style({ text: NORMAL_TEXT, border: rgba(180, 180, 180), background: rgba(0, 0, 0, 200) }),
-  /** Для правил скрытия: под Alt неприметно, в цвете редкости. */
-  hiddenRare: style({ fontSize: 30, text: RARE_TEXT, background: rgba(0, 0, 0, 200) }),
-  hiddenNormal: style({ fontSize: 30, text: NORMAL_TEXT, background: rgba(0, 0, 0, 200) }),
+  /** Для правил скрытия: под Alt мелко и без фона, как у NeverSink (SetFontSize 18), в цвете редкости. */
+  hiddenRare: style({ fontSize: 18, text: RARE_TEXT, border: rgba(0, 0, 0, 0), background: rgba(20, 20, 0, 0) }),
+  hiddenNormal: style({ fontSize: 18, text: NORMAL_TEXT, border: rgba(0, 0, 0, 0), background: rgba(20, 20, 0, 0) }),
 }

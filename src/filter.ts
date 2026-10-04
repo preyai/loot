@@ -100,7 +100,7 @@ function block(action: 'Show' | 'Hide', comment: string, lines: string[], hidden
 }
 
 /** Блок фильтра для правила баз; null — правило выключено или ничего не выбирает. */
-export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tiers']): string | null {
+export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tiers'], plainHidden = false): string | null {
   if (!rule.enabled || rule.classes.length === 0) return null
   const all = rule.rarities.length === 0 || rule.rarities.length === RARITIES.length
   const lines = [
@@ -117,8 +117,9 @@ export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tier
   if (rule.maxAreaLevel > 0) lines.push(`AreaLevel <= ${rule.maxAreaLevel}`)
   const show = rule.action === 'show'
   // Название правила в комментарий не идёт: оно может быть не на латинице.
-  // Скрытое правилом — под Alt в оформлении тира правила.
-  return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(ruleStyle(rule, tiers))] : lines, ruleStyle(rule, tiers))
+  // Скрытое правилом — под Alt в оформлении правила, а с plainHidden — мелко и прозрачно, как у NeverSink.
+  const hidden = plainHidden ? null : ruleStyle(rule, tiers)
+  return block(show ? 'Show' : 'Hide', `Bases / rule ${index + 1}`, show ? [...lines, ...styleLines(ruleStyle(rule, tiers))] : lines, hidden)
 }
 
 /**
@@ -387,7 +388,7 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
   out.push(...extraBlocks(config))
 
   config.baseRules.forEach((rule, index) => {
-    const text = baseRuleBlock(rule, index, config.tiers)
+    const text = baseRuleBlock(rule, index, config.tiers, config.gear.plainHidden)
     if (text) out.push(text)
   })
 

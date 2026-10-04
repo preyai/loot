@@ -321,6 +321,8 @@ export const pt: Dictionary = {
   'rules.tradeHint': 'Busca no comércio com as condições desta regra',
   'rules.rest': 'Resto do equipamento',
   'rules.restHide': 'Ocultar armas e armaduras normais e mágicas a partir do nível de área',
+  'rules.plainHidden': 'Não aplicar o estilo das regras a itens ocultos',
+  'rules.plainHiddenNote': 'Itens ocultos pelas regras de bases só aparecem com Alt pressionado. Marcado, ficam pequenos e sem fundo, como no NeverSink; senão, com o estilo da regra.',
   'rules.areaLevel': 'Nível de área',
   'rules.restNote':
     'Vale depois das regras acima: o que elas mostram continua visível. Anéis, amuletos, cintos e todos os itens raros e únicos nunca são ocultados.',

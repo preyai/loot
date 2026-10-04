@@ -321,6 +321,8 @@ export const ko: Dictionary = {
   'rules.tradeHint': '이 규칙의 조건으로 거래 검색',
   'rules.rest': '나머지 장비',
   'rules.restHide': '일반·마법 무기와 방어구를 숨길 지역 레벨',
+  'rules.plainHidden': '숨긴 아이템에 규칙 스타일을 적용하지 않음',
+  'rules.plainHiddenNote': '베이스 규칙으로 숨긴 아이템은 Alt를 누르고 있을 때만 보입니다. 체크하면 NeverSink처럼 작고 배경 없이, 해제하면 규칙의 스타일로 표시됩니다.',
   'rules.areaLevel': '지역 레벨',
   'rules.restNote':
     '위 규칙 다음에 적용됩니다: 위 규칙이 표시하는 것은 계속 보입니다. 반지, 목걸이, 허리띠와 모든 희귀·고유 아이템은 숨겨지지 않습니다.',

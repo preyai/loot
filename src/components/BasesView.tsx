@@ -680,6 +680,15 @@ export function BasesView({ config, update, snapshot }: Props) {
           />
         </label>
         <p className="note">{t('rules.restNote')}</p>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={config.gear.plainHidden}
+            onChange={(e) => update((c) => ({ ...c, gear: { ...c.gear, plainHidden: e.target.checked } }))}
+          />
+          {t('rules.plainHidden')}
+        </label>
+        <p className="note">{t('rules.plainHiddenNote')}</p>
       </section>
     </div>
   )

@@ -68,7 +68,7 @@ Hide # rest
     const config: Config = {
       ...DEFAULT_CONFIG,
       visibility: { minTier: 'C', minPrice: 0, stacks: true },
-      gear: { hideLowRarity: true, areaLevel: 70 },
+      gear: { hideLowRarity: true, areaLevel: 70, plainHidden: true },
       waystones: { ...DEFAULT_CONFIG.waystones, minTier: 5 },
       baseRules: [
         {

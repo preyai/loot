@@ -243,7 +243,8 @@ export interface Config {
   sectionVisibility: Partial<Record<SectionId, Visibility>>
   /** Своё оформление тиров в разделе рынка; тиров, которых здесь нет, — общее оформление (tiers). */
   sectionTiers: Partial<Record<SectionId, Partial<Record<TierId, TierStyle>>>>
-  gear: { hideLowRarity: boolean; areaLevel: number }
+  /** plainHidden — скрытые правилами баз вещи под Alt без оформления правила: мелко и прозрачно, как у NeverSink. */
+  gear: { hideLowRarity: boolean; areaLevel: number; plainHidden: boolean }
   waystones: WaystoneConfig
   gold: GoldConfig
   /** Прочие предметы: выбор по ключу «группа.правило», только отличия от значений по умолчанию. */

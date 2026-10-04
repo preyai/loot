@@ -251,7 +251,7 @@ describe('правила баз', () => {
     const config: Config = {
       ...DEFAULT_CONFIG,
       baseRules: [rule, { ...rule, id: '2', classes: ['Rings'] }],
-      gear: { hideLowRarity: true, areaLevel: 70 },
+      gear: { hideLowRarity: true, areaLevel: 70, plainHidden: true },
     }
     const text = generateFilter(snapshot([]), config)
     const positions = ['Bases / rule 1', 'Bases / rule 2', 'Gear / normal and magic'].map((s) => text.indexOf(s))
@@ -556,7 +556,7 @@ describe('generateFilter', () => {
     const config: Config = {
       ...DEFAULT_CONFIG,
       disabledSections: ['currency'],
-      gear: { hideLowRarity: true, areaLevel: 70 },
+      gear: { hideLowRarity: true, areaLevel: 70, plainHidden: true },
     }
     const text = generateFilter(snapshot([mirror]), config)
     // Предмет выключенного раздела — «как в игре»: блок без оформления, чтобы его не поймала ловушка неизвестной валюты.
@@ -749,7 +749,7 @@ describe('оформление скрытого (под Alt)', () => {
     const config: Config = {
       ...DEFAULT_CONFIG,
       visibility: { minTier: 'A', minPrice: 0, stacks: false },
-      gear: { hideLowRarity: true, areaLevel: 70 },
+      gear: { hideLowRarity: true, areaLevel: 70, plainHidden: true },
       gold: { ...DEFAULT_CONFIG.gold, hideSmall: true },
       waystones: { ...DEFAULT_CONFIG.waystones, minTier: 5 },
     }
@@ -825,5 +825,27 @@ describe('оформление правил наборов', () => {
     const sockets2 = baseRuleBlock({ ...balanced.find((r) => r.name === t('rule.sockets2'))!, id: '2' }, 1, DEFAULT_CONFIG.tiers)!
     expect(sockets2).toContain('SetTextColor 0 240 190 255')
     expect(chancingRule(['Utility Belt'], '10 div', t).style?.text).toEqual({ r: 125, g: 255, b: 89, a: 255 })
+  })
+})
+
+describe('скрытые правилами баз', () => {
+  const hide: BaseRule = { ...EMPTY_RULE, id: 'h', name: 'h', action: 'hide', classes: ['Boots'], rarities: ['Normal', 'Magic'], tier: 'S' }
+
+  it('по умолчанию — без оформления правила: мелко и прозрачно, как у NeverSink', () => {
+    const text = generateFilter(snapshot([]), { ...DEFAULT_CONFIG, baseRules: [hide] })
+    const block = text.split('\n\n').find((b) => b.startsWith('Hide # Bases / rule 1'))!
+    expect(block.endsWith(HIDDEN_LINES.map((l) => '    ' + l).join('\n'))).toBe(true)
+    expect(block).not.toContain('SetFontSize 45')
+  })
+
+  it('без галочки — в оформлении правила', () => {
+    const text = generateFilter(snapshot([]), { ...DEFAULT_CONFIG, baseRules: [hide], gear: { ...DEFAULT_CONFIG.gear, plainHidden: false } })
+    expect(text.split('\n\n').find((b) => b.startsWith('Hide # Bases / rule 1'))).toContain('SetFontSize 45')
+  })
+
+  it('правила скрытия в наборах — мелкие, шрифт 18', () => {
+    const strict = RULE_PRESETS.find((p) => p.id === 'strict')!.make(null, t).filter((r) => r.action === 'hide')
+    expect(strict.length).toBeGreaterThan(2)
+    for (const rule of strict) expect(rule.style?.fontSize, rule.name).toBe(18)
   })
 })

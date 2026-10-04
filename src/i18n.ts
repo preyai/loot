@@ -356,6 +356,8 @@ const ru = {
   'rules.tradeHint': 'Поиск на трейде с условиями этого правила',
   'rules.rest': 'Остальная экипировка',
   'rules.restHide': 'Скрывать обычные и магические оружие и броню начиная с уровня области',
+  'rules.plainHidden': 'Не применять оформление правил к скрытым вещам',
+  'rules.plainHiddenNote': 'Скрытые правилами баз вещи видны, только если держать Alt. С галочкой они выглядят мелко и без фона, как у NeverSink; без неё — в оформлении своего правила.',
   'rules.areaLevel': 'Уровень области',
   'rules.restNote':
     'Срабатывает после правил выше: то, что они показывают, остаётся видимым. Кольца, амулеты, пояса и все редкие и уникальные предметы не скрываются.',
@@ -856,6 +858,8 @@ const en: Dictionary = {
   'rules.tradeHint': 'Trade search with this rule’s conditions',
   'rules.rest': 'Remaining gear',
   'rules.restHide': 'Hide normal and magic weapons and armour starting from area level',
+  'rules.plainHidden': 'Do not apply rule styles to hidden items',
+  'rules.plainHiddenNote': 'Items hidden by base rules are only visible while Alt is held. When ticked they look small and without background, as in NeverSink; otherwise they use their rule’s style.',
   'rules.areaLevel': 'Area level',
   'rules.restNote':
     'Applies after the rules above: whatever they show stays visible. Rings, amulets, belts and all rare and unique items are never hidden.',

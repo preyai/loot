@@ -321,6 +321,8 @@ export const fr: Dictionary = {
   'rules.tradeHint': 'Recherche d’échange avec les conditions de cette règle',
   'rules.rest': 'Reste de l’équipement',
   'rules.restHide': 'Masquer les armes et armures normales et magiques à partir du niveau de zone',
+  'rules.plainHidden': 'Ne pas appliquer le style des règles aux objets masqués',
+  'rules.plainHiddenNote': 'Les objets masqués par les règles de bases ne sont visibles qu’avec Alt. Coché, ils sont petits et sans fond, comme chez NeverSink ; sinon ils prennent le style de leur règle.',
   'rules.areaLevel': 'Niveau de zone',
   'rules.restNote':
     'S’applique après les règles ci-dessus : ce qu’elles affichent reste visible. Les bagues, amulettes, ceintures et tous les objets rares et uniques ne sont jamais masqués.',

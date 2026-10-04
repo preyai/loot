@@ -321,6 +321,8 @@ export const ja: Dictionary = {
   'rules.tradeHint': 'このルールの条件でトレードを検索',
   'rules.rest': 'その他の装備',
   'rules.restHide': 'ノーマルとマジックの武器・防具を非表示にするエリアレベル',
+  'rules.plainHidden': '非表示のアイテムにルールのスタイルを適用しない',
+  'rules.plainHiddenNote': 'ベースのルールで非表示にしたアイテムは Alt を押している間だけ見えます。チェックすると NeverSink と同じく小さく背景なしで、外すとルールのスタイルで表示されます。',
   'rules.areaLevel': 'エリアレベル',
   'rules.restNote':
     '上のルールの後に適用されます: 上のルールで表示されるものは見えたままです。指輪、アミュレット、ベルト、すべてのレアとユニークは非表示になりません。',

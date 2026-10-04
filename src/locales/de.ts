@@ -321,6 +321,8 @@ export const de: Dictionary = {
   'rules.tradeHint': 'Handelssuche mit den Bedingungen dieser Regel',
   'rules.rest': 'Übrige Ausrüstung',
   'rules.restHide': 'Normale und magische Waffen und Rüstungen ausblenden ab Gebietsstufe',
+  'rules.plainHidden': 'Regelstile nicht auf ausgeblendete Gegenstände anwenden',
+  'rules.plainHiddenNote': 'Durch Basisregeln ausgeblendete Gegenstände sind nur mit gedrückter Alt-Taste sichtbar. Angehakt erscheinen sie klein und ohne Hintergrund wie bei NeverSink, sonst im Stil ihrer Regel.',
   'rules.areaLevel': 'Gebietsstufe',
   'rules.restNote':
     'Gilt nach den Regeln oben: Was sie anzeigen, bleibt sichtbar. Ringe, Amulette, Gürtel sowie alle seltenen und einzigartigen Gegenstände werden nie ausgeblendet.',

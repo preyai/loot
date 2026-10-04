@@ -54,6 +54,8 @@ function useBlockTitle(config: Config, item: SimulatedItem) {
     if (head === 'Gold') return { title: `${t('nav.gold')}: ${tail}`, href: focusHref('gold', tail.split(' ')[0]) }
     if (head === 'Waystones') return { title: `${t('nav.waystones')}: ${tail}`, href: focusHref('waystones', waystoneFocus(tail)) }
     if (head === 'Gear') return { title: t('rules.rest'), href: focusHref('bases', 'rest') }
+    // Последний слой фильтра: настраивать нечего — предмет не попал ни под одно правило выше.
+    if (head === 'Rest') return { title: t('rest.title'), href: null }
     const section = SECTIONS.find((s) => s.label === head)
     if (section) {
       // «Currency / A» → «Валюта: A — очень ценное», «… / stacks of 20+» и «… / hidden» — как есть.

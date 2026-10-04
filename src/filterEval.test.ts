@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './defaults'
-import { generateFilter } from './filter'
+import { generateFilter, REST_STYLES } from './filter'
 import { defaultStyle, evaluate, KNOWN_CONDITIONS, matchCondition, parseFilter, trace, type DroppedItem } from './filterEval'
 import { generateLoot } from './lootSim'
 import type { Config, MarketItem, MarketSnapshot } from './types'
@@ -145,8 +145,33 @@ describe('вид предмета', () => {
       generateFilter(snapshot([market('Scroll of Wisdom', 0.0001)]), { ...DEFAULT_CONFIG, visibility: { minTier: 'C', minPrice: 0, stacks: false } }),
     )
     expect(evaluate(hiding, currency('Scroll of Wisdom'), 70).visible).toBe(false)
+    // Ни одного своего правила — предмет попадает в последний слой «всё остальное», а не остаётся «как в игре».
     const nothing = drop({ itemClass: 'Body Armours', baseType: 'Vile Robe', rarity: 'Magic' })
-    expect(evaluate(hiding, nothing, 70)).toEqual({ visible: true, style: defaultStyle(nothing), block: null })
+    const look = evaluate(hiding, nothing, 70)
+    expect(look.block?.comment).toBe('Rest / magic')
+    expect(look.style).toEqual(REST_STYLES.magic)
+    // Без фильтра вообще — вид игры по умолчанию.
+    expect(evaluate([], nothing, 70)).toEqual({ visible: true, style: defaultStyle(nothing), block: null })
+  })
+
+  it('всё выключено — у любого предмета всё равно есть правило фильтра', () => {
+    const items = [market('Divine Orb', 1), market('Scroll of Wisdom', 0.0001), { ...market('Utility Belt', 300, 'uq-accessories'), uniques: [] }]
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      disabledSections: ['currency', 'uq-accessories'],
+      waystones: { ...DEFAULT_CONFIG.waystones, enabled: false },
+      gold: { ...DEFAULT_CONFIG.gold, enabled: false },
+      disabledExtras: ['quest', 'trials', 'relics', 'gems', 'unknown'],
+      baseRules: [],
+    }
+    const blocks = parseFilter(generateFilter(snapshot(items), config))
+    for (const area of [5, 70, 83]) {
+      const orphans = generateLoot(items, area, 300, seeded(area)).filter((loot) => evaluate(blocks, loot, area).block === null)
+      expect(orphans.map((o) => o.label), `уровень области ${area}`).toEqual([])
+    }
+    // Особые классы — тоже в последнем слое: камни и предметы, которых нет ни в одном справочнике.
+    expect(evaluate(blocks, drop({ itemClass: 'Skill Gems', baseType: 'Fireball' }), 70).block?.comment).toBe('Rest / gems')
+    expect(evaluate(blocks, drop({ itemClass: 'Something New', baseType: 'Odd Thing' }), 70).block?.comment).toBe('Rest / everything else')
   })
 
   it('с Continue оформление складывается, решает последний подошедший блок', () => {

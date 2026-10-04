@@ -552,7 +552,7 @@ describe('generateFilter', () => {
     }
     const text = generateFilter(snapshot([mirror]), config)
     // Предмет выключенного раздела — «как в игре»: блок без оформления, чтобы его не поймала ловушка неизвестной валюты.
-    expect(text).toContain('Show # Currency / disabled\n    BaseType == "Mirror of Kalandra"\n\n')
+    expect(text).toContain('Show # Currency / disabled\n    BaseType == "Mirror of Kalandra"\n    SetFontSize 30\n    SetTextColor 170 158 130 255')
     expect(text.indexOf('Currency / disabled')).toBeLessThan(text.indexOf('Other / unknown / currency'))
     expect(text).toContain('Rarity <= Magic\n    AreaLevel >= 70')
     const noCatcher = generateFilter(snapshot([mirror]), { ...config, disabledExtras: ['unknown'] })

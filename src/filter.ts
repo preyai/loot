@@ -1,4 +1,4 @@
-import { GEAR_CLASSES, ruleStyle } from './bases'
+import { BASE_CLASSES, GEAR_CLASSES, ruleStyle } from './bases'
 import { SECTIONS } from './sections'
 import { itemDisplay } from './tiering'
 import { EXTRA_GROUPS, extraKey } from './extras'
@@ -149,6 +149,47 @@ export function extraBlocks(config: Config): string[] {
   return out
 }
 
+const rgb = (r: number, g: number, b: number, a = 255): Rgba => ({ r, g, b, a })
+
+/** Неприметное оформление для «всего остального»: цвет как у игры по умолчанию, без рамки, звука, луча и значка. */
+const quiet = (text: Rgba): TierStyle => ({
+  fontSize: 30,
+  text,
+  border: null,
+  background: rgb(0, 0, 0, 200),
+  sound: null,
+  effect: null,
+  icon: null,
+})
+
+/** Цвета «всего остального» — как у игры по умолчанию для такой вещи. */
+export const REST_STYLES = {
+  unique: quiet(rgb(175, 96, 37)),
+  rare: quiet(rgb(255, 255, 119)),
+  magic: quiet(rgb(136, 136, 255)),
+  gems: quiet(rgb(27, 162, 155)),
+  normal: quiet(rgb(200, 200, 200)),
+  other: quiet(rgb(170, 158, 130)),
+}
+
+/**
+ * Последний слой фильтра: всё, что не поймали правила выше, получает явное неприметное оформление.
+ * Так ни один предмет не остаётся «как в игре по умолчанию», что бы ни было выключено в настройках.
+ * Последний блок — без условий: под него подходит любой предмет.
+ */
+export function restBlocks(): string[] {
+  const allBases = `Class == ${quote(BASE_CLASSES.map((c) => c.name))}`
+  return [
+    block('Show', 'Rest / unique', ['Rarity Unique', ...styleLines(REST_STYLES.unique)]),
+    block('Show', 'Rest / rare', ['Rarity Rare', ...styleLines(REST_STYLES.rare)]),
+    block('Show', 'Rest / magic', ['Rarity Magic', ...styleLines(REST_STYLES.magic)]),
+    // Без «==»: «Skill Gems», «Support Gems», «Uncut Skill Gems» и другие классы камней.
+    block('Show', 'Rest / gems', ['Class "Gems"', ...styleLines(REST_STYLES.gems)]),
+    block('Show', 'Rest / normal gear', [allBases, ...styleLines(REST_STYLES.normal)]),
+    block('Show', 'Rest / everything else', styleLines(REST_STYLES.other)),
+  ]
+}
+
 /** Ловушка неизвестной валюты включена — тогда предметам выключенных разделов нужен свой блок. */
 const catchesUnknown = (config: Config) =>
   !config.disabledExtras.includes('unknown') && (config.extras['unknown.currency'] ?? 'B') !== 'off'
@@ -221,11 +262,13 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
 
   for (const section of SECTIONS) {
     if (config.disabledSections.includes(section.id)) {
-      // Выключенный раздел — «как в игре по умолчанию». Без этого блока его предметы
+      // Выключенный раздел — неприметно, как «всё остальное». Без этого блока его предметы
       // поймала бы ловушка неизвестной валюты и выделила как новинку.
       if (!section.unique && catchesUnknown(config)) {
         const items = snapshot.items.filter((item) => item.section === section.id)
-        for (const conditions of matchConditions(items)) out.push(block('Show', `${section.label} / disabled`, conditions))
+        for (const conditions of matchConditions(items)) {
+          out.push(block('Show', `${section.label} / disabled`, [...conditions, ...styleLines(REST_STYLES.other)]))
+        }
       }
       continue
     }
@@ -299,5 +342,6 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
     )
   }
 
+  out.push(...restBlocks())
   return out.join('\n\n') + '\n'
 }

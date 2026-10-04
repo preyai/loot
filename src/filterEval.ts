@@ -202,3 +202,37 @@ export function evaluate(blocks: FilterBlock[], item: DroppedItem, area: number)
   // Последний подошедший блок с Continue тоже решает, показывать ли предмет.
   return { visible: last ? last.action !== 'Hide' : true, style, block: last }
 }
+
+/** Роль блока для предмета: решает, добавляет оформление, подходит, но решение уже принято выше, или почти подошёл. */
+export type BlockRole = 'decisive' | 'decorator' | 'unreached' | 'near'
+
+export interface TraceEntry {
+  block: FilterBlock
+  role: BlockRole
+  /** Невыполненные условия — только у «почти подошедших». */
+  failed: string[]
+}
+
+/** Условия, которые говорят «про этот предмет»: если они выполнены, а другие нет — блок «почти подошёл». */
+const IDENTITY = /^(BaseType|Class)\b/
+
+/**
+ * Все блоки, которые касаются предмета: оформление с Continue, решающий блок, подходящие блоки ниже решающего
+ * (до них игра не дойдёт) и блоки для того же предмета, где не выполнено какое-то другое условие.
+ */
+export function trace(blocks: FilterBlock[], item: DroppedItem, area: number): TraceEntry[] {
+  const out: TraceEntry[] = []
+  let decided = false
+  for (const block of blocks) {
+    const failed = block.conditions.filter((condition) => !matchCondition(condition, item, area))
+    if (failed.length === 0) {
+      out.push({ block, role: decided ? 'unreached' : block.continues ? 'decorator' : 'decisive', failed })
+      if (!block.continues) decided = true
+      continue
+    }
+    // «Почти»: предмет назван в блоке по имени или классу, и не выполнено что-то кроме этого.
+    const identity = block.conditions.filter((condition) => IDENTITY.test(condition))
+    if (identity.length > 0 && failed.every((condition) => !IDENTITY.test(condition))) out.push({ block, role: 'near', failed })
+  }
+  return out
+}

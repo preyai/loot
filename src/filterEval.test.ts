@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './defaults'
 import { generateFilter } from './filter'
-import { defaultStyle, evaluate, KNOWN_CONDITIONS, matchCondition, parseFilter, type DroppedItem } from './filterEval'
+import { defaultStyle, evaluate, KNOWN_CONDITIONS, matchCondition, parseFilter, trace, type DroppedItem } from './filterEval'
 import { generateLoot } from './lootSim'
 import type { Config, MarketItem, MarketSnapshot } from './types'
 
@@ -182,5 +182,35 @@ describe('генератор лута', () => {
     const loot = generateLoot(items, 10, 300, seeded(2))
     expect(loot.some((i) => i.itemClass === 'Waystones')).toBe(false)
     expect(loot.filter((i) => i.rarity !== 'Unique').every((i) => i.dropLevel <= 10)).toBe(true)
+  })
+})
+
+describe('правила, действующие на предмет', () => {
+  it('оформление, решающий блок, недостижимые ниже и почти подошедшие', () => {
+    const blocks = parseFilter(`Show # deco
+    Class == "Stackable Currency"
+    SetFontSize 40
+    Continue
+
+Show # stacks
+    BaseType == "Scroll of Wisdom"
+    StackSize >= 20
+
+Show # single
+    BaseType == "Scroll of Wisdom"
+
+Hide # later
+    Class == "Stackable Currency"
+
+Show # other
+    BaseType == "Divine Orb"
+`)
+    const entries = trace(blocks, currency('Scroll of Wisdom', 3), 70)
+    expect(entries.map((e) => [e.block.comment, e.role, e.failed])).toEqual([
+      ['deco', 'decorator', []],
+      ['stacks', 'near', ['StackSize >= 20']],
+      ['single', 'decisive', []],
+      ['later', 'unreached', []],
+    ])
   })
 })

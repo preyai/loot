@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
-import { evaluate, parseFilter, type Appearance } from '../filterEval'
+import { evaluate, parseFilter, trace, type Appearance } from '../filterEval'
 import { generateFilter } from '../filter'
 import { useI18n } from '../i18n-react'
 import { generateLoot, type SimulatedItem } from '../lootSim'
-import { playAlertSound } from '../sound'
 import type { Config, MarketSnapshot } from '../types'
+import { ItemDetails } from './ItemDetails'
 import { ItemLabel } from './ItemLabel'
 
 interface Props {
@@ -50,6 +50,7 @@ export function PreviewView({ config, snapshot }: Props) {
   const [count, setCount] = useState(60)
   const [seed, setSeed] = useState(0)
   const [showHidden, setShowHidden] = useState(true)
+  const [opened, setOpened] = useState<SimulatedItem | null>(null)
 
   // Тот же текст, что уйдёт в файл: предпросмотр не может разойтись с фильтром.
   const blocks = useMemo(() => parseFilter(generateFilter(snapshot, config)), [snapshot, config])
@@ -80,7 +81,7 @@ export function PreviewView({ config, snapshot }: Props) {
       '',
       look.block ? t('preview.rule', { rule: `${look.block.action} # ${look.block.comment}`, line: look.block.line }) : t('preview.noRule'),
       !look.visible && t('preview.hidden'),
-      look.style.sound && look.visible && t('preview.playHint'),
+      t('preview.clickHint'),
     ]
       .filter((line) => line !== false && line !== null && line !== undefined && line !== 0)
       .join('\n')
@@ -122,7 +123,7 @@ export function PreviewView({ config, snapshot }: Props) {
             key={item.id}
             className={look.visible ? 'preview-item' : 'preview-item preview-item--hidden'}
             title={details(item, look)}
-            onClick={() => look.visible && look.style.sound && playAlertSound(look.style.sound.id, look.style.sound.volume).catch(() => {})}
+            onClick={() => setOpened(item)}
           >
             {look.visible && look.style.effect && (
               <span
@@ -147,6 +148,18 @@ export function PreviewView({ config, snapshot }: Props) {
           </button>
         ))}
       </div>
+
+      {opened && (
+        <ItemDetails
+          key={opened.id}
+          item={opened}
+          title={title(opened)}
+          look={evaluate(blocks, opened, area)}
+          entries={trace(blocks, opened, area)}
+          config={config}
+          onClose={() => setOpened(null)}
+        />
+      )}
     </div>
   )
 }

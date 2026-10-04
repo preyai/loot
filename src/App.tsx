@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { BasesView } from './components/BasesView'
 import { ExtrasView } from './components/ExtrasView'
 import { GoldView } from './components/GoldView'
+import { PreviewView } from './components/PreviewView'
 import { downloadFilter, ExportView } from './components/ExportView'
 import { SectionView } from './components/SectionView'
 import { StylesView } from './components/StylesView'
@@ -15,7 +16,7 @@ import { useConfig, useMarket, type UpdateConfig } from './store'
 import { convertCurrency, perDivine } from './tiering'
 import type { Config, Currency } from './types'
 
-const PAGES = ['waystones', 'gold', 'extras', 'bases', 'styles', 'export'] as const
+const PAGES = ['waystones', 'gold', 'extras', 'bases', 'preview', 'styles', 'export'] as const
 type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number]
 
 function readRoute(): Route {
@@ -106,6 +107,9 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
             <span className="count">{config.baseRules.filter((r) => r.enabled).length}</span>
           </a>
           <div className="nav-group">{t('nav.filter')}</div>
+          <a href="#/preview" className={route === 'preview' ? 'active' : ''}>
+            {t('nav.preview')}
+          </a>
           <a href="#/styles" className={route === 'styles' ? 'active' : ''}>
             {t('nav.styles')}
           </a>
@@ -180,6 +184,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
           {route === 'bases' && <BasesView config={config} update={update} snapshot={snapshot} />}
           {route === 'styles' && <StylesView config={config} update={update} rates={snapshot?.rates ?? null} />}
           {snapshot && route === 'export' && <ExportView snapshot={snapshot} config={config} />}
+          {snapshot && route === 'preview' && <PreviewView snapshot={snapshot} config={config} />}
           {snapshot && section && <SectionView key={section.id} section={section} snapshot={snapshot} config={config} update={update} />}
         </main>
       </div>

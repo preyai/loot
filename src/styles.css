@@ -1056,6 +1056,71 @@ button.danger:not(:disabled):hover {
   color: #f0a08f;
 }
 
+/* Предпросмотр: «земля» с плашками выпавшего лута. */
+.preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+}
+
+.preview-controls input[type='number'] {
+  width: 64px;
+}
+
+.preview-ground {
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
+  gap: 14px 18px;
+  min-height: 420px;
+  padding: 28px 20px;
+}
+
+.preview-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: default;
+}
+
+.preview-item .item-label {
+  white-space: nowrap;
+}
+
+.preview-item--hidden {
+  opacity: 0.45;
+}
+
+/* Луч: тонкая полоса над плашкой; временный — короче и бледнее. */
+.preview-beam {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 3px;
+  height: 22px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 8px currentColor;
+  opacity: 0.9;
+}
+
+.preview-beam--temp {
+  height: 12px;
+  opacity: 0.55;
+}
+
+.preview-marks {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .presets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

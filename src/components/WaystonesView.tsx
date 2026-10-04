@@ -29,7 +29,7 @@ export function WaystonesView({ config, update }: Props) {
       <p className="note">{t(w.enabled ? 'waystones.note' : 'waystones.disabled')}</p>
 
       <fieldset className="plain" disabled={!w.enabled}>
-        <section className="panel">
+        <section className="panel" data-focus="minTier">
           <label className="check">
             {t('waystones.minTier')}
             <select value={w.minTier} onChange={(e) => set({ minTier: Number(e.target.value) })}>
@@ -56,6 +56,7 @@ export function WaystonesView({ config, update }: Props) {
             <StyleRow
               key={kind}
               id={`waystone-${kind}`}
+              focusKey={kind}
               title={t(`waystones.${kind}`)}
               sample={name(waystoneName(MAX_WAYSTONE_TIER))}
               style={w[kind]}
@@ -80,6 +81,7 @@ export function WaystonesView({ config, update }: Props) {
               <StyleRow
                 key={band.id}
                 id={`waystone-${band.id}`}
+                focusKey={band.id}
                 title={band.from === band.to ? t('waystones.tier', { n: band.from }) : t('waystones.range', { from: band.from, to: band.to })}
                 note={hidden ? t('waystones.hidden') : partly ? t('waystones.partly', { n: w.minTier }) : undefined}
                 sample={name(waystoneName(band.to))}

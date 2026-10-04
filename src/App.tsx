@@ -9,6 +9,7 @@ import { StylesView } from './components/StylesView'
 import { WaystonesView } from './components/WaystonesView'
 import { CURRENCIES } from './defaults'
 import { generateFilter } from './filter'
+import { useFocus, useFocusScroll } from './focus'
 import { keyOf, LANGUAGE_TITLES, LANGUAGES, translateOr, type Lang } from './i18n'
 import { I18nProvider, useI18n } from './i18n-react'
 import { SECTIONS } from './sections'
@@ -20,7 +21,8 @@ const PAGES = ['waystones', 'gold', 'extras', 'bases', 'preview', 'styles', 'exp
 type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number]
 
 function readRoute(): Route {
-  const id = location.hash.replace(/^#\/?/, '')
+  // После «?» — переход к строке страницы (focus.ts), к маршруту он не относится.
+  const id = location.hash.replace(/^#\/?/, '').split('?')[0]
   const known = SECTIONS.some((s) => s.id === id) || (PAGES as readonly string[]).includes(id)
   return known ? (id as Route) : SECTIONS[0].id
 }
@@ -48,6 +50,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
   const { t, locale, name } = useI18n()
   const market = useMarket(config.league, (league) => update((c) => ({ ...c, league })))
   const route = useRoute()
+  useFocusScroll(useFocus(), route)
   const { snapshot } = market
 
   const counts = useMemo(() => {

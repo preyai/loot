@@ -36,6 +36,7 @@ export function GoldView({ config, update }: Props) {
             <StyleRow
               key={pile}
               id={`gold-${pile}`}
+              focusKey={pile}
               title={t(`gold.${pile}`)}
               sample={sample(gold.sizes[pile])}
               style={gold.styles[pile]}
@@ -56,6 +57,7 @@ export function GoldView({ config, update }: Props) {
           ))}
           <StyleRow
             id="gold-small"
+            focusKey="small"
             title={t('gold.small', { n: smallest.toLocaleString(locale) })}
             sample={sample(Math.max(1, Math.round(smallest / 10)))}
             style={gold.hideSmall ? null : gold.styles.small}

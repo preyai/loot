@@ -48,7 +48,7 @@ export function ExtrasView({ config, update }: Props) {
                 const choice = config.extras[key] ?? rule.tier
                 const label = t(keyOf('extra', key))
                 return (
-                  <div key={key} className="style-row">
+                  <div key={key} className="style-row" data-focus={key}>
                     <div className="style-row-head extra-row">
                       <span className="style-row-title">{label}</span>
                       <div className="ground">

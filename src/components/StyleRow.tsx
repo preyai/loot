@@ -14,14 +14,16 @@ interface Props {
   onChange: (style: TierStyle) => void
   /** Слева от названия: переключатель или поле. */
   children?: React.ReactNode
+  /** Ключ для перехода к строке из предпросмотра (focus.ts). */
+  focusKey?: string
 }
 
 /** Строка с образцом плашки и раскрывающимися полями оформления. */
-export function StyleRow({ id, title, sample, style, note, onChange, children }: Props) {
+export function StyleRow({ id, title, sample, style, note, onChange, children, focusKey }: Props) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   return (
-    <div className="style-row">
+    <div className="style-row" data-focus={focusKey}>
       <div className="style-row-head">
         {children}
         <span className="style-row-title">{title}</span>

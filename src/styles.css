@@ -1216,6 +1216,27 @@ button.danger:not(:disabled):hover {
   text-decoration: line-through;
 }
 
+/* Строка, к которой перешли из предпросмотра: короткая золотая подсветка; отступ — под липкую верхнюю панель. */
+[data-focus] {
+  scroll-margin-top: 140px;
+}
+
+.is-focused {
+  animation: focus-glow 2.5s ease-out;
+}
+
+@keyframes focus-glow {
+  0%,
+  45% {
+    box-shadow:
+      0 0 0 2px var(--gold-bright),
+      0 0 22px rgba(241, 216, 146, 0.55);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+
 .presets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

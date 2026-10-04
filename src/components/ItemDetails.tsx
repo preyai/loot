@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { EXTRA_GROUPS, extraKey } from '../extras'
+import { focusHref } from '../focus'
+import { WAYSTONE_BANDS } from '../waystones'
 import type { Appearance, BlockRole, FilterBlock, TraceEntry } from '../filterEval'
 import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
@@ -18,8 +20,20 @@ interface Props {
   onClose: () => void
 }
 
-/** Понятное название блока и страница, где он настраивается; комментарии блоков пишет наш генератор. */
-function useBlockTitle(config: Config) {
+/** Строка страницы путевых камней для блока «Waystones / …». */
+function waystoneFocus(tail: string): string {
+  if (tail.startsWith('corrupted')) return 'corrupted'
+  if (tail === 'enchanted') return 'enchanted'
+  if (tail.startsWith('below')) return 'minTier'
+  const tier = Number(/^T(\d+)/.exec(tail)?.[1])
+  return WAYSTONE_BANDS.find((b) => tier >= b.from && tier <= b.to)?.id ?? 'minTier'
+}
+
+/**
+ * Понятное название блока и ссылка сразу на нужную строку настройки; комментарии блоков пишет наш генератор.
+ * Для разделов рынка ссылка ведёт к строке этого предмета.
+ */
+function useBlockTitle(config: Config, item: SimulatedItem) {
   const { t } = useI18n()
   return (block: FilterBlock): { title: string; href: string | null } => {
     const [head, ...rest] = block.comment.split(' / ')
@@ -27,22 +41,26 @@ function useBlockTitle(config: Config) {
     const rule = /^rule (\d+)$/.exec(tail)
     if (head === 'Bases' && rule) {
       const index = Number(rule[1]) - 1
-      return { title: `${t('nav.bases')}: ${config.baseRules[index]?.name ?? tail}`, href: '#/bases' }
+      const target = config.baseRules[index]
+      return { title: `${t('nav.bases')}: ${target?.name ?? tail}`, href: target ? focusHref('bases', target.id) : '#/bases' }
     }
     if (head === 'Other') {
       const [group, id] = rest
       const known = EXTRA_GROUPS.find((g) => g.id === group)?.rules.find((r) => r.id === id)
       const label = known ? t(keyOf('extra', extraKey({ id: group, rules: [] }, known))) : tail
-      return { title: `${t('nav.extras')}: ${label}`, href: '#/extras' }
+      return { title: `${t('nav.extras')}: ${label}`, href: focusHref('extras', `${group}.${id}`) }
     }
-    if (head === 'Gold') return { title: `${t('nav.gold')}: ${tail}`, href: '#/gold' }
-    if (head === 'Waystones') return { title: `${t('nav.waystones')}: ${tail}`, href: '#/waystones' }
-    if (head === 'Gear') return { title: t('rules.rest'), href: '#/bases' }
+    // «Gold / huge pile», «… while levelling», «Gold / small piles» → строка кучи.
+    if (head === 'Gold') return { title: `${t('nav.gold')}: ${tail}`, href: focusHref('gold', tail.split(' ')[0]) }
+    if (head === 'Waystones') return { title: `${t('nav.waystones')}: ${tail}`, href: focusHref('waystones', waystoneFocus(tail)) }
+    if (head === 'Gear') return { title: t('rules.rest'), href: focusHref('bases', 'rest') }
     const section = SECTIONS.find((s) => s.label === head)
     if (section) {
       // «Currency / A» → «Валюта: A — очень ценное», «… / stacks of 20+» и «… / hidden» — как есть.
       const tier = /^[SABCDE]$/.test(tail) ? t(keyOf('tier', tail)) : tail
-      return { title: `${t(keyOf('section', section.id))}: ${tier}`, href: `#/${section.id}` }
+      // Ключ строки — как в разделе (itemKey): у уников — «unique:<база>».
+      const key = section.unique ? `unique:${item.baseType}` : item.label
+      return { title: `${t(keyOf('section', section.id))}: ${tier}`, href: focusHref(section.id, key) }
     }
     return { title: block.comment || `${block.action}`, href: null }
   }
@@ -54,7 +72,7 @@ export function ItemDetails({ item, title, look, entries, config, onClose }: Pro
   const { t } = useI18n()
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => ref.current?.showModal(), [])
-  const blockTitle = useBlockTitle(config)
+  const blockTitle = useBlockTitle(config, item)
 
   const properties = [
     item.rarity === 'Unique' ? t('preview.unique') : item.itemClass === 'Gold' ? null : t(`rarity.${item.rarity}` as 'rarity.Normal'),

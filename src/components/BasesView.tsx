@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   baseIconUrl,
   baseTradeUrl,
@@ -18,6 +18,7 @@ import { CHANCING_MIN_DIVINE, chancingBases, chancingRule, uniquesByBase } from 
 import { CURRENCIES } from '../defaults'
 import { baseOffers } from '../exceptional'
 import { keyOf, translateOr, type T } from '../i18n'
+import { useFocus } from '../focus'
 import { useI18n } from '../i18n-react'
 import { applyPreset, RULE_PRESETS, type RulePreset } from '../presets'
 import { useExceptionalScan, usePopularity, type UpdateConfig } from '../store'
@@ -264,6 +265,11 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
   const dropSide = drag.target?.id === rule.id && drag.dragging !== rule.id ? (drag.target.after ? 'after' : 'before') : null
   // Свёрнутое правило читается одной строкой; пустое сразу открыто — его всё равно надо заполнять.
   const [open, setOpen] = useState(rule.classes.length === 0)
+  // Переход к правилу из предпросмотра: карточку сразу раскрываем.
+  const focus = useFocus()
+  useEffect(() => {
+    if (focus === rule.id) setOpen(true)
+  }, [focus, rule.id])
   // Список баз длинный — рисуем его, только пока он раскрыт.
   const [pickerOpen, setPickerOpen] = useState(false)
   const set = <K extends keyof BaseRule>(key: K, value: BaseRule[K]) => onChange({ ...rule, [key]: value })
@@ -303,6 +309,7 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
   return (
     <section
       ref={cardRef}
+      data-focus={rule.id}
       className={['panel rule', !rule.enabled && 'rule--off', drag.dragging === rule.id && 'rule--dragging', dropSide && `rule--drop-${dropSide}`]
         .filter(Boolean)
         .join(' ')}
@@ -653,7 +660,7 @@ export function BasesView({ config, update, snapshot }: Props) {
         />
       ))}
 
-      <section className="panel">
+      <section className="panel" data-focus="rest">
         <h2>{t('rules.rest')}</h2>
         <label className="check">
           <input

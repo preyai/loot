@@ -157,7 +157,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                 const key = itemKey(item)
                 const override = config.overrides[key]
                 return (
-                  <li key={key} className="item">
+                  <li key={key} className="item" data-focus={key}>
                     {/* Без иконки или с недоступной — пустое место того же размера вместо значка «битой картинки». */}
                     {item.icon ? (
                       <img

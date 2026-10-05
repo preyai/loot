@@ -116,6 +116,14 @@ export function SectionView({ section, snapshot, config, update }: Props) {
     })
 
   const failed = snapshot.failed.includes(section.id)
+  // Свои настройки раздела: блок раскрыт, только если что-то изменено, — иначе предметы видны сразу.
+  const ownTiers = TIER_IDS.filter((tier) => config.sectionTiers[section.id]?.[tier])
+  const customized = ownVisibility !== undefined || ownTiers.length > 0
+  const settingsSummary = customized
+    ? [ownVisibility !== undefined && t('items.settingsOwnVisibility'), ownTiers.length > 0 && t('items.settingsOwnTiers', { tiers: ownTiers.join(', ') })]
+        .filter(Boolean)
+        .join(' · ')
+    : t(section.unique ? 'items.settingsGlobalUnique' : 'items.settingsGlobal')
   const groupTitle = (group: GroupId) => (group === 'stack' || group === 'hide' ? t(keyOf('group', group)) : t(keyOf('tier', group)))
 
   return (
@@ -135,7 +143,12 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         </label>
       </header>
 
-      <section className="panel">
+      {/* key: при переходе в другой раздел блок снова свёрнут или раскрыт по его настройкам. */}
+      <details key={section.id} className="panel section-settings" open={customized || undefined}>
+        <summary>
+          <span className="section-settings-title">{t('items.settings')}</span>
+          <span className={customized ? 'section-settings-state is-own' : 'section-settings-state'}>{settingsSummary}</span>
+        </summary>
         <label className="check">
           <input
             type="checkbox"
@@ -185,7 +198,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
             </StyleRow>
           )
         })}
-      </section>
+      </details>
 
       {section.unique && <p className="note">{t('items.uniqueNote')}</p>}
       {section.bases && <p className="note">{t('items.basesNote')}</p>}

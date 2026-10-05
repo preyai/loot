@@ -63,6 +63,11 @@ export const pt: Dictionary = {
 
   'items.search': 'Buscar item…',
   'items.enable': 'Incluir esta seção no filtro',
+  'items.settings': 'Configurações da seção',
+  'items.settingsGlobal': 'gerais — como na página “Tiers e estilos”',
+  'items.settingsGlobalUnique': 'gerais; visual dos tiers como os únicos do NeverSink',
+  'items.settingsOwnVisibility': 'exibição própria',
+  'items.settingsOwnTiers': 'visual próprio dos tiers: {tiers}',
   'items.ownVisibility': 'Configurações de exibição próprias para esta seção',
   'items.globalNote': 'Valem as configurações gerais — elas são alteradas na página',
   'items.uniqueNote':

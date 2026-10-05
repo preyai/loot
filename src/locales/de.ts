@@ -63,6 +63,11 @@ export const de: Dictionary = {
 
   'items.search': 'Gegenstand suchen…',
   'items.enable': 'Abschnitt in den Filter aufnehmen',
+  'items.settings': 'Bereichseinstellungen',
+  'items.settingsGlobal': 'allgemein – wie auf der Seite „Tiers & Stile“',
+  'items.settingsGlobalUnique': 'allgemein; Tier-Aussehen wie bei NeverSinks Uniques',
+  'items.settingsOwnVisibility': 'eigene Anzeige',
+  'items.settingsOwnTiers': 'eigenes Tier-Aussehen: {tiers}',
   'items.ownVisibility': 'Eigene Anzeigeeinstellungen für diesen Abschnitt',
   'items.globalNote': 'Es gelten die allgemeinen Einstellungen — sie werden auf der Seite geändert',
   'items.uniqueNote':

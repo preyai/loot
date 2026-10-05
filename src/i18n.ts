@@ -97,6 +97,11 @@ const ru = {
 
   'items.search': 'Поиск предмета…',
   'items.enable': 'Включить раздел в фильтр',
+  'items.settings': 'Настройки раздела',
+  'items.settingsGlobal': 'общие — как на странице «Тиры и стили»',
+  'items.settingsGlobalUnique': 'общие; оформление тиров — как у уников NeverSink',
+  'items.settingsOwnVisibility': 'свой показ',
+  'items.settingsOwnTiers': 'своё оформление тиров: {tiers}',
   'items.ownVisibility': 'Свои настройки показа для этого раздела',
   'items.globalNote': 'Действуют общие настройки — они меняются на странице',
   'items.uniqueNote':
@@ -672,6 +677,11 @@ const en: Dictionary = {
 
   'items.search': 'Search items…',
   'items.enable': 'Include this section in the filter',
+  'items.settings': 'Section settings',
+  'items.settingsGlobal': 'shared — as on the “Tiers & styles” page',
+  'items.settingsGlobalUnique': 'shared; tier look — like NeverSink’s uniques',
+  'items.settingsOwnVisibility': 'own visibility',
+  'items.settingsOwnTiers': 'own tier look: {tiers}',
   'items.ownVisibility': 'Custom visibility settings for this section',
   'items.globalNote': 'Global settings apply — change them on the page',
   'items.uniqueNote':

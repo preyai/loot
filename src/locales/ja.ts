@@ -63,6 +63,11 @@ export const ja: Dictionary = {
 
   'items.search': 'アイテムを検索…',
   'items.enable': 'このセクションをフィルターに含める',
+  'items.settings': 'セクションの設定',
+  'items.settingsGlobal': '共通 —「ティアとスタイル」ページと同じ',
+  'items.settingsGlobalUnique': '共通。ティアの見た目は NeverSink のユニークと同じ',
+  'items.settingsOwnVisibility': '独自の表示',
+  'items.settingsOwnTiers': 'ティアの独自の見た目：{tiers}',
   'items.ownVisibility': 'このセクション専用の表示設定',
   'items.globalNote': '共通設定が適用されています。変更はこちらのページで',
   'items.uniqueNote':

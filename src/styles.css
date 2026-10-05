@@ -1934,3 +1934,45 @@ a.discord-button:hover {
   width: auto;
   min-width: 0;
 }
+
+/* Настройки раздела рынка: свёрнуты в одну строку, пока в разделе ничего не изменено. */
+.section-settings > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.section-settings > summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-settings > summary::before {
+  content: '▸';
+  color: var(--gold-dim);
+  transition: transform 0.15s;
+}
+
+.section-settings[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.section-settings[open] > summary {
+  margin-bottom: 14px;
+}
+
+.section-settings-title {
+  color: var(--gold-bright);
+  font-weight: 600;
+}
+
+.section-settings-state {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.section-settings-state.is-own {
+  color: var(--gold);
+}

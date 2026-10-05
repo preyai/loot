@@ -63,6 +63,11 @@ export const ko: Dictionary = {
 
   'items.search': '아이템 검색…',
   'items.enable': '이 항목을 필터에 포함',
+  'items.settings': '섹션 설정',
+  'items.settingsGlobal': '공통 — "티어와 스타일" 페이지와 같음',
+  'items.settingsGlobalUnique': '공통, 티어 모양은 NeverSink 고유 아이템과 같음',
+  'items.settingsOwnVisibility': '자체 표시',
+  'items.settingsOwnTiers': '티어 자체 모양: {tiers}',
   'items.ownVisibility': '이 항목 전용 표시 설정',
   'items.globalNote': '공통 설정이 적용됩니다. 변경은 다음 페이지에서',
   'items.uniqueNote':

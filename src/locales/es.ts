@@ -63,6 +63,11 @@ export const es: Dictionary = {
 
   'items.search': 'Buscar objeto…',
   'items.enable': 'Incluir esta sección en el filtro',
+  'items.settings': 'Ajustes de la sección',
+  'items.settingsGlobal': 'generales: como en la página «Niveles y estilos»',
+  'items.settingsGlobalUnique': 'generales; estilo de niveles como los únicos de NeverSink',
+  'items.settingsOwnVisibility': 'visibilidad propia',
+  'items.settingsOwnTiers': 'estilo propio de niveles: {tiers}',
   'items.ownVisibility': 'Ajustes de visualización propios para esta sección',
   'items.globalNote': 'Se aplican los ajustes generales — se cambian en la página',
   'items.uniqueNote':

@@ -63,6 +63,11 @@ export const fr: Dictionary = {
 
   'items.search': 'Rechercher un objet…',
   'items.enable': 'Inclure cette section dans le filtre',
+  'items.settings': 'Réglages de la section',
+  'items.settingsGlobal': 'communs — comme sur la page « Paliers et styles »',
+  'items.settingsGlobalUnique': 'communs ; style des paliers comme les uniques de NeverSink',
+  'items.settingsOwnVisibility': 'affichage propre',
+  'items.settingsOwnTiers': 'style propre des paliers : {tiers}',
   'items.ownVisibility': 'Réglages d’affichage propres à cette section',
   'items.globalNote': 'Les réglages généraux s’appliquent — ils se modifient sur la page',
   'items.uniqueNote':

@@ -22,6 +22,7 @@ import { useFocus } from '../focus'
 import { useI18n } from '../i18n-react'
 import { applyPreset, recombinatorRules, RULE_PRESETS, type RulePreset } from '../presets'
 import { useExceptionalScan, type UpdateConfig } from '../store'
+import { ruleConflicts, type RuleConflict } from '../ruleConflicts'
 import { usePresetInputs } from '../usePresetInputs'
 import { formatPrice } from '../tiering'
 import {
@@ -246,6 +247,10 @@ interface CardProps {
   onMove: (delta: number) => void
   onDelete: () => void
   drag: DragState
+  /** Конфликт с правилом выше (ruleConflicts.ts). */
+  conflict?: RuleConflict
+  /** Показать правило по номеру в списке (переход к мешающему правилу). */
+  onShow: (index: number) => void
 }
 
 /** Перетаскивание правил: что тащим, куда собираемся бросить и как об этом сообщить списку. */
@@ -260,7 +265,7 @@ interface DragState {
   end: () => void
 }
 
-function RuleCard({ rule, index, total, config, context, onChange, onMove, onDelete, drag }: CardProps) {
+function RuleCard({ rule, index, total, config, context, onChange, onMove, onDelete, drag, conflict, onShow }: CardProps) {
   const { t, name } = useI18n()
   const cardRef = useRef<HTMLElement>(null)
   const dropSide = drag.target?.id === rule.id && drag.dragging !== rule.id ? (drag.target.after ? 'after' : 'before') : null
@@ -398,6 +403,14 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
           <button onClick={() => confirm(t('rules.deleteConfirm', { name: rule.name })) && onDelete()}>{t('rules.delete')}</button>
         </div>
       </header>
+      {conflict && (
+        <p className="rule-warning" title={t('rules.conflictHint')}>
+          ⚠ {conflict.kind === 'shadowed' ? t('rules.conflictShadowed') : t('rules.conflictHidden')}{' '}
+          <button className="link-button" onClick={() => onShow(conflict.by)}>
+            {t('rules.conflictRule', { n: conflict.by + 1, name: config.baseRules[conflict.by]?.name ?? '' })}
+          </button>
+        </p>
+      )}
 
       {open && (
         <>
@@ -561,6 +574,14 @@ function ModsInput({ value, onChange }: { value: string[]; onChange: (mods: stri
   )
 }
 
+/** Касается ли правило вещей этого класса: класс выбран, а если выбраны базы — хоть одна из этого класса. */
+function touchesClass(rule: BaseRule, className: string): boolean {
+  if (!rule.classes.includes(className)) return false
+  if (!rule.bases.length) return true
+  const bases = new Set(BASE_CLASSES.find((c) => c.name === className)?.bases.map((base) => base.name) ?? [])
+  return rule.bases.some((base) => bases.has(base))
+}
+
 /** Цвет текста образца, если правило его не задаёт: редкость правила; несколько или любая — самая высокая из них. */
 function rarityText(rule: BaseRule) {
   const order = ['Rare', 'Magic', 'Normal'] as const
@@ -591,6 +612,22 @@ export function BasesView({ config, update, snapshot }: Props) {
     const title = t(keyOf('preset', `${preset.id}.title`))
     if (count > 0 && !confirm(t('rules.presetConfirm', { title, n: count }))) return
     update((c) => applyPreset(c, preset, shares, t, chancing))
+  }
+
+  // Фильтр списка по классу: только правила, которые касаются вещей этого класса, — в порядке, в каком их проверит игра.
+  const [classFilter, setClassFilter] = useState<string | null>(null)
+  const conflicts = useMemo(() => ruleConflicts(config.baseRules), [config.baseRules])
+  const shownRules = config.baseRules
+    .map((rule, index) => ({ rule, index }))
+    .filter(({ rule }) => classFilter === null || touchesClass(rule, classFilter))
+  /** К правилу по номеру: если фильтр его прячет — фильтр снимается. */
+  const showRule = (index: number) => {
+    const target = config.baseRules[index]
+    if (!target) return
+    if (classFilter && !touchesClass(target, classFilter)) setClassFilter(null)
+    requestAnimationFrame(() =>
+      document.querySelector(`[data-focus="${CSS.escape(target.id)}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }),
+    )
   }
 
   const move = (index: number, delta: number) =>
@@ -695,7 +732,32 @@ export function BasesView({ config, update, snapshot }: Props) {
         </div>
       )}
 
-      {config.baseRules.map((rule, index) => (
+      {config.baseRules.length > 0 && (
+        <div className="base-tabs rule-filter" role="tablist" aria-label={t('rules.filterLabel')}>
+          <button role="tab" aria-selected={classFilter === null} className={classFilter === null ? 'active' : undefined} onClick={() => setClassFilter(null)}>
+            {t('rules.filterAll', { n: config.baseRules.length })}
+            {conflicts.size > 0 && <span className="rule-filter-warn"> ⚠ {conflicts.size}</span>}
+          </button>
+          {BASE_CLASSES.map(({ name: className }) => {
+            const n = config.baseRules.filter((rule) => touchesClass(rule, className)).length
+            return (
+              <button
+                key={className}
+                role="tab"
+                aria-selected={classFilter === className}
+                className={[classFilter === className && 'active', n === 0 && 'empty'].filter(Boolean).join(' ') || undefined}
+                onClick={() => setClassFilter(classFilter === className ? null : className)}
+              >
+                {t(keyOf('class', className))} <span className="count">{n}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {classFilter && <p className="note">{t('rules.filterNote', { cls: t(keyOf('class', classFilter)) })}</p>}
+      {classFilter && shownRules.length === 0 && <p className="note">{t('rules.filterEmpty', { section: t('rules.rest') })}</p>}
+
+      {shownRules.map(({ rule, index }) => (
         <RuleCard
           key={rule.id}
           rule={rule}
@@ -707,6 +769,8 @@ export function BasesView({ config, update, snapshot }: Props) {
           onMove={(delta) => move(index, delta)}
           onDelete={() => setRules((rules) => rules.filter((r) => r.id !== rule.id))}
           drag={drag}
+          conflict={conflicts.get(index)}
+          onShow={showRule}
         />
       ))}
 

@@ -2459,3 +2459,37 @@ fieldset.thresholds:disabled {
   flex: 1;
   min-width: 200px;
 }
+
+/* Правила баз: фильтр по классу и предупреждения о конфликтах. */
+.rule-filter {
+  margin: 4px 0 10px;
+}
+
+.rule-filter-warn {
+  color: #f0a24a;
+}
+
+.rule-warning {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid #f0a24a;
+  background: rgba(240, 162, 74, 0.08);
+  color: #f3c38a;
+  font-size: 13px;
+}
+
+button.link-button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--gold-bright);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+button.link-button:hover:not(:disabled) {
+  box-shadow: none;
+  color: #fff;
+}

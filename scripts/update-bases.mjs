@@ -79,3 +79,20 @@ const result = [...classes.values()]
 await writeFile(OUTPUT, JSON.stringify(result) + '\n')
 console.log(`${result.length} классов, ${result.reduce((n, c) => n + c.bases.length, 0)} баз → src/data/bases.json`)
 for (const c of result) console.log(`  ${c.group.padEnd(9)} ${c.name.padEnd(20)} ${c.bases.length}`)
+
+// Сколько предметов помещается в одну стопку: фильтр не ждёт стопки больше, чем бывает в игре.
+// Сохраняем только складываемые (больше одного в стопке); у одноимённых предметов — наибольшее значение.
+function stackSizes(items) {
+  const sizes = {}
+  for (const item of Object.values(items)) {
+    const size = item.properties?.stack_size
+    if (!item.name || !(size > 1)) continue
+    sizes[item.name] = Math.max(sizes[item.name] ?? 0, size)
+  }
+  return Object.fromEntries(Object.entries(sizes).sort(([a], [b]) => a.localeCompare(b)))
+}
+
+const STACKS = new URL('../src/data/stack-sizes.json', import.meta.url)
+const stacks = stackSizes(items)
+await writeFile(STACKS, JSON.stringify(stacks) + '\n')
+console.log(`${Object.keys(stacks).length} складываемых предметов → src/data/stack-sizes.json`)

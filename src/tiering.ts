@@ -1,3 +1,4 @@
+import STACK_SIZES from './data/stack-sizes.json'
 import { CURRENCIES, UNIQUE_TIERS } from './defaults'
 import type { T } from './i18n'
 import { SECTIONS } from './sections'
@@ -20,6 +21,9 @@ type Rates = MarketSnapshot['rates']
 const UNPRICED_TIER: TierId = 'C'
 
 const UNSTACKABLE = new Set(SECTIONS.filter((s) => s.unstackable).map((s) => s.id))
+
+/** Сколько предметов помещается в стопку (по игровым данным); нет в таблице — не складывается. */
+export const maxStack = (name: string): number => (STACK_SIZES as Record<string, number>)[name] ?? 1
 
 /** Ключ для ручного выбора тира: базы уников не должны совпасть с одноимённым обычным предметом. */
 export const itemKey = (item: MarketItem) => (item.uniques ? `unique:${item.name}` : item.name)
@@ -103,10 +107,13 @@ export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Dis
   // Ручной тир важнее мин. цены: предмет, поднятый вручную, показывается, даже если он дешёвый.
   const passes = rank(tier) <= rank(visibility.minTier) && (override !== undefined || price >= visibility.minPrice)
   if (passes) return { kind: 'show', tier }
-  if (!visibility.stacks || price <= 0 || UNSTACKABLE.has(item.section)) return { kind: 'hide' }
+  // Не складывается — стопки не бывает, правило для неё в фильтре никогда бы не сработало.
+  const largest = maxStack(item.name)
+  if (!visibility.stacks || price <= 0 || UNSTACKABLE.has(item.section) || largest < 2) return { kind: 'hide' }
 
   // Не меньше 2: одиночный предмет сюда попал именно потому, что его показывать не нужно.
-  const stackSize = Math.max(2, Math.ceil(roundPrice(cutoffPrice(visibility, config.thresholds, config.currency, rates)) / price))
+  // Не больше полной стопки: стопку больше той, что бывает в игре, фильтр ждал бы зря.
+  const stackSize = Math.min(largest, Math.max(2, Math.ceil(roundPrice(cutoffPrice(visibility, config.thresholds, config.currency, rates)) / price)))
   return { kind: 'stack', tier: tierByValue(stackSize * item.divine, config.thresholds, rates), stackSize }
 }
 

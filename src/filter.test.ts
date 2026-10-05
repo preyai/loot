@@ -49,7 +49,7 @@ const snapshot = (items: MarketItem[]): MarketSnapshot => ({
 })
 
 const mirror = item('Mirror of Kalandra', 10) // 1000 ex → S
-const jeweller = item("Jeweller's Orb", 0.03) // 3 ex → C
+const jeweller = item("Greater Jeweller's Orb", 0.03) // 3 ex → C
 const scroll = item('Scroll of Wisdom', 0.001) // 0.1 ex → E
 
 describe('matchConditions', () => {
@@ -99,6 +99,14 @@ describe('itemDisplay', () => {
     // 3 ex за штуку → 4 штуки = 12 ex → тир B (от 10 ex)
     expect(itemDisplay(jeweller, config, rates)).toEqual({ kind: 'stack', tier: 'B', stackSize: 4 })
     expect(itemDisplay(mirror, config, rates)).toEqual({ kind: 'show', tier: 'S' })
+  })
+
+  it('стопка не больше полной: для дорогого порога — полная стопка, неделимое — скрывается', () => {
+    // Свиток 0.1 ex, порог 12 ex → нужно 120 штук, но в стопке их максимум 40.
+    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'E', minPrice: 12, stacks: true } }
+    expect(itemDisplay(scroll, config, rates)).toMatchObject({ kind: 'stack', stackSize: 40 })
+    // Фрагмент не складывается — стопки не бывает, правило для неё не нужно.
+    expect(itemDisplay(item('Cowardly Fate', 0.01, 'fragments'), config, rates)).toEqual({ kind: 'hide' })
   })
 
   it('без стопок дешёвое просто скрывается', () => {
@@ -575,7 +583,7 @@ describe('generateFilter', () => {
   it('раскладывает предметы по тирам согласно порогам в exalted', () => {
     const text = generateFilter(snapshot([mirror, jeweller, scroll]), EX)
     expect(text).toContain('Show # Currency / S\n    BaseType == "Mirror of Kalandra"\n    SetFontSize 45')
-    expect(text).toContain('Show # Currency / C\n    BaseType == "Jeweller\'s Orb"')
+    expect(text).toContain('Show # Currency / C\n    BaseType == "Greater Jeweller\'s Orb"')
     expect(text).toContain('Show # Currency / E\n    BaseType == "Scroll of Wisdom"')
     expect(text).toContain('PlayAlertSound 6 300')
     expect(text).toContain('MinimapIcon 0 Red Star')

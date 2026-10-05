@@ -1734,3 +1734,66 @@ label.button-like:hover {
   display: block;
   margin: 2px auto;
 }
+
+/* Учётная запись и сохранённые фильтры. */
+.account-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--bronze);
+  border-radius: 2px;
+  color: var(--gold);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.account-form form {
+  display: grid;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.account-form .check {
+  display: grid;
+  gap: 4px;
+}
+
+.account-form .note {
+  margin: 0;
+}
+
+.saved-filters {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.saved-filters li {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.saved-filters li.active {
+  border-color: var(--gold-dim);
+}
+
+.saved-filter-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.share-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-link input {
+  flex: 1;
+  min-width: 0;
+}

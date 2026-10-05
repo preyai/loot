@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { AccountError, handleAccounts } from './accounts'
 import { getLeagues, getSnapshot } from './market'
 import { getPopularity } from './popularity'
 import { getExceptionalScan, getTradeJob, startExceptionalScan, stopExceptionalScan } from './trade'
@@ -74,12 +75,14 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse): Prom
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.setHeader('Cache-Control', 'no-store')
   try {
-    const result = await route(req, url)
+    // Пользователи и их фильтры — свой обработчик (server/accounts.ts), остальное — данные о ценах.
+    const accounts = await handleAccounts(req, res, url)
+    const result = accounts !== undefined ? accounts : await route(req, url)
     // null — законный ответ («данных ещё нет»), не найденным считается только undefined.
     if (result === undefined) res.statusCode = 404
     res.end(JSON.stringify(result === undefined ? { error: 'Not found' } : result))
   } catch (e) {
-    res.statusCode = e instanceof HttpError ? e.status : 502
+    res.statusCode = e instanceof HttpError || e instanceof AccountError ? e.status : 502
     res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }))
   }
   return true

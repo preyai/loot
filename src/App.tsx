@@ -1,10 +1,13 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useAccount, useActiveFilter } from './account'
 import { BasesView } from './components/BasesView'
 import { ExtrasView } from './components/ExtrasView'
+import { FiltersView } from './components/FiltersView'
 import { GoldView } from './components/GoldView'
 import { PreviewView } from './components/PreviewView'
 import { downloadFilter, ExportView } from './components/ExportView'
 import { SectionView } from './components/SectionView'
+import { SharedView } from './components/SharedView'
 import { StylesView } from './components/StylesView'
 import { WaystonesView } from './components/WaystonesView'
 import { CURRENCIES } from './defaults'
@@ -18,10 +21,14 @@ import { useConfig, useMarket, type UpdateConfig } from './store'
 import { convertCurrency, perDivine } from './tiering'
 import type { Config, Currency } from './types'
 
-const PAGES = ['waystones', 'gold', 'extras', 'bases', 'preview', 'styles', 'export'] as const
-type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number]
+const PAGES = ['filters', 'waystones', 'gold', 'extras', 'bases', 'preview', 'styles', 'export'] as const
+type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number] | 'shared'
+
+/** Код из ссылки «поделиться»: #/shared/<код>. */
+const sharedCode = () => /^#\/?shared\/([^?/]+)/.exec(location.hash)?.[1] ?? null
 
 function readRoute(): Route {
+  if (sharedCode()) return 'shared'
   // После «?» — переход к строке страницы (focus.ts), к маршруту он не относится.
   const id = location.hash.replace(/^#\/?/, '').split('?')[0]
   const known = SECTIONS.some((s) => s.id === id) || (PAGES as readonly string[]).includes(id)
@@ -52,6 +59,8 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
   const market = useMarket(config.league, (league) => update((c) => ({ ...c, league })))
   const route = useRoute()
   const gameFolder = useGameFolder()
+  const { me } = useAccount()
+  const { active, dirty } = useActiveFilter(config)
   useFocusScroll(useFocus(), route)
   const { snapshot } = market
 
@@ -112,6 +121,10 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
             <span className="count">{config.baseRules.filter((r) => r.enabled).length}</span>
           </a>
           <div className="nav-group">{t('nav.filter')}</div>
+          <a href="#/filters" className={route === 'filters' ? 'active' : ''}>
+            {t('nav.filters')}
+            {active && <span className="count">{dirty ? `${active.name} •` : active.name}</span>}
+          </a>
           <a href="#/preview" className={route === 'preview' ? 'active' : ''}>
             {t('nav.preview')}
           </a>
@@ -166,6 +179,9 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
               ))}
             </select>
           </label>
+          <a className="account-chip" href="#/filters" title={t('nav.filters')}>
+            {me ? me.login : me === null ? t('account.signIn') : '…'}
+          </a>
           <span className="status">
             {market.loading
               ? t('top.loading')
@@ -195,6 +211,8 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
             </p>
           )}
           {!snapshot && market.loading && <p className="note">{t('top.loading')}</p>}
+          {route === 'filters' && <FiltersView config={config} update={update} />}
+          {route === 'shared' && <SharedView code={sharedCode()!} config={config} update={update} />}
           {route === 'waystones' && <WaystonesView config={config} update={update} />}
           {route === 'gold' && <GoldView config={config} update={update} />}
           {route === 'extras' && <ExtrasView config={config} update={update} />}

@@ -9,32 +9,38 @@ const CONFIG_KEY = 'loot-filter-editor:config'
 /** Настройки для первого запуска: язык — по языку браузера. */
 const freshConfig = (): Config => ({ ...DEFAULT_CONFIG, language: detectLanguage() })
 
+/**
+ * Настройки из сохранённых (в браузере, на сервере или по ссылке): поля, добавленные в новых версиях,
+ * берутся из значений по умолчанию.
+ */
+export function normalizeConfig(stored: Partial<Config>): Config {
+  return {
+    ...DEFAULT_CONFIG,
+    ...stored,
+    language: LANGUAGES.find((lang) => lang === stored.language) ?? detectLanguage(),
+    thresholds: { ...DEFAULT_CONFIG.thresholds, ...stored.thresholds },
+    tiers: { ...DEFAULT_CONFIG.tiers, ...stored.tiers },
+    visibility: { ...DEFAULT_CONFIG.visibility, ...stored.visibility },
+    gear: { ...DEFAULT_CONFIG.gear, ...stored.gear },
+    waystones: {
+      ...DEFAULT_CONFIG.waystones,
+      ...stored.waystones,
+      styles: { ...DEFAULT_CONFIG.waystones.styles, ...stored.waystones?.styles },
+    },
+    gold: {
+      ...DEFAULT_CONFIG.gold,
+      ...stored.gold,
+      sizes: { ...DEFAULT_CONFIG.gold.sizes, ...stored.gold?.sizes },
+      styles: { ...DEFAULT_CONFIG.gold.styles, ...stored.gold?.styles },
+    },
+    baseRules: (stored.baseRules ?? []).map((rule) => ({ ...EMPTY_RULE, ...rule })),
+  }
+}
+
 function loadConfig(): Config {
   try {
     const stored = JSON.parse(localStorage.getItem(CONFIG_KEY) ?? 'null') as Partial<Config> | null
-    if (!stored) return freshConfig()
-    // Поля, добавленные в новых версиях, берутся из значений по умолчанию.
-    return {
-      ...DEFAULT_CONFIG,
-      ...stored,
-      language: LANGUAGES.find((lang) => lang === stored.language) ?? detectLanguage(),
-      thresholds: { ...DEFAULT_CONFIG.thresholds, ...stored.thresholds },
-      tiers: { ...DEFAULT_CONFIG.tiers, ...stored.tiers },
-      visibility: { ...DEFAULT_CONFIG.visibility, ...stored.visibility },
-      gear: { ...DEFAULT_CONFIG.gear, ...stored.gear },
-      waystones: {
-        ...DEFAULT_CONFIG.waystones,
-        ...stored.waystones,
-        styles: { ...DEFAULT_CONFIG.waystones.styles, ...stored.waystones?.styles },
-      },
-      gold: {
-        ...DEFAULT_CONFIG.gold,
-        ...stored.gold,
-        sizes: { ...DEFAULT_CONFIG.gold.sizes, ...stored.gold?.sizes },
-        styles: { ...DEFAULT_CONFIG.gold.styles, ...stored.gold?.styles },
-      },
-      baseRules: (stored.baseRules ?? []).map((rule) => ({ ...EMPTY_RULE, ...rule })),
-    }
+    return stored ? normalizeConfig(stored) : freshConfig()
   } catch {
     return freshConfig()
   }

@@ -288,7 +288,7 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
   const out: string[] = [
     '#' + '='.repeat(70),
     '# Exile Filter — https://exile-filter.com',
-    `# League: ${snapshot.league} | prices: poe.ninja, ${snapshot.fetchedAt}`,
+    `# League: ${snapshot.league} | prices: ${(snapshot.sources ?? ['poe.ninja']).join(' + ')}, ${snapshot.fetchedAt}`,
     '#' + '='.repeat(70),
     // Золото — первым, как у NeverSink: у него свой базовый тип, и ничто ниже его не задевает.
     ...goldBlocks(config.gold),

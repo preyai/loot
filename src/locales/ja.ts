@@ -22,7 +22,7 @@ export const ja: Dictionary = {
   'top.currencyHint': 'しきい値と最低価格は現在のレートで換算されます',
   'top.language': '言語',
   'top.loading': '価格を読み込み中…',
-  'top.pricesAt': 'poe.ninja の価格（{time} 時点）',
+  'top.pricesAt': '{source} の価格（{time} 時点）',
   'top.download': '.filter をダウンロード',
   'error.load': 'データを読み込めませんでした: {error}',
   'action.retry': '再試行',

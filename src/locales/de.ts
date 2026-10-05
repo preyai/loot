@@ -22,7 +22,7 @@ export const de: Dictionary = {
   'top.currencyHint': 'Schwellen und Mindestpreise werden zum aktuellen Kurs umgerechnet',
   'top.language': 'Sprache',
   'top.loading': 'Preise werden geladen…',
-  'top.pricesAt': 'Preise von poe.ninja, Stand {time}',
+  'top.pricesAt': 'Preise von {source}, Stand {time}',
   'top.download': '.filter herunterladen',
   'error.load': 'Daten konnten nicht geladen werden: {error}',
   'action.retry': 'Erneut versuchen',

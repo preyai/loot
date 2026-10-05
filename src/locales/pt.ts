@@ -22,7 +22,7 @@ export const pt: Dictionary = {
   'top.currencyHint': 'Limites e preços mínimos são convertidos pela cotação atual',
   'top.language': 'Idioma',
   'top.loading': 'Carregando preços…',
-  'top.pricesAt': 'Preços do poe.ninja em {time}',
+  'top.pricesAt': 'Preços do {source} em {time}',
   'top.download': 'Baixar .filter',
   'error.load': 'Não foi possível carregar os dados: {error}',
   'action.retry': 'Tentar de novo',

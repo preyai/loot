@@ -260,7 +260,9 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                         </ul>
                       )}
                     </div>
-                    <span className="price">{formatPrice(item.divine, snapshot.rates, config.currency, t)}</span>
+                    <span className="price" title={item.priceSource ?? 'poe.ninja'}>
+                      {formatPrice(item.divine, snapshot.rates, config.currency, t)}
+                    </span>
                     <div className="tier-picker" role="group" aria-label={t('items.tierFor', { name: name(item.name) })}>
                       <button
                         className={override === undefined && !own ? 'active' : ''}

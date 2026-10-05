@@ -186,7 +186,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
           <span className="status">
             {market.loading
               ? t('top.loading')
-              : snapshot && t('top.pricesAt', { time: new Date(snapshot.fetchedAt).toLocaleString(locale) })}
+              : snapshot && t('top.pricesAt', { source: (snapshot.sources ?? ['poe.ninja']).join(' + '), time: new Date(snapshot.fetchedAt).toLocaleString(locale) })}
           </span>
           {/* Папка игры выбрана — сохраняем прямо туда, иначе скачиваем файл. */}
           {gameFolder.supported && gameFolder.folder ? (

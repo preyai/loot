@@ -22,7 +22,7 @@ export const ko: Dictionary = {
   'top.currencyHint': '기준값과 최저 가격은 현재 시세로 환산됩니다',
   'top.language': '언어',
   'top.loading': '가격을 불러오는 중…',
-  'top.pricesAt': 'poe.ninja 가격 ({time} 기준)',
+  'top.pricesAt': '{source} 가격 ({time} 기준)',
   'top.download': '.filter 다운로드',
   'error.load': '데이터를 불러오지 못했습니다: {error}',
   'action.retry': '다시 시도',

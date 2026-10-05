@@ -53,6 +53,8 @@ export interface MarketItem {
   divine: number | null
   /** Только в разделах уников: name — базовый тип, здесь — уникальные предметы на этой базе. */
   uniques?: UniqueInfo[]
+  /** Откуда цена; нет — poe.ninja. */
+  priceSource?: 'poe2scout'
 }
 
 export interface MarketSnapshot {
@@ -60,6 +62,8 @@ export interface MarketSnapshot {
   fetchedAt: string
   /** Сколько Exalted / Chaos дают за 1 Divine. */
   rates: { exalted: number; chaos: number }
+  /** Откуда цены: poe2scout — обычные предметы и курс, poe.ninja — уники и то, чего нет у poe2scout. Нет — только poe.ninja. */
+  sources?: string[]
   items: MarketItem[]
   /** Разделы, которые не удалось загрузить. */
   failed: SectionId[]

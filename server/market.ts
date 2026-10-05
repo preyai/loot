@@ -1,5 +1,6 @@
 import { SECTIONS, type Section } from '../src/sections'
 import type { League, MarketItem, MarketSnapshot, ModLine, SectionId, UniqueInfo } from '../src/types'
+import { scoutPrice, scoutPrices } from './scout'
 import { readData, storedResource, writeData } from './storage'
 
 export const API = 'https://poe.ninja/poe2/api'
@@ -218,8 +219,13 @@ async function loadSnapshot(league: string): Promise<MarketSnapshot> {
       ),
     )
   }
-  const [results, catalog] = await Promise.all([
+  const [results, scout, catalog] = await Promise.all([
     Promise.allSettled(SECTIONS.map(load)),
+    // poe2scout недоступен — обходимся ценами poe.ninja.
+    scoutPrices(league).catch((e: unknown) => {
+      console.warn(`poe2scout не ответил: ${e instanceof Error ? e.message : String(e)}`)
+      return null
+    }),
     // Без справочника обходимся: пропадут только предметы без цены.
     exchangeCatalog.get('all').catch((e: unknown) => {
       console.warn(`справочник обмена не загрузился: ${e instanceof Error ? e.message : String(e)}`)
@@ -259,9 +265,23 @@ async function loadSnapshot(league: string): Promise<MarketSnapshot> {
     if (catalog) items.push(...catalogItems(catalog, section, seen))
     else if (section.ninja.length === 0) failed.push(section.id)
   }
+  // Обычные предметы (не уники и не плитки) — по ценам poe2scout, если они там есть.
+  if (scout) {
+    const priced = new Set(SECTIONS.filter((s) => !s.unique && !s.bases).map((s) => s.id))
+    for (const item of items) {
+      if (!priced.has(item.section)) continue
+      const price = scoutPrice(scout, item.name, item.divine)
+      if (price === null) continue
+      item.divine = price
+      item.priceSource = 'poe2scout'
+    }
+    // Курс тоже с poe2scout: иначе его цены в exalted/chaos пересчитывались бы по чужому курсу.
+    rates = scout.rates
+  }
   await fillMissingIcons(items)
 
-  return { league, fetchedAt: new Date().toISOString(), rates, items, failed }
+  const sources = scout ? ['poe2scout', 'poe.ninja'] : ['poe.ninja']
+  return { league, fetchedAt: new Date().toISOString(), rates, sources, items, failed }
 }
 
 /** Снимки цен по лигам: хранятся на диске и обновляются не чаще раза в TTL. */

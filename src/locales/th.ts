@@ -22,7 +22,7 @@ export const th: Dictionary = {
   'top.currencyHint': 'เกณฑ์และราคาขั้นต่ำจะถูกแปลงตามอัตราปัจจุบัน',
   'top.language': 'ภาษา',
   'top.loading': 'กำลังโหลดราคา…',
-  'top.pricesAt': 'ราคาจาก poe.ninja ณ {time}',
+  'top.pricesAt': 'ราคาจาก {source} ณ {time}',
   'top.download': 'ดาวน์โหลด .filter',
   'error.load': 'โหลดข้อมูลไม่สำเร็จ: {error}',
   'action.retry': 'ลองอีกครั้ง',

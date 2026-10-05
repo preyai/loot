@@ -127,6 +127,25 @@ REST=$($SUDO grep -v '^DATABASE_URL=' "$ENV_FILE" 2>/dev/null || true)
 { if [ -n "$REST" ]; then printf '%s\n' "$REST"; fi; printf 'DATABASE_URL=postgres://loot:%s@%s:5432/loot\n' "$DB_PASSWORD" "$DB"; } | $SUDO tee "$ENV_FILE" >/dev/null
 $SUDO chmod 600 "$ENV_FILE"
 
+# --- Резервные копии базы: каждый день в 03:30 UTC, хранятся последние 14.
+BACKUP_DIR="$APP_DIR/backups"
+$SUDO mkdir -p "$BACKUP_DIR"
+$SUDO chmod 700 "$BACKUP_DIR"
+cat <<BACKUP | $SUDO tee "$APP_DIR/backup.sh" >/dev/null
+#!/usr/bin/env bash
+# Создан remote-install.sh. Резервная копия базы: pg_dump, сжатый gzip; старше 14 последних — удаляются.
+# Восстановить: gunzip -c файл.sql.gz | docker exec -i $DB psql -U loot -d loot
+set -euo pipefail
+FILE="$BACKUP_DIR/loot-\$(date -u +%Y%m%d-%H%M).sql.gz"
+docker exec $DB pg_dump -U loot --clean --if-exists loot | gzip > "\$FILE.tmp"
+mv "\$FILE.tmp" "\$FILE"
+ls -1t "$BACKUP_DIR"/loot-*.sql.gz | tail -n +15 | xargs -r rm -f
+echo "\$(date -u '+%F %T') \$FILE \$(du -h "\$FILE" | cut -f1)"
+BACKUP
+$SUDO chmod 700 "$APP_DIR/backup.sh"
+printf '30 3 * * * root %s >> %s 2>&1\n' "$APP_DIR/backup.sh" "$BACKUP_DIR/backup.log" | $SUDO tee "/etc/cron.d/$NAME-backup" >/dev/null
+$SUDO chmod 644 "/etc/cron.d/$NAME-backup"
+
 # С доменом приложение наружу напрямую не публикуется: иначе пароль можно было бы отправить мимо HTTPS.
 if [ -n "$DOMAIN" ]; then PUBLISH="127.0.0.1:$PORT:8080"; else PUBLISH="$PORT:8080"; fi
 

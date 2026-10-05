@@ -248,6 +248,8 @@ export interface Config {
   overrides: Record<string, TierChoice>
   /** Своё оформление предмета раздела рынка по ключу (itemKey): важнее тира, предмет всегда показывается. */
   itemStyles: Record<string, TierStyle>
+  /** Ручной размер стопки предмета рынка (ключ — как у overrides): показывать только стопками от стольких штук. */
+  itemStacks: Record<string, number>
   disabledSections: SectionId[]
   /** Применяются по порядку: первое подошедшее правило побеждает. */
   baseRules: BaseRule[]

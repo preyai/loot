@@ -33,6 +33,7 @@ export function normalizeConfig(stored: Partial<Config>): Config {
       sizes: { ...DEFAULT_CONFIG.gold.sizes, ...stored.gold?.sizes },
       styles: { ...DEFAULT_CONFIG.gold.styles, ...stored.gold?.styles },
     },
+    itemStacks: { ...stored.itemStacks },
     baseRules: (stored.baseRules ?? []).map((rule) => ({ ...EMPTY_RULE, ...rule })),
   }
 }

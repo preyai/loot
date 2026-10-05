@@ -2379,3 +2379,21 @@ input[type='range'].alpha-slider::-webkit-slider-thumb {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+/* Ручной размер стопки предмета рынка. */
+.item-stack {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 2px 0 6px 46px;
+}
+
+.item-stack .note {
+  margin: 0;
+}
+
+.tier-picker svg {
+  display: block;
+}

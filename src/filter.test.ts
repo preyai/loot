@@ -109,6 +109,22 @@ describe('itemDisplay', () => {
     expect(itemDisplay(item('Cowardly Fate', 0.01, 'fragments'), config, rates)).toEqual({ kind: 'hide' })
   })
 
+  it('ручная стопка предмета: важнее показа по цене, не больше полной, со своим оформлением — своим блоком', () => {
+    const config: Config = { ...EX, itemStacks: { 'Scroll of Wisdom': 25, 'Mirror of Kalandra': 3 } }
+    // 25 свитков по 0.1 ex = 2.5 ex → тир C по прежним границам.
+    expect(itemDisplay(scroll, config, rates)).toEqual({ kind: 'stack', tier: 'C', stackSize: 25 })
+    // Ручной тир важнее цены стопки; скрытие важнее стопки.
+    expect(itemDisplay(scroll, { ...config, overrides: { 'Scroll of Wisdom': 'A' } }, rates)).toEqual({ kind: 'stack', tier: 'A', stackSize: 25 })
+    expect(itemDisplay(scroll, { ...config, overrides: { 'Scroll of Wisdom': 'hide' } }, rates)).toEqual({ kind: 'hide' })
+    // Больше полной стопки (у свитка — 40) не бывает.
+    expect(itemDisplay(scroll, { ...config, itemStacks: { 'Scroll of Wisdom': 500 } }, rates)).toMatchObject({ stackSize: 40 })
+
+    const own = { ...DEFAULT_CONFIG.tiers.S, fontSize: 31 }
+    const text = generateFilter(snapshot([scroll]), { ...config, itemStyles: { 'Scroll of Wisdom': own } })
+    expect(text).toContain('Show # Currency / custom style / stacks of 25+\n    BaseType == "Scroll of Wisdom"\n    StackSize >= 25\n    SetFontSize 31')
+    expect(text.indexOf('custom style / stacks of 25+')).toBeLessThan(text.indexOf('Hide # Currency / hidden'))
+  })
+
   it('без стопок дешёвое просто скрывается', () => {
     const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'E', minPrice: 12, stacks: false } }
     expect(itemDisplay(jeweller, config, rates)).toEqual({ kind: 'hide' })

@@ -4,7 +4,7 @@ import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
 import type { Section } from '../sections'
 import type { UpdateConfig } from '../store'
-import { autoTier, defaultSectionTierStyle, formatPrice, itemDisplay, itemKey, sectionTierStyle, visibilityFor, type Display } from '../tiering'
+import { autoTier, defaultSectionTierStyle, formatPrice, itemDisplay, itemKey, maxStack, sectionTierStyle, visibilityFor, type Display } from '../tiering'
 import {
   TIER_IDS,
   type Config,
@@ -29,6 +29,17 @@ const CHOICES: TierChoice[] = [...TIER_IDS, 'hide']
 // Предметы со своим оформлением — отдельной группой сверху: их настраивали вручную, и искать их проще в одном месте.
 const GROUPS = ['custom', ...TIER_IDS, 'stack', 'hide'] as const
 type GroupId = (typeof GROUPS)[number]
+
+/** Значок стопки: монеты одна на другой. */
+function StackIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <ellipse cx="7" cy="10.5" rx="5" ry="2" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <ellipse cx="7" cy="7" rx="5" ry="2" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <ellipse cx="7" cy="3.5" rx="5" ry="2" fill="none" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  )
+}
 
 /** Корзина на кнопке «скрыть предмет»: крестик читался как «закрыть», а не как «выбросить из показа». */
 function TrashIcon() {
@@ -57,6 +68,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
   const [opened, setOpened] = useState<{ unique: UniqueInfo; base: string } | null>(null)
   // Строка, у которой раскрыты поля своего оформления.
   const [editing, setEditing] = useState<string | null>(null)
+  const [stacking, setStacking] = useState<string | null>(null)
   const enabled = !config.disabledSections.includes(section.id)
   const ownVisibility = config.sectionVisibility[section.id]
 
@@ -69,7 +81,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
       const names = [item.name, ...(item.uniques ?? []).map((u) => u.name)].flatMap((n) => [n, name(n)])
       if (needle && !names.some((n) => n.toLowerCase().includes(needle))) continue
       const display = itemDisplay(item, config, snapshot.rates)
-      const group = display.kind === 'show' ? (display.custom ? 'custom' : display.tier) : display.kind
+      const group = display.kind !== 'hide' && display.custom ? 'custom' : display.kind === 'show' ? display.tier : display.kind
       const list = map.get(group) ?? []
       list.push({ item, display })
       map.set(group, list)
@@ -97,6 +109,11 @@ export function SectionView({ section, snapshot, config, update }: Props) {
   /** К строке предмета после того, как он сменил группу (кадр спустя — когда список уже перерисован). */
   const scrollToItem = (key: string) =>
     requestAnimationFrame(() => document.querySelector(`[data-focus="${CSS.escape(key)}"]`)?.scrollIntoView({ block: 'start' }))
+  const setItemStack = (key: string, size: number | null) =>
+    update((c) => {
+      const { [key]: _old, ...itemStacks } = c.itemStacks
+      return { ...c, itemStacks: size ? { ...itemStacks, [key]: size } : itemStacks }
+    })
   const setItemStyle = (key: string, style: TierStyle | null) =>
     update((c) => {
       const { [key]: _old, ...itemStyles } = c.itemStyles
@@ -301,6 +318,15 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                         </button>
                       ))}
                       <button
+                        className={config.itemStacks[key] ? 'active' : ''}
+                        disabled={maxStack(item.name) < 2}
+                        title={maxStack(item.name) < 2 ? t('items.stackUnstackable') : t('items.stackManual')}
+                        aria-expanded={stacking === key}
+                        onClick={() => setStacking(stacking === key ? null : key)}
+                      >
+                        <StackIcon />
+                      </button>
+                      <button
                         className={own ? 'active' : ''}
                         title={t('items.customStyle')}
                         aria-expanded={editing === key}
@@ -317,6 +343,27 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                         ✎
                       </button>
                     </div>
+                    {stacking === key && (
+                      <div className="item-stack">
+                        <label className="check">
+                          {t('items.stackManual')}
+                          <input
+                            type="number"
+                            min={2}
+                            max={maxStack(item.name)}
+                            placeholder={display.kind === 'stack' ? String(display.stackSize) : ''}
+                            value={config.itemStacks[key] ?? ''}
+                            onChange={(e) => {
+                              const n = Math.round(Number(e.target.value))
+                              setItemStack(key, e.target.value && n >= 2 ? Math.min(n, maxStack(item.name)) : null)
+                            }}
+                          />
+                          {t('items.stackUnit')}
+                        </label>
+                        <span className="note">{t('items.stackMax', { n: maxStack(item.name) })}</span>
+                        {config.itemStacks[key] !== undefined && <button onClick={() => setItemStack(key, null)}>{t('items.stackReset')}</button>}
+                      </div>
+                    )}
                     {editing === key && own && (
                       <div className="rule-style item-style">
                         <StyleFields id={`item-${key}`} style={own} onChange={(style) => setItemStyle(key, style)} />

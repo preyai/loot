@@ -311,6 +311,7 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
     const stacks = new Map<string, { tier: TierId; stackSize: number; items: MarketItem[] }>()
     const hidden: MarketItem[] = []
     const custom: MarketItem[] = []
+    const customStacks: { item: MarketItem; stackSize: number }[] = []
     for (const item of snapshot.items) {
       if (item.section !== section.id) continue
       const display = itemDisplay(item, config, snapshot.rates)
@@ -323,7 +324,9 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
         continue
       }
       hidden.push(item)
-      if (display.kind === 'stack') {
+      if (display.kind === 'stack' && display.custom) {
+        customStacks.push({ item, stackSize: display.stackSize })
+      } else if (display.kind === 'stack') {
         const key = `${display.tier}:${display.stackSize}`
         const group = stacks.get(key) ?? { tier: display.tier, stackSize: display.stackSize, items: [] }
         group.items.push(item)
@@ -339,6 +342,18 @@ export function generateFilter(snapshot: MarketSnapshot, config: Config): string
     for (const item of custom) {
       for (const conditions of matchConditions([item])) {
         out.push(block('Show', `${section.label} / custom style`, [...rarity, ...conditions, ...styleLines(config.itemStyles[itemKey(item)])]))
+      }
+    }
+    for (const { item, stackSize } of customStacks) {
+      for (const conditions of matchConditions([item])) {
+        out.push(
+          block('Show', `${section.label} / custom style / stacks of ${stackSize}+`, [
+            ...rarity,
+            ...conditions,
+            `StackSize >= ${stackSize}`,
+            ...styleLines(config.itemStyles[itemKey(item)]),
+          ]),
+        )
       }
     }
 

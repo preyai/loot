@@ -158,6 +158,7 @@ export const DEFAULT_CONFIG: Config = {
   },
   overrides: {},
   itemStyles: {},
+  itemStacks: {},
   disabledSections: [],
   baseRules: [],
   visibility: { minTier: 'E', minPrice: 0, stacks: true },

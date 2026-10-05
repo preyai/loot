@@ -87,12 +87,20 @@ export function cutoffPrice(visibility: Visibility, thresholds: Config['threshol
 export type Display =
   /** custom — у предмета своё оформление (config.itemStyles), оно важнее стиля тира. */
   | { kind: 'show'; tier: TierId; custom?: true }
-  /** Показывать только стопки от stackSize штук; tier — стиль по стоимости такой стопки. */
-  | { kind: 'stack'; tier: TierId; stackSize: number }
+  /** Показывать только стопки от stackSize штук; tier — стиль по стоимости такой стопки; custom — своё оформление. */
+  | { kind: 'stack'; tier: TierId; stackSize: number; custom?: true }
   | { kind: 'hide' }
 
 export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Display {
   const override = config.overrides[itemKey(item)]
+  // Ручная стопка — важнее остального, кроме скрытия: «показывать только стопками от N штук».
+  const manualStack = config.itemStacks[itemKey(item)]
+  const largest = maxStack(item.name)
+  if (manualStack && override !== 'hide' && largest >= 2) {
+    const stackSize = Math.min(largest, Math.max(2, manualStack))
+    const tier = override ?? (item.divine === null ? UNPRICED_TIER : tierByValue(stackSize * item.divine, config.thresholds, rates))
+    return config.itemStyles[itemKey(item)] ? { kind: 'stack', tier, stackSize, custom: true } : { kind: 'stack', tier, stackSize }
+  }
   // Своё оформление — значит, предмет нужен: показываем всегда, тир — только для группы на экране.
   if (config.itemStyles[itemKey(item)]) {
     return { kind: 'show', tier: override && override !== 'hide' ? override : autoTier(item, config, rates), custom: true }
@@ -108,7 +116,6 @@ export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Dis
   const passes = rank(tier) <= rank(visibility.minTier) && (override !== undefined || price >= visibility.minPrice)
   if (passes) return { kind: 'show', tier }
   // Не складывается — стопки не бывает, правило для неё в фильтре никогда бы не сработало.
-  const largest = maxStack(item.name)
   if (!visibility.stacks || price <= 0 || UNSTACKABLE.has(item.section) || largest < 2) return { kind: 'hide' }
 
   // Не меньше 2: одиночный предмет сюда попал именно потому, что его показывать не нужно.

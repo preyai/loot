@@ -1,7 +1,7 @@
 import { useI18n } from '../i18n-react'
 
 /** Приглашение на сервер Discord сообщества; пусто — ссылки на сайте не показываются. */
-export const DISCORD_INVITE = ''
+export const DISCORD_INVITE = 'https://discord.gg/bZmxQqbTju'
 
 /** Логотип Discord (упрощённый «Clyde»): узнаваемый значок, без чужих шрифтов и надписей. */
 function DiscordLogo() {

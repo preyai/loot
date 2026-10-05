@@ -4,7 +4,7 @@ import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
 import type { Section } from '../sections'
 import type { UpdateConfig } from '../store'
-import { autoTier, formatPrice, itemDisplay, itemKey, sectionTierStyle, visibilityFor, type Display } from '../tiering'
+import { autoTier, defaultSectionTierStyle, formatPrice, itemDisplay, itemKey, sectionTierStyle, visibilityFor, type Display } from '../tiering'
 import {
   TIER_IDS,
   type Config,
@@ -159,7 +159,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         )}
 
         <h3 className="section-tiers-title">{t('items.ownTiers')}</h3>
-        <p className="note">{t('items.ownTiersNote')}</p>
+        <p className="note">{t(section.unique ? 'items.ownTiersNoteUnique' : 'items.ownTiersNote')}</p>
         {TIER_IDS.map((tier) => {
           const own = config.sectionTiers[section.id]?.[tier]
           return (
@@ -177,7 +177,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                   type="checkbox"
                   checked={own !== undefined}
                   // Своё оформление начинается с копии общего — так понятно, от чего отталкиваться.
-                  onChange={(e) => setSectionTier(tier, e.target.checked ? structuredClone(config.tiers[tier]) : null)}
+                  onChange={(e) => setSectionTier(tier, e.target.checked ? structuredClone(defaultSectionTierStyle(config, section.id, tier)) : null)}
                 />
                 {t('items.ownTier')}
               </label>

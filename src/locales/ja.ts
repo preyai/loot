@@ -139,6 +139,7 @@ export const ja: Dictionary = {
   'items.customReset': '専用スタイルを解除',
   'items.ownTiers': 'このセクションのティアのスタイル',
   'items.ownTiersNote': 'チェックしたティアはこのセクション専用のスタイルになります。チェックしていないティアは「ティアとスタイル」ページと同じです。',
+  'items.ownTiersNoteUnique': 'ティアにチェックを入れると、このセクションで独自の見た目にできます。チェックのないティアは NeverSink のフィルターのユニークと同じ見た目です。',
   'items.ownTier': '専用',
   'items.hide': 'アイテムを非表示',
   'items.tierFor': '{name} のティア',

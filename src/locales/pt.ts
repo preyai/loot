@@ -139,6 +139,7 @@ export const pt: Dictionary = {
   'items.customReset': 'Remover estilo próprio',
   'items.ownTiers': 'Estilo dos tiers nesta seção',
   'items.ownTiersNote': 'Marque um tier para dar a ele um visual próprio nesta seção; os não marcados ficam como na página “Tiers e estilos”.',
+  'items.ownTiersNoteUnique': 'Marque um tier para dar a ele um visual próprio nesta seção; tiers não marcados ficam como os únicos no filtro do NeverSink.',
   'items.ownTier': 'próprio',
   'items.hide': 'Ocultar item',
   'items.tierFor': 'Tier de {name}',

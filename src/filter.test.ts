@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { chanceOf, chancingBases, chancingRule, dropSource, topUnique, uniquesByBase } from './chancing'
-import { DEFAULT_CONFIG } from './defaults'
+import { DEFAULT_CONFIG, UNIQUE_TIERS } from './defaults'
 import { BASE_CLASSES, baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, GEAR_CLASSES, moveItem, RULE_TEMPLATES, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, restRules, RULE_PRESETS } from './presets'
@@ -151,6 +151,19 @@ describe('уники', () => {
   it('правило для базы ограничено редкостью Unique', () => {
     const text = generateFilter(snapshot([robe]), DEFAULT_CONFIG)
     expect(text).toContain('Show # Unique Armours / S\n    Rarity Unique\n    BaseType == "Silk Robe"\n    SetFontSize 45')
+  })
+
+  it('по умолчанию уники оформлены как у NeverSink, валюта — как раньше; своё оформление раздела главнее', () => {
+    const cheap: MarketItem = { ...item('Linen Belt', 0.2, 'uq-armour'), uniques: [{ name: 'X', divine: 0.2 }] as MarketItem['uniques'] }
+    const text = generateFilter(snapshot([robe, cheap, mirror]), DEFAULT_CONFIG)
+    // Тир S у NeverSink одинаков для уников (t1) и валюты: красный на белом со звездой.
+    expect(text).toMatch(/Show # Unique Armours \/ S\n[^#]*MinimapIcon 0 Red Star/)
+    expect(text).toMatch(/Show # Currency \/ S\n[^#]*MinimapIcon 0 Red Star/)
+    // Тир B уников — коричневый на тёмно-красном (t3 у NeverSink), у валюты — чёрный на розовом.
+    const own = { ...UNIQUE_TIERS.B, fontSize: 33 }
+    const custom = generateFilter(snapshot([cheap]), { ...DEFAULT_CONFIG, sectionTiers: { 'uq-armour': { B: own } } })
+    expect(generateFilter(snapshot([cheap]), DEFAULT_CONFIG)).toMatch(/Unique Armours \/ B\n[^#]*SetBackgroundColor 53 13 13 255/)
+    expect(custom).toMatch(/Unique Armours \/ B\n[^#]*SetFontSize 33/)
   })
 
   it('обычная плитка и уникальная на той же базе не задевают друг друга; предмет без цены показывается в тире C', () => {

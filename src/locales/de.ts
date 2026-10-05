@@ -139,6 +139,7 @@ export const de: Dictionary = {
   'items.customReset': 'Eigenen Stil entfernen',
   'items.ownTiers': 'Stufenstile in diesem Abschnitt',
   'items.ownTiersNote': 'Hake eine Stufe an, um ihr in diesem Abschnitt ein eigenes Aussehen zu geben; nicht angehakte Stufen sehen aus wie auf der Seite „Stufen & Stile“.',
+  'items.ownTiersNoteUnique': 'Markiere einen Tier, um ihm in diesem Bereich ein eigenes Aussehen zu geben; nicht markierte Tiers sehen aus wie Uniques in NeverSinks Filter.',
   'items.ownTier': 'eigen',
   'items.hide': 'Gegenstand ausblenden',
   'items.tierFor': 'Stufe für {name}',

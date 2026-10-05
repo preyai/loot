@@ -139,6 +139,7 @@ export const fr: Dictionary = {
   'items.customReset': 'Retirer le style personnalisé',
   'items.ownTiers': 'Style des paliers dans cette section',
   'items.ownTiersNote': 'Cochez un palier pour lui donner son propre style dans cette section ; les autres gardent celui de la page « Paliers et styles ».',
+  'items.ownTiersNoteUnique': 'Cochez un palier pour lui donner son propre style dans cette section ; les paliers non cochés ressemblent aux uniques du filtre de NeverSink.',
   'items.ownTier': 'perso',
   'items.hide': 'Masquer l’objet',
   'items.tierFor': 'Palier pour {name}',

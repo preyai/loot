@@ -139,6 +139,7 @@ export const ko: Dictionary = {
   'items.customReset': '사용자 스타일 제거',
   'items.ownTiers': '이 항목의 등급 스타일',
   'items.ownTiersNote': '등급을 체크하면 이 항목에서만 따로 꾸밀 수 있습니다. 체크하지 않은 등급은 "등급과 스타일" 페이지와 같습니다.',
+  'items.ownTiersNoteUnique': '티어를 체크하면 이 섹션에서 고유한 모양을 지정할 수 있습니다. 체크하지 않은 티어는 NeverSink 필터의 고유 아이템처럼 보입니다.',
   'items.ownTier': '전용',
   'items.hide': '아이템 숨기기',
   'items.tierFor': '{name}의 등급',

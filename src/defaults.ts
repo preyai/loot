@@ -1,4 +1,4 @@
-import type { Config, Currency, Rgba } from './types'
+import type { Config, Currency, Rgba, TierId, TierStyle } from './types'
 import { DEFAULT_GOLD } from './gold'
 import { DEFAULT_WAYSTONES } from './waystones'
 
@@ -23,6 +23,68 @@ export const SOUND_IDS = Array.from({ length: 16 }, (_, i) => i + 1)
 export const SOUND_VOLUME_MAX = 300
 
 const rgba = (r: number, g: number, b: number, a = 255): Rgba => ({ r, g, b, a })
+
+/**
+ * Оформление тиров уников по умолчанию — как у уников в фильтре NeverSink (0.10.4):
+ * S — t1, A — t2, B — t3, C — t4 (hideable). У NeverSink ниже t4 тиров нет: D — тот же t4 тише (без звука,
+ * короткий луч), E — неприметно, только значок на миникарте.
+ */
+export const UNIQUE_TIERS: Record<TierId, TierStyle> = {
+  S: {
+    fontSize: 45,
+    text: rgba(255, 0, 0),
+    border: rgba(255, 0, 0),
+    background: rgba(255, 255, 255),
+    sound: { id: 6, volume: 300 },
+    effect: { color: 'Red', temp: false },
+    icon: { size: 0, color: 'Red', shape: 'Star' },
+  },
+  A: {
+    fontSize: 45,
+    text: rgba(255, 255, 255),
+    border: rgba(255, 255, 255),
+    background: rgba(188, 96, 37),
+    sound: { id: 1, volume: 300 },
+    effect: { color: 'Red', temp: false },
+    icon: { size: 0, color: 'Yellow', shape: 'Star' },
+  },
+  B: {
+    fontSize: 42,
+    text: rgba(188, 96, 37),
+    border: rgba(188, 96, 37),
+    background: rgba(53, 13, 13),
+    sound: { id: 3, volume: 300 },
+    effect: { color: 'Brown', temp: false },
+    icon: { size: 1, color: 'Brown', shape: 'Star' },
+  },
+  C: {
+    fontSize: 40,
+    text: rgba(188, 96, 37),
+    border: null,
+    background: null,
+    sound: { id: 3, volume: 300 },
+    effect: { color: 'Brown', temp: false },
+    icon: { size: 2, color: 'Brown', shape: 'Star' },
+  },
+  D: {
+    fontSize: 40,
+    text: rgba(188, 96, 37),
+    border: null,
+    background: null,
+    sound: null,
+    effect: { color: 'Brown', temp: true },
+    icon: { size: 2, color: 'Brown', shape: 'Star' },
+  },
+  E: {
+    fontSize: 38,
+    text: rgba(188, 96, 37),
+    border: null,
+    background: null,
+    sound: null,
+    effect: null,
+    icon: { size: 2, color: 'Brown', shape: 'Star' },
+  },
+}
 
 export const DEFAULT_CONFIG: Config = {
   filterName: 'ExileFilter',

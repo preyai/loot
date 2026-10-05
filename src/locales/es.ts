@@ -139,6 +139,7 @@ export const es: Dictionary = {
   'items.customReset': 'Quitar el estilo propio',
   'items.ownTiers': 'Estilo de los niveles en esta sección',
   'items.ownTiersNote': 'Marca un nivel para darle su propio aspecto en esta sección; los no marcados se ven como en la página «Niveles y estilos».',
+  'items.ownTiersNoteUnique': 'Marca un nivel para darle su propio estilo en esta sección; los niveles sin marcar se ven como los únicos del filtro de NeverSink.',
   'items.ownTier': 'propio',
   'items.hide': 'Ocultar objeto',
   'items.tierFor': 'Nivel para {name}',

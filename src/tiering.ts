@@ -1,4 +1,4 @@
-import { CURRENCIES } from './defaults'
+import { CURRENCIES, UNIQUE_TIERS } from './defaults'
 import type { T } from './i18n'
 import { SECTIONS } from './sections'
 import {
@@ -44,9 +44,13 @@ export function autoTier(item: MarketItem, config: Config, rates: Rates): TierId
   return tierByValue(item.divine * perDivine(config.currency, rates), config.thresholds)
 }
 
-/** Оформление тира в разделе: своё для раздела, если задано, иначе общее. */
+/** Оформление тира раздела по умолчанию: у уников своё, как у NeverSink, у остальных — общее со страницы «Тиры и стили». */
+export const defaultSectionTierStyle = (config: Config, section: SectionId, tier: TierId): TierStyle =>
+  SECTIONS.find((s) => s.id === section)?.unique ? UNIQUE_TIERS[tier] : config.tiers[tier]
+
+/** Оформление тира в разделе: своё для раздела, если задано, иначе по умолчанию. */
 export const sectionTierStyle = (config: Config, section: SectionId, tier: TierId): TierStyle =>
-  config.sectionTiers[section]?.[tier] ?? config.tiers[tier]
+  config.sectionTiers[section]?.[tier] ?? defaultSectionTierStyle(config, section, tier)
 
 export function visibilityFor(config: Config, section: SectionId): Visibility {
   return config.sectionVisibility[section] ?? config.visibility

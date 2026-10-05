@@ -156,9 +156,10 @@ export const fr: Dictionary = {
   'vis.stacksFrom': 'd’une valeur d’au moins {value} {unit}',
 
   'styles.thresholds': 'Seuils de prix',
-  'styles.thresholdsNote': 'Un objet reçoit un palier s’il coûte au moins le seuil. Prix en {currency}',
-  'styles.rate': ' (actuellement 1 Divine ≈ {value} {unit})',
-  'styles.thresholdsNote2': 'La monnaie se choisit en haut de la page. Tout ce qui est moins cher que D va en E.',
+  'styles.thresholdsNote': 'Un objet obtient un palier s’il coûte au moins le seuil. Chaque seuil a sa propre monnaie : « S dès 1 div » le reste quel que soit le cours de l’Exalted. Tout ce qui coûte moins que D va en E.',
+  'styles.rates': 'Actuellement 1 div ≈ {exalted} ex ≈ {chaos} c.',
+  'styles.count': '{n} objets',
+  'styles.countE': 'E : {n} objets',
   'styles.from': '{tier} dès',
   'styles.visibility': 'Ce qui est affiché',
   'styles.visibilityNote':

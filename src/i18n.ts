@@ -191,9 +191,10 @@ const ru = {
   'vis.stacksFrom': 'на сумму от {value} {unit}',
 
   'styles.thresholds': 'Пороги цен',
-  'styles.thresholdsNote': 'Предмет попадает в тир, если стоит не меньше порога. Цены — в валюте «{currency}»',
-  'styles.rate': ' (сейчас 1 Divine ≈ {value} {unit})',
-  'styles.thresholdsNote2': 'Валюта выбирается вверху страницы. Всё, что дешевле D, уходит в E.',
+  'styles.thresholdsNote': 'Предмет попадает в тир, если стоит не меньше границы. У каждой границы своя валюта: «S от 1 div» так и останется, как бы ни менялся курс экзальта. Всё, что дешевле D, уходит в E.',
+  'styles.rates': 'Сейчас 1 div ≈ {exalted} ex ≈ {chaos} c.',
+  'styles.count': '{n} шт.',
+  'styles.countE': 'E: {n} шт.',
   'styles.from': '{tier} от',
   'styles.visibility': 'Что показывать',
   'styles.visibilityNote':
@@ -762,9 +763,10 @@ const en: Dictionary = {
   'vis.stacksFrom': 'worth at least {value} {unit}',
 
   'styles.thresholds': 'Price thresholds',
-  'styles.thresholdsNote': 'An item gets a tier if it costs at least the threshold. Prices are in {currency}',
-  'styles.rate': ' (now 1 Divine ≈ {value} {unit})',
-  'styles.thresholdsNote2': 'The currency is chosen at the top of the page. Anything cheaper than D goes to E.',
+  'styles.thresholdsNote': 'An item gets a tier if it costs at least the threshold. Each threshold has its own currency: “S from 1 div” stays that way however the Exalted rate moves. Anything cheaper than D goes to E.',
+  'styles.rates': 'Now 1 div ≈ {exalted} ex ≈ {chaos} c.',
+  'styles.count': '{n} items',
+  'styles.countE': 'E: {n} items',
   'styles.from': '{tier} from',
   'styles.visibility': 'What to show',
   'styles.visibilityNote':

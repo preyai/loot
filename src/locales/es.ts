@@ -156,9 +156,10 @@ export const es: Dictionary = {
   'vis.stacksFrom': 'que valgan al menos {value} {unit}',
 
   'styles.thresholds': 'Umbrales de precio',
-  'styles.thresholdsNote': 'Un objeto recibe un nivel si cuesta al menos el umbral. Precios en {currency}',
-  'styles.rate': ' (ahora 1 Divine ≈ {value} {unit})',
-  'styles.thresholdsNote2': 'La moneda se elige arriba de la página. Todo lo que sea más barato que D va a E.',
+  'styles.thresholdsNote': 'Un objeto obtiene un nivel si cuesta al menos el umbral. Cada umbral tiene su propia moneda: «S desde 1 div» se mantiene así aunque cambie el valor del Exalted. Todo lo que cueste menos que D va a E.',
+  'styles.rates': 'Ahora 1 div ≈ {exalted} ex ≈ {chaos} c.',
+  'styles.count': '{n} objetos',
+  'styles.countE': 'E: {n} objetos',
   'styles.from': '{tier} desde',
   'styles.visibility': 'Qué mostrar',
   'styles.visibilityNote':

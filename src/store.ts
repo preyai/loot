@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { EMPTY_RULE } from './bases'
 import { DEFAULT_CONFIG } from './defaults'
 import { detectLanguage, LANGUAGES } from './i18n'
-import type { BasePopularity, Config, ExceptionalScan, League, MarketSnapshot } from './types'
+import type { BasePopularity, Config, ExceptionalScan, League, MarketSnapshot, Threshold, ThresholdTier } from './types'
 
 const CONFIG_KEY = 'loot-filter-editor:config'
 
@@ -18,7 +18,7 @@ export function normalizeConfig(stored: Partial<Config>): Config {
     ...DEFAULT_CONFIG,
     ...stored,
     language: LANGUAGES.find((lang) => lang === stored.language) ?? detectLanguage(),
-    thresholds: { ...DEFAULT_CONFIG.thresholds, ...stored.thresholds },
+    thresholds: thresholdsOf(stored),
     tiers: { ...DEFAULT_CONFIG.tiers, ...stored.tiers },
     visibility: { ...DEFAULT_CONFIG.visibility, ...stored.visibility },
     gear: { ...DEFAULT_CONFIG.gear, ...stored.gear },
@@ -35,6 +35,16 @@ export function normalizeConfig(stored: Partial<Config>): Config {
     },
     baseRules: (stored.baseRules ?? []).map((rule) => ({ ...EMPTY_RULE, ...rule })),
   }
+}
+
+/** Границы тиров: раньше это были числа в основной валюте — переводим в границы со своей валютой. */
+function thresholdsOf(stored: Partial<Config>): Config['thresholds'] {
+  const result = { ...DEFAULT_CONFIG.thresholds }
+  for (const [tier, value] of Object.entries(stored.thresholds ?? {}) as [ThresholdTier, Threshold | number][]) {
+    if (!(tier in result)) continue
+    result[tier] = typeof value === 'number' ? { value, currency: stored.currency ?? 'exalted' } : value
+  }
+  return result
 }
 
 function loadConfig(): Config {

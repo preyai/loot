@@ -156,9 +156,10 @@ export const ja: Dictionary = {
   'vis.stacksFrom': '合計 {value} {unit} 以上',
 
   'styles.thresholds': '価格のしきい値',
-  'styles.thresholdsNote': 'アイテムの価格がしきい値以上ならそのティアになります。価格の単位は {currency}',
-  'styles.rate': '（現在 1 Divine ≈ {value} {unit}）',
-  'styles.thresholdsNote2': '通貨はページ上部で選びます。D より安いものはすべて E になります。',
+  'styles.thresholdsNote': 'しきい値以上の価格のアイテムがそのティアになります。しきい値ごとに通貨を選べます。「S は 1 div から」はエクザルテッドの相場が動いても変わりません。D より安いものは E になります。',
+  'styles.rates': '現在 1 div ≈ {exalted} ex ≈ {chaos} c。',
+  'styles.count': '{n} 件',
+  'styles.countE': 'E：{n} 件',
   'styles.from': '{tier}:',
   'styles.visibility': '表示するもの',
   'styles.visibilityNote':

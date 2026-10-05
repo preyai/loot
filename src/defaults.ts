@@ -91,7 +91,14 @@ export const DEFAULT_CONFIG: Config = {
   language: 'ru',
   league: null,
   currency: 'exalted',
-  thresholds: { S: 500, A: 50, B: 10, C: 2, D: 0.5 },
+  // У каждой границы своя валюта: тир «от 1 div» остаётся таким, как бы ни менялся курс экзальта.
+  thresholds: {
+    S: { value: 1, currency: 'divine' },
+    A: { value: 3, currency: 'chaos' },
+    B: { value: 1, currency: 'chaos' },
+    C: { value: 5, currency: 'exalted' },
+    D: { value: 1, currency: 'exalted' },
+  },
   // Оформление и звуки тиров — как у валюты в фильтре NeverSink (тиры s, a, b, c, d, e).
   tiers: {
     S: {

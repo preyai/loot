@@ -156,9 +156,10 @@ export const ko: Dictionary = {
   'vis.stacksFrom': '합계 {value} {unit} 이상',
 
   'styles.thresholds': '가격 기준',
-  'styles.thresholdsNote': '아이템 가격이 기준 이상이면 해당 등급이 됩니다. 가격 단위: {currency}',
-  'styles.rate': ' (현재 1 Divine ≈ {value} {unit})',
-  'styles.thresholdsNote2': '화폐는 페이지 위쪽에서 고릅니다. D보다 싼 것은 모두 E가 됩니다.',
+  'styles.thresholdsNote': '가격이 기준 이상이면 해당 티어가 됩니다. 기준마다 통화를 따로 정할 수 있습니다. "S는 1 div부터"는 엑잘티드 시세가 바뀌어도 그대로입니다. D보다 싼 것은 E가 됩니다.',
+  'styles.rates': '현재 1 div ≈ {exalted} ex ≈ {chaos} c.',
+  'styles.count': '{n}개',
+  'styles.countE': 'E: {n}개',
   'styles.from': '{tier}:',
   'styles.visibility': '표시할 것',
   'styles.visibilityNote':

@@ -128,6 +128,15 @@ export const TIER_IDS = ['S', 'A', 'B', 'C', 'D', 'E'] as const
 export type TierId = (typeof TIER_IDS)[number]
 export type TierChoice = TierId | 'hide'
 
+/** Тиры, у которых есть нижняя граница цены; всё дешевле D — тир E. */
+export type ThresholdTier = Exclude<TierId, 'E'>
+
+/** Нижняя граница тира в своей валюте: «от 1 div», «от 1 c», «от 5 ex». Курс её не сдвигает. */
+export interface Threshold {
+  value: number
+  currency: Currency
+}
+
 export interface Rgba {
   r: number
   g: number
@@ -233,7 +242,7 @@ export interface Config {
   league: string | null
   currency: Currency
   /** Нижняя граница тира в основной валюте; всё, что дешевле D, попадает в E. */
-  thresholds: Record<Exclude<TierId, 'E'>, number>
+  thresholds: Record<ThresholdTier, Threshold>
   tiers: Record<TierId, TierStyle>
   /** Ручной выбор тира по ключу предмета (itemKey). */
   overrides: Record<string, TierChoice>

@@ -3,7 +3,7 @@ import { exceptionalBases, exceptionalRules, withExceptionalRules } from '../exc
 import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
 import type { UpdateConfig } from '../store'
-import { perDivine, tierByValue } from '../tiering'
+import { tierByValue } from '../tiering'
 import type { Config, ExceptionalKind, ExceptionalScan, MarketSnapshot, TierId } from '../types'
 
 /** Тир для правил, пока курсы валют не загружены и цену порога нельзя перевести в основную валюту. */
@@ -30,7 +30,7 @@ export function ExceptionalPanel({ config, update, rates, scan, loading }: Props
     // Тир — тот, в который по общим порогам попал бы предмет с ценой на нижней границе опроса.
     const tier =
       rates && rates.exalted > 0
-        ? tierByValue((scan.minExalted / rates.exalted) * perDivine(config.currency, rates), config.thresholds)
+        ? tierByValue(scan.minExalted / rates.exalted, config.thresholds, rates)
         : FALLBACK_TIER
     update((c) => ({ ...c, baseRules: withExceptionalRules(c.baseRules, exceptionalRules(scan, price, tier, t)) }))
   }

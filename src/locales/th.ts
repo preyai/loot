@@ -156,9 +156,10 @@ export const th: Dictionary = {
   'vis.stacksFrom': 'ที่มีมูลค่าอย่างน้อย {value} {unit}',
 
   'styles.thresholds': 'เกณฑ์ราคา',
-  'styles.thresholdsNote': 'ไอเทมจะได้ระดับถ้าราคาไม่ต่ำกว่าเกณฑ์ ราคาเป็น {currency}',
-  'styles.rate': ' (ตอนนี้ 1 Divine ≈ {value} {unit})',
-  'styles.thresholdsNote2': 'เลือกสกุลเงินได้ที่ด้านบนของหน้า ทุกอย่างที่ถูกกว่า D จะไปอยู่ใน E',
+  'styles.thresholdsNote': 'ไอเทมจะได้ระดับนั้นเมื่อราคาไม่ต่ำกว่าเกณฑ์ แต่ละเกณฑ์มีสกุลเงินของตัวเอง “S ตั้งแต่ 1 div” จะคงเดิมไม่ว่าราคา Exalted จะเปลี่ยนไปอย่างไร ของที่ถูกกว่า D จะเป็นระดับ E',
+  'styles.rates': 'ตอนนี้ 1 div ≈ {exalted} ex ≈ {chaos} c',
+  'styles.count': '{n} ชิ้น',
+  'styles.countE': 'E: {n} ชิ้น',
   'styles.from': '{tier} ตั้งแต่',
   'styles.visibility': 'สิ่งที่จะแสดง',
   'styles.visibilityNote':

@@ -130,9 +130,10 @@ describe('вид предмета', () => {
   it('дорогая валюта — стиль своего тира и подпись правила', () => {
     const look = evaluate(filter, currency('Divine Orb'), 70)
     expect(look.visible).toBe(true)
-    expect(look.block?.comment).toBe('Currency / A')
-    expect(look.style.fontSize).toBe(DEFAULT_CONFIG.tiers.A.fontSize)
-    expect(look.style.sound).toEqual(DEFAULT_CONFIG.tiers.A.sound)
+    // Граница S по умолчанию — 1 div: Divine Orb в неё попадает.
+    expect(look.block?.comment).toBe('Currency / S')
+    expect(look.style.fontSize).toBe(DEFAULT_CONFIG.tiers.S.fontSize)
+    expect(look.style.sound).toEqual(DEFAULT_CONFIG.tiers.S.sound)
   })
 
   it('золото — по размеру кучи', () => {

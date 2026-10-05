@@ -9,6 +9,7 @@ import {
   type MarketSnapshot,
   type SectionId,
   type TierId,
+  type ThresholdTier,
   type TierStyle,
   type Visibility,
 } from './types'
@@ -42,19 +43,24 @@ export function roundPrice(value: number): number {
   return Number(value.toPrecision(2))
 }
 
-export function tierByValue(exact: number, thresholds: Config['thresholds']): TierId {
-  const value = roundPrice(exact)
-  if (value >= thresholds.S) return 'S'
-  if (value >= thresholds.A) return 'A'
-  if (value >= thresholds.B) return 'B'
-  if (value >= thresholds.C) return 'C'
-  if (value >= thresholds.D) return 'D'
+const THRESHOLD_TIERS: ThresholdTier[] = ['S', 'A', 'B', 'C', 'D']
+
+/** Тир по цене в divine: цена переводится в валюту каждой границы и сравнивается так, как её видно на экране. */
+export function tierByValue(divine: number, thresholds: Config['thresholds'], rates: Rates): TierId {
+  for (const tier of THRESHOLD_TIERS) {
+    const { value, currency } = thresholds[tier]
+    if (roundPrice(divine * perDivine(currency, rates)) >= value) return tier
+  }
   return 'E'
 }
 
+/** Граница тира в выбранной валюте (для подсказок и расчёта стопок). */
+export const thresholdIn = (thresholds: Config['thresholds'], tier: ThresholdTier, currency: Currency, rates: Rates) =>
+  (thresholds[tier].value / perDivine(thresholds[tier].currency, rates)) * perDivine(currency, rates)
+
 export function autoTier(item: MarketItem, config: Config, rates: Rates): TierId {
   if (item.divine === null) return UNPRICED_TIER
-  return tierByValue(item.divine * perDivine(config.currency, rates), config.thresholds)
+  return tierByValue(item.divine, config.thresholds, rates)
 }
 
 /** Оформление тира раздела по умолчанию: у уников своё, как у NeverSink, у остальных — общее со страницы «Тиры и стили». */
@@ -69,9 +75,9 @@ export function visibilityFor(config: Config, section: SectionId): Visibility {
   return config.sectionVisibility[section] ?? config.visibility
 }
 
-/** Сколько должна стоить стопка, чтобы её показали: не меньше мин. цены и нижней границы мин. тира. */
-export function cutoffPrice(visibility: Visibility, thresholds: Config['thresholds']): number {
-  return Math.max(visibility.minPrice, visibility.minTier === 'E' ? 0 : thresholds[visibility.minTier])
+/** Сколько должна стоить стопка (в выбранной валюте), чтобы её показали: не меньше мин. цены и нижней границы мин. тира. */
+export function cutoffPrice(visibility: Visibility, thresholds: Config['thresholds'], currency: Currency, rates: Rates): number {
+  return Math.max(visibility.minPrice, visibility.minTier === 'E' ? 0 : thresholdIn(thresholds, visibility.minTier, currency, rates))
 }
 
 export type Display =
@@ -100,30 +106,19 @@ export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Dis
   if (!visibility.stacks || price <= 0 || UNSTACKABLE.has(item.section)) return { kind: 'hide' }
 
   // Не меньше 2: одиночный предмет сюда попал именно потому, что его показывать не нужно.
-  const stackSize = Math.max(2, Math.ceil(cutoffPrice(visibility, config.thresholds) / price))
-  return { kind: 'stack', tier: tierByValue(stackSize * price, config.thresholds), stackSize }
+  const stackSize = Math.max(2, Math.ceil(roundPrice(cutoffPrice(visibility, config.thresholds, config.currency, rates)) / price))
+  return { kind: 'stack', tier: tierByValue(stackSize * item.divine, config.thresholds, rates), stackSize }
 }
 
 const convertPrice = (value: number, from: Currency, to: Currency, rates: Rates) =>
   Number(((value * perDivine(to, rates)) / perDivine(from, rates)).toPrecision(3))
 
-export function convertThresholds(
-  thresholds: Config['thresholds'],
-  from: Currency,
-  to: Currency,
-  rates: Rates,
-): Config['thresholds'] {
-  const convert = (v: number) => convertPrice(v, from, to, rates)
-  return { S: convert(thresholds.S), A: convert(thresholds.A), B: convert(thresholds.B), C: convert(thresholds.C), D: convert(thresholds.D) }
-}
-
-/** Смена основной валюты: пороги и мин. цены пересчитываются по курсу, чтобы тиры остались теми же. */
+/** Смена основной валюты: мин. цены пересчитываются по курсу. Границы тиров — в своих валютах и не меняются. */
 export function convertCurrency(config: Config, to: Currency, rates: Rates): Config {
   const visibility = (v: Visibility): Visibility => ({ ...v, minPrice: convertPrice(v.minPrice, config.currency, to, rates) })
   return {
     ...config,
     currency: to,
-    thresholds: convertThresholds(config.thresholds, config.currency, to, rates),
     visibility: visibility(config.visibility),
     sectionVisibility: Object.fromEntries(
       Object.entries(config.sectionVisibility).map(([id, v]) => [id, visibility(v)]),

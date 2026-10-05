@@ -156,9 +156,10 @@ export const de: Dictionary = {
   'vis.stacksFrom': 'im Wert von mindestens {value} {unit}',
 
   'styles.thresholds': 'Preisschwellen',
-  'styles.thresholdsNote': 'Ein Gegenstand bekommt eine Stufe, wenn er mindestens die Schwelle kostet. Preise in {currency}',
-  'styles.rate': ' (aktuell 1 Divine ≈ {value} {unit})',
-  'styles.thresholdsNote2': 'Die Währung wird oben auf der Seite gewählt. Alles, was billiger als D ist, landet in E.',
+  'styles.thresholdsNote': 'Ein Gegenstand bekommt einen Tier, wenn er mindestens die Schwelle kostet. Jede Schwelle hat ihre eigene Währung: „S ab 1 div“ bleibt so, wie auch immer sich der Exalted-Kurs ändert. Alles unter D landet in E.',
+  'styles.rates': 'Aktuell 1 div ≈ {exalted} ex ≈ {chaos} c.',
+  'styles.count': '{n} Stück',
+  'styles.countE': 'E: {n} Stück',
   'styles.from': '{tier} ab',
   'styles.visibility': 'Was angezeigt wird',
   'styles.visibilityNote':

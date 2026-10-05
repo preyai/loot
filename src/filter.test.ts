@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { chanceOf, chancingBases, chancingRule, dropSource, topUnique, uniquesByBase } from './chancing'
 import { DEFAULT_CONFIG, UNIQUE_TIERS } from './defaults'
+import { normalizeConfig } from './store'
 import { BASE_CLASSES, baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, GEAR_CLASSES, moveItem, RULE_TEMPLATES, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, restRules, RULE_PRESETS } from './presets'
@@ -12,7 +13,7 @@ import { DEFAULT_WAYSTONES } from './waystones'
 import { keyOf, LANGUAGES, translator } from './i18n'
 import { EXTRA_GROUPS, extraKey } from './extras'
 import { convertCurrency, formatPrice, itemDisplay } from './tiering'
-import type { BaseRule, Config, ExceptionalScan, MarketItem, MarketSnapshot } from './types'
+import type { BaseRule, Config, Currency, ExceptionalScan, MarketItem, MarketSnapshot } from './types'
 
 // Названия правил и подписи проверяются на русском; английский словарь — в i18n.test.ts.
 const t = translator('ru')
@@ -26,6 +27,18 @@ const item = (name: string, divine: number | null, section: MarketItem['section'
 
 // 1 div = 100 ex = 10 chaos
 const rates = { exalted: 100, chaos: 10 }
+
+/** Границы тиров в одной валюте: S, A, B, C, D. */
+const bounds = (currency: Currency, S: number, A: number, B: number, C: number, D: number): Config['thresholds'] => ({
+  S: { value: S, currency },
+  A: { value: A, currency },
+  B: { value: B, currency },
+  C: { value: C, currency },
+  D: { value: D, currency },
+})
+
+/** Прежние границы по умолчанию — под них написаны тесты логики показа: S 500, A 50, B 10, C 2, D 0.5 ex. */
+const EX = { ...DEFAULT_CONFIG, thresholds: bounds('exalted', 500, 50, 10, 2, 0.5) }
 
 const snapshot = (items: MarketItem[]): MarketSnapshot => ({
   league: 'Test',
@@ -67,7 +80,7 @@ describe('itemDisplay', () => {
     const config: Config = {
       ...DEFAULT_CONFIG,
       currency: 'chaos',
-      thresholds: { S: 100, A: 20, B: 5, C: 1, D: 0.5 },
+      thresholds: bounds('chaos', 100, 20, 5, 1, 0.5),
       visibility: { minTier: 'E', minPrice: 1, stacks: false },
     }
     expect(formatPrice(chaos.divine, ninja, 'chaos', t)).toBe('1 c')
@@ -75,7 +88,7 @@ describe('itemDisplay', () => {
   })
 
   it('ниже мин. тира — только стопка на сумму не меньше границы тира', () => {
-    const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'C', minPrice: 0, stacks: true } }
+    const config: Config = { ...EX, visibility: { minTier: 'C', minPrice: 0, stacks: true } }
     expect(itemDisplay(jeweller, config, rates)).toEqual({ kind: 'show', tier: 'C' })
     // Граница C — 2 ex, свиток стоит 0.1 ex → нужно 20 штук, и такая стопка сама тянет на C.
     expect(itemDisplay(scroll, config, rates)).toEqual({ kind: 'stack', tier: 'C', stackSize: 20 })
@@ -95,7 +108,7 @@ describe('itemDisplay', () => {
 
   it('настройки раздела важнее общих, ручной тир важнее мин. цены', () => {
     const config: Config = {
-      ...DEFAULT_CONFIG,
+      ...EX,
       visibility: { minTier: 'S', minPrice: 0, stacks: false },
       sectionVisibility: { currency: { minTier: 'B', minPrice: 50, stacks: false } },
       overrides: { 'Scroll of Wisdom': 'A', 'Mirror of Kalandra': 'hide' },
@@ -117,16 +130,24 @@ describe('itemDisplay', () => {
 })
 
 describe('основная валюта', () => {
-  it('пороги трактуются в выбранной валюте', () => {
+  it('у каждой границы своя валюта', () => {
     // 3 ex = 0.3 chaos = 0.03 div
-    const inChaos: Config = { ...DEFAULT_CONFIG, currency: 'chaos', thresholds: { S: 50, A: 5, B: 1, C: 0.2, D: 0.05 } }
-    expect(itemDisplay(jeweller, inChaos, rates)).toEqual({ kind: 'show', tier: 'C' })
-    const inDivine: Config = { ...DEFAULT_CONFIG, currency: 'divine', thresholds: { S: 5, A: 0.5, B: 0.1, C: 0.02, D: 0.005 } }
-    expect(itemDisplay(jeweller, inDivine, rates)).toEqual({ kind: 'show', tier: 'C' })
-    expect(itemDisplay(mirror, inDivine, rates)).toEqual({ kind: 'show', tier: 'S' })
+    const mixed = { ...DEFAULT_CONFIG, thresholds: { ...bounds('exalted', 500, 50, 10, 2, 0.5), S: { value: 5, currency: 'divine' as const }, B: { value: 1, currency: 'chaos' as const } } }
+    expect(itemDisplay(mirror, mixed, rates)).toEqual({ kind: 'show', tier: 'S' })
+    // 0.3 c не дотягивает до «B от 1 c», но не меньше «C от 2 ex».
+    expect(itemDisplay(jeweller, mixed, rates)).toEqual({ kind: 'show', tier: 'C' })
+    expect(itemDisplay(item('Ten Ex', 0.1), mixed, rates)).toEqual({ kind: 'show', tier: 'B' })
   })
 
-  it('смена валюты пересчитывает пороги и мин. цены, не меняя результат', () => {
+  it('курс сдвигает тиры только у границ в другой валюте', () => {
+    // «B от 1 c»: предмет за 12 ex — B при 10 ex за хаос, но C, когда хаос дорожает до 20 ex.
+    const config = { ...DEFAULT_CONFIG, thresholds: { ...bounds('exalted', 500, 50, 10, 2, 0.5), B: { value: 1, currency: 'chaos' as const } } }
+    const thing = item('Thing', 0.12)
+    expect(itemDisplay(thing, config, rates)).toEqual({ kind: 'show', tier: 'B' })
+    expect(itemDisplay(thing, config, { exalted: 100, chaos: 5 })).toEqual({ kind: 'show', tier: 'C' })
+  })
+
+  it('смена валюты пересчитывает мин. цены, а границы тиров не трогает', () => {
     const config: Config = {
       ...DEFAULT_CONFIG,
       visibility: { minTier: 'E', minPrice: 12, stacks: true },
@@ -134,13 +155,12 @@ describe('основная валюта', () => {
     }
     const inDivine = convertCurrency(config, 'divine', rates)
     expect(inDivine.currency).toBe('divine')
-    expect(inDivine.thresholds).toEqual({ S: 5, A: 0.5, B: 0.1, C: 0.02, D: 0.005 })
+    expect(inDivine.thresholds).toEqual(config.thresholds)
     expect(inDivine.visibility.minPrice).toBe(0.12)
     expect(inDivine.sectionVisibility.ritual?.minPrice).toBe(0.4)
     for (const it of [mirror, jeweller, scroll]) {
       expect(itemDisplay(it, inDivine, rates)).toEqual(itemDisplay(it, config, rates))
     }
-    expect(convertCurrency(inDivine, 'exalted', rates).thresholds).toEqual(DEFAULT_CONFIG.thresholds)
   })
 
   it('цена показывается в основной валюте, дорогое — в divine', () => {
@@ -553,7 +573,7 @@ describe('оформление тиров по умолчанию', () => {
 
 describe('generateFilter', () => {
   it('раскладывает предметы по тирам согласно порогам в exalted', () => {
-    const text = generateFilter(snapshot([mirror, jeweller, scroll]), DEFAULT_CONFIG)
+    const text = generateFilter(snapshot([mirror, jeweller, scroll]), EX)
     expect(text).toContain('Show # Currency / S\n    BaseType == "Mirror of Kalandra"\n    SetFontSize 45')
     expect(text).toContain('Show # Currency / C\n    BaseType == "Jeweller\'s Orb"')
     expect(text).toContain('Show # Currency / E\n    BaseType == "Scroll of Wisdom"')
@@ -564,7 +584,7 @@ describe('generateFilter', () => {
 
   it('блок стопок идёт перед Hide для тех же предметов', () => {
     const config: Config = {
-      ...DEFAULT_CONFIG,
+      ...EX,
       visibility: { minTier: 'C', minPrice: 0, stacks: true },
       overrides: { 'Mirror of Kalandra': 'hide' },
     }
@@ -874,5 +894,15 @@ describe('скрытые правилами баз', () => {
     const strict = RULE_PRESETS.find((p) => p.id === 'strict')!.make(null, t).filter((r) => r.action === 'hide')
     expect(strict.length).toBeGreaterThan(2)
     for (const rule of strict) expect(rule.style?.fontSize, rule.name).toBe(18)
+  })
+})
+
+describe('старые настройки', () => {
+  it('границы-числа переводятся в границы с основной валютой, недостающие — по умолчанию', () => {
+    const old = { currency: 'chaos', thresholds: { S: 50, A: 5 } } as unknown as Partial<Config>
+    const { thresholds } = normalizeConfig(old)
+    expect(thresholds.S).toEqual({ value: 50, currency: 'chaos' })
+    expect(thresholds.A).toEqual({ value: 5, currency: 'chaos' })
+    expect(thresholds.B).toEqual(DEFAULT_CONFIG.thresholds.B)
   })
 })

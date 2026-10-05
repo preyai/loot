@@ -1,9 +1,10 @@
 import { CURRENCIES, DEFAULT_CONFIG } from '../defaults'
 import { keyOf } from '../i18n'
+import { useMemo } from 'react'
 import { useI18n } from '../i18n-react'
 import type { UpdateConfig } from '../store'
-import { convertThresholds, perDivine } from '../tiering'
-import { TIER_IDS, type Config, type MarketSnapshot, type TierId, type TierStyle } from '../types'
+import { autoTier, perDivine } from '../tiering'
+import { TIER_IDS, type Config, type Currency, type MarketSnapshot, type ThresholdTier, type TierId, type TierStyle } from '../types'
 import { ItemLabel } from './ItemLabel'
 import { SoundLibrary } from './SoundLibrary'
 import { StyleFields } from './StyleFields'
@@ -31,14 +32,23 @@ interface Props {
   config: Config
   update: UpdateConfig
   /** null, пока цены не загружены. */
-  rates: MarketSnapshot['rates'] | null
+  snapshot: MarketSnapshot | null
 }
 
-export function StylesView({ config, update, rates }: Props) {
+export function StylesView({ config, update, snapshot }: Props) {
   const { t, name } = useI18n()
-  const unit = CURRENCIES[config.currency].short
-  const thresholdTiers = TIER_IDS.filter((tier): tier is Exclude<TierId, 'E'> => tier !== 'E')
+  const rates = snapshot?.rates ?? null
+  const thresholdTiers = TIER_IDS.filter((tier): tier is ThresholdTier => tier !== 'E')
   const overrideCount = Object.keys(config.overrides).length
+  // Сколько предметов рынка попадает в каждый тир по этим границам — чтобы двигать их осознанно.
+  const counts = useMemo(() => {
+    const result = Object.fromEntries(TIER_IDS.map((tier) => [tier, 0])) as Record<TierId, number>
+    if (!snapshot) return null
+    for (const item of snapshot.items) if (item.divine !== null) result[autoTier(item, config, snapshot.rates)]++
+    return result
+  }, [snapshot, config])
+  const setThreshold = (tier: ThresholdTier, change: Partial<Config['thresholds'][ThresholdTier]>) =>
+    update((c) => ({ ...c, thresholds: { ...c.thresholds, [tier]: { ...c.thresholds[tier], ...change } } }))
 
   return (
     <div>
@@ -49,11 +59,9 @@ export function StylesView({ config, update, rates }: Props) {
       <section className="panel">
         <h2>{t('styles.thresholds')}</h2>
         <p className="note">
-          {t('styles.thresholdsNote', { currency: name(CURRENCIES[config.currency].title) })}
+          {t('styles.thresholdsNote')}
           {rates &&
-            config.currency !== 'divine' &&
-            t('styles.rate', { value: Math.round(perDivine(config.currency, rates)), unit })}
-          . {t('styles.thresholdsNote2')}
+            ` ${t('styles.rates', { exalted: Math.round(perDivine('exalted', rates)), chaos: perDivine('chaos', rates).toFixed(1) })}`}
         </p>
         <div className="thresholds">
           {thresholdTiers.map((tier) => (
@@ -63,14 +71,20 @@ export function StylesView({ config, update, rates }: Props) {
                 type="number"
                 min={0}
                 step="any"
-                value={config.thresholds[tier]}
-                onChange={(e) =>
-                  update((c) => ({ ...c, thresholds: { ...c.thresholds, [tier]: Math.max(0, Number(e.target.value)) } }))
-                }
+                value={config.thresholds[tier].value}
+                onChange={(e) => setThreshold(tier, { value: Math.max(0, Number(e.target.value)) })}
               />
-              {unit}
+              <select value={config.thresholds[tier].currency} onChange={(e) => setThreshold(tier, { currency: e.target.value as Currency })}>
+                {(Object.keys(CURRENCIES) as Currency[]).map((id) => (
+                  <option key={id} value={id} title={name(CURRENCIES[id].title)}>
+                    {CURRENCIES[id].short}
+                  </option>
+                ))}
+              </select>
+              {counts && <span className="count">{t('styles.count', { n: counts[tier] })}</span>}
             </label>
           ))}
+          {counts && <span className="count">{t('styles.countE', { n: counts.E })}</span>}
         </div>
       </section>
 
@@ -81,6 +95,7 @@ export function StylesView({ config, update, rates }: Props) {
           value={config.visibility}
           thresholds={config.thresholds}
           currency={config.currency}
+          rates={rates}
           onChange={(visibility) => update((c) => ({ ...c, visibility }))}
         />
       </section>
@@ -108,16 +123,8 @@ export function StylesView({ config, update, rates }: Props) {
             {t('styles.resetOverrides', { n: overrideCount })}
           </button>
           <button
-            disabled={!rates}
             onClick={() =>
-              rates &&
-              confirm(t('styles.resetStylesConfirm')) &&
-              update((c) => ({
-                ...c,
-                tiers: DEFAULT_CONFIG.tiers,
-                // Пороги по умолчанию заданы в exalted — переводим в выбранную валюту.
-                thresholds: convertThresholds(DEFAULT_CONFIG.thresholds, DEFAULT_CONFIG.currency, c.currency, rates),
-              }))
+              confirm(t('styles.resetStylesConfirm')) && update((c) => ({ ...c, tiers: DEFAULT_CONFIG.tiers, thresholds: DEFAULT_CONFIG.thresholds }))
             }
           >
             {t('styles.resetStyles')}

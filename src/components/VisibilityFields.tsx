@@ -1,13 +1,15 @@
 import { CURRENCIES } from '../defaults'
 import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
-import { cutoffPrice } from '../tiering'
-import { TIER_IDS, type Config, type Currency, type TierId, type Visibility } from '../types'
+import { cutoffPrice, roundPrice } from '../tiering'
+import { TIER_IDS, type Config, type Currency, type MarketSnapshot, type TierId, type Visibility } from '../types'
 
 interface Props {
   value: Visibility
   thresholds: Config['thresholds']
   currency: Currency
+  /** Без курса нельзя перевести границу тира в выбранную валюту — подсказка о стопках не показывается. */
+  rates: MarketSnapshot['rates'] | null
   onChange: (value: Visibility) => void
   disabled?: boolean
   /** Раздел с нескладываемыми предметами: настройка стопок не показывается. */
@@ -15,9 +17,9 @@ interface Props {
 }
 
 /** Настройки «что показывать»: общие или для одного раздела. */
-export function VisibilityFields({ value, thresholds, currency, onChange, disabled, unstackable }: Props) {
+export function VisibilityFields({ value, thresholds, currency, rates, onChange, disabled, unstackable }: Props) {
   const { t } = useI18n()
-  const cutoff = cutoffPrice(value, thresholds)
+  const cutoff = rates ? roundPrice(cutoffPrice(value, thresholds, currency, rates)) : 0
   const unit = CURRENCIES[currency].short
   return (
     <fieldset className="visibility" disabled={disabled}>

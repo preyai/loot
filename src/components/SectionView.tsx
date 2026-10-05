@@ -148,6 +148,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
           value={visibilityFor(config, section.id)}
           thresholds={config.thresholds}
           currency={config.currency}
+          rates={snapshot?.rates ?? null}
           onChange={setVisibility}
           disabled={ownVisibility === undefined}
           unstackable={section.unstackable}

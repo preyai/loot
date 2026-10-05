@@ -156,9 +156,10 @@ export const pt: Dictionary = {
   'vis.stacksFrom': 'que valham pelo menos {value} {unit}',
 
   'styles.thresholds': 'Limites de preço',
-  'styles.thresholdsNote': 'Um item recebe um tier se custar pelo menos o limite. Preços em {currency}',
-  'styles.rate': ' (agora 1 Divine ≈ {value} {unit})',
-  'styles.thresholdsNote2': 'A moeda é escolhida no topo da página. Tudo que for mais barato que D vai para E.',
+  'styles.thresholdsNote': 'Um item recebe um tier se custar pelo menos o limite. Cada limite tem sua própria moeda: “S a partir de 1 div” continua assim, mesmo que a cotação do Exalted mude. Tudo abaixo de D vai para E.',
+  'styles.rates': 'Agora 1 div ≈ {exalted} ex ≈ {chaos} c.',
+  'styles.count': '{n} itens',
+  'styles.countE': 'E: {n} itens',
   'styles.from': '{tier} a partir de',
   'styles.visibility': 'O que mostrar',
   'styles.visibilityNote':

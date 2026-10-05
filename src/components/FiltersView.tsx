@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, ApiError, applySaved, discordUrl, setActive, shareUrl, snapshotOf, useAccount, useActiveFilter, type FilterSummary } from '../account'
+import { api, applySaved, discordUrl, setActive, shareUrl, snapshotOf, useAccount, useActiveFilter, type FilterSummary } from '../account'
 import { useI18n } from '../i18n-react'
 import type { UpdateConfig } from '../store'
 import type { Config } from '../types'
@@ -13,7 +13,7 @@ function useProviders() {
   return providers
 }
 
-const AUTH_RESULTS = ['ok', 'linked', 'denied', 'failed', 'taken', 'limit', 'unavailable'] as const
+const AUTH_RESULTS = ['ok', 'denied', 'failed', 'limit', 'unavailable'] as const
 type AuthResult = (typeof AUTH_RESULTS)[number]
 
 /** Чем закончился вход через Discord: сервер возвращает на #/filters?auth=<итог>. Итог показываем один раз. */
@@ -33,83 +33,27 @@ interface Props {
   update: UpdateConfig
 }
 
-/** Вход и регистрация. */
+/** Вход — только через Discord: учётная запись на сайте создаётся при первом входе. */
 function SignIn({ discord }: { discord: boolean }) {
   const { t } = useI18n()
-  const { login, register } = useAccount()
-  const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [name, setName] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setBusy(true)
-    setError(null)
-    try {
-      await (mode === 'login' ? login(name, password) : register(name, password))
-    } catch (err) {
-      const status = err instanceof ApiError ? err.status : 0
-      setError(
-        status === 401
-          ? t('account.wrong')
-          : status === 409
-            ? t('account.taken')
-            : status === 429
-              ? t('account.tooMany')
-              : t('account.error', { error: err instanceof Error ? err.message : String(err) }),
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <section className="panel account-form">
-      <h2>{mode === 'login' ? t('account.signIn') : t('account.register')}</h2>
+      <h2>{t('account.signIn')}</h2>
       <p className="note">{t('account.intro')}</p>
-      {discord && (
-        <>
-          <a className="button discord-button" href={discordUrl()}>
-            {t('account.discord')}
-          </a>
-          <p className="note or">{t('account.or')}</p>
-        </>
+      {discord ? (
+        <a className="button discord-button" href={discordUrl}>
+          {t('account.discord')}
+        </a>
+      ) : (
+        <p className="note">{t('account.auth.unavailable')}</p>
       )}
-      <form onSubmit={submit}>
-        <label className="check">
-          {t('account.login')}
-          <input value={name} autoComplete="username" onChange={(e) => setName(e.target.value)} />
-        </label>
-        {mode === 'register' && <p className="note">{t('account.loginHint')}</p>}
-        <label className="check">
-          {t('account.password')}
-          <input
-            type="password"
-            value={password}
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
-        {mode === 'register' && <p className="note">{t('account.passwordHint')}</p>}
-        {error && <p className="note note--error">{error}</p>}
-        <div className="actions">
-          <button className="primary" type="submit" disabled={busy || !name || !password}>
-            {mode === 'login' ? t('account.signIn') : t('account.register')}
-          </button>
-          <button type="button" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
-            {mode === 'login' ? t('account.noAccount') : t('account.haveAccount')}
-          </button>
-        </div>
-      </form>
     </section>
   )
 }
 
 export function FiltersView({ config, update }: Props) {
   const { t, locale } = useI18n()
-  const { me, logout, unlinkDiscord } = useAccount()
+  const { me, logout } = useAccount()
   const providers = useProviders()
   const authResult = useAuthResult()
   const { active, dirty } = useActiveFilter(config)
@@ -178,25 +122,14 @@ export function FiltersView({ config, update }: Props) {
         {me && (
           <div className="actions">
             <span>{t('account.signedAs', { login: me.login })}</span>
-            {me.discord ? (
-              <span className="count">{t('account.discordAs', { name: me.discord })}</span>
-            ) : (
-              providers.discord && (
-                <a className="button" href={discordUrl(true)}>
-                  {t('account.discordLink')}
-                </a>
-              )
-            )}
-            {/* Без пароля отвязывать нельзя: в учётную запись будет не войти. */}
-            {me.discord && me.hasPassword && (
-              <button onClick={() => run(unlinkDiscord)}>{t('account.discordUnlink')}</button>
-            )}
+            {/* Имя в Discord могли сменить — показываем, под каким Discord вошли. */}
+            {me.discord && me.discord !== me.login && <span className="count">{t('account.discordAs', { name: me.discord })}</span>}
             <button onClick={() => void logout()}>{t('account.signOut')}</button>
           </div>
         )}
       </header>
       {authResult && authResult !== 'ok' && (
-        <p className={authResult === 'linked' ? 'note note--ok' : 'note note--error'}>
+        <p className="note note--error">
           {t(`account.auth.${authResult}` as 'account.auth.failed')}
         </p>
       )}

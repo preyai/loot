@@ -18,10 +18,8 @@ export interface FilterSummary {
 /** Вошедший пользователь. */
 export interface Me {
   login: string
-  /** Имя в Discord, если учётная запись к нему привязана. */
+  /** Текущее имя в Discord. */
   discord: string | null
-  /** Без пароля (зарегистрирован через Discord) отвязать Discord нельзя. */
-  hasPassword: boolean
 }
 
 export interface SharedFilter {
@@ -65,9 +63,6 @@ export const applySaved = (current: Config, saved: Partial<Config>): Config =>
 export const api = {
   me: () => call<Me | null>('/api/auth/me'),
   providers: () => call<{ discord: boolean }>('/api/auth/providers'),
-  register: (login: string, password: string) => call<object>('/api/auth/register', 'POST', { login, password }),
-  login: (login: string, password: string) => call<object>('/api/auth/login', 'POST', { login, password }),
-  unlinkDiscord: () => call<object>('/api/auth/discord/unlink', 'POST'),
   logout: () => call<object>('/api/auth/logout', 'POST'),
   list: () => call<FilterSummary[]>('/api/filters'),
   get: (id: string) => call<FilterSummary & { config: Partial<Config> }>(`/api/filters/${id}`),
@@ -84,7 +79,7 @@ export const api = {
 }
 
 /** Вход через Discord — обычный переход: сервер перенаправит на Discord и обратно на «Мои фильтры». */
-export const discordUrl = (link = false) => '/api/auth/discord/start' + (link ? '?link=1' : '')
+export const discordUrl = '/api/auth/discord/start'
 
 /** Ссылка на фильтр для других. */
 export const shareUrl = (code: string) => `${location.origin}${location.pathname}#/shared/${code}`
@@ -111,19 +106,6 @@ export function useAccount() {
   return {
     /** undefined — ещё не знаем, null — не вошёл. */
     me: current,
-    register: async (login: string, password: string) => {
-      await api.register(login, password)
-      setMe(await api.me())
-    },
-    login: async (login: string, password: string) => {
-      await api.login(login, password)
-      setMe(await api.me())
-    },
-    unlinkDiscord: async () => {
-      await api.unlinkDiscord()
-      setMe(await api.me())
-    },
-    refresh: async () => setMe(await api.me()),
     logout: async () => {
       await api.logout()
       setMe(null)

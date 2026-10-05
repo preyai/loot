@@ -1,15 +1,12 @@
-import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { promisify } from 'node:util'
 import { readData, writeData } from './storage'
 
 /**
  * Пользователи, их сохранённые фильтры и ссылки «поделиться».
  * Хранится в JSON-файлах каталога данных: пользователей и фильтров немного, база данных пока не нужна.
- * Пароли — только хешем scrypt с солью; сессия — случайный токен в HttpOnly-cookie, на диске лежит его хеш.
+ * Вход — только через Discord (server/discord.ts); сессия — случайный токен в HttpOnly-cookie, на диске лежит его хеш.
  */
-
-const scrypt = promisify(scryptCallback) as (password: string, salt: Buffer, keylen: number) => Promise<Buffer>
 
 export class AccountError extends Error {
   constructor(
@@ -22,13 +19,12 @@ export class AccountError extends Error {
 
 interface User {
   id: string
+  /** Имя на сайте: из Discord при первом входе, дальше не меняется. */
   login: string
-  /** Пусто у тех, кто зарегистрировался через Discord: войти паролем они не могут. */
-  salt: string
-  hash: string
   createdAt: string
+  /** Нет у учётных записей, созданных до входа через Discord: войти в них больше нельзя. */
   discordId?: string
-  /** Имя в Discord — только чтобы показать, к чему привязана учётная запись. */
+  /** Текущее имя в Discord — обновляется при каждом входе. */
   discordName?: string
 }
 
@@ -65,6 +61,7 @@ const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000
 const MAX_FILTERS = 50
 /** Настройки редактора — десятки килобайт; больший объём — уже не настройки. */
 const MAX_CONFIG_BYTES = 512 * 1024
+/** Имя на сайте: буквы, цифры, «_», «.», «-». */
 const LOGIN = /^[\p{L}\p{N}_.-]{3,32}$/u
 
 // --- Запись по очереди: одновременные запросы не должны терять изменения друг друга.
@@ -91,20 +88,6 @@ async function update<T, R>(file: string, fallback: T, change: (value: T) => R |
 const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex')
 const newId = (bytes = 12) => randomBytes(bytes).toString('base64url')
 
-async function hashPassword(password: string, salt: Buffer) {
-  return (await scrypt(password, salt, 64)).toString('hex')
-}
-
-function checkCredentials(login: unknown, password: unknown): { login: string; password: string } {
-  if (typeof login !== 'string' || !LOGIN.test(login)) {
-    throw new AccountError(400, 'login: 3–32 letters, digits, «_», «.», «-»')
-  }
-  if (typeof password !== 'string' || password.length < 8 || password.length > 200) {
-    throw new AccountError(400, 'password: 8–200 characters')
-  }
-  return { login, password }
-}
-
 export async function newSession(userId: string): Promise<string> {
   const token = newId(32)
   await update<Record<string, Session>, void>(SESSIONS, {}, (sessions) => {
@@ -114,29 +97,6 @@ export async function newSession(userId: string): Promise<string> {
     sessions[tokenHash(token)] = { userId, expires: now + SESSION_MS }
   })
   return token
-}
-
-export async function register(loginValue: unknown, passwordValue: unknown): Promise<{ login: string; token: string }> {
-  const { login, password } = checkCredentials(loginValue, passwordValue)
-  const salt = randomBytes(16)
-  const hash = await hashPassword(password, salt)
-  const user = await update<Record<string, User>, User>(USERS, {}, (users) => {
-    const key = login.toLowerCase()
-    if (users[key]) throw new AccountError(409, 'login is taken')
-    users[key] = { id: newId(), login, salt: salt.toString('hex'), hash, createdAt: new Date().toISOString() }
-    return users[key]
-  })
-  return { login: user.login, token: await newSession(user.id) }
-}
-
-export async function login(loginValue: unknown, passwordValue: unknown): Promise<{ login: string; token: string }> {
-  const { login, password } = checkCredentials(loginValue, passwordValue)
-  const users = (await readData<Record<string, User>>(USERS)) ?? {}
-  const user = users[login.toLowerCase()]
-  // Хеш считаем и для несуществующего логина: по времени ответа нельзя понять, есть ли такой пользователь.
-  const hash = Buffer.from(await hashPassword(password, Buffer.from(user?.salt ?? '00'.repeat(16), 'hex')), 'hex')
-  if (!user?.hash || !timingSafeEqual(hash, Buffer.from(user.hash, 'hex'))) throw new AccountError(401, 'wrong login or password')
-  return { login: user.login, token: await newSession(user.id) }
 }
 
 export async function logout(token: string) {
@@ -159,7 +119,8 @@ export async function profile(userId: string) {
   const users = (await readData<Record<string, User>>(USERS)) ?? {}
   const user = Object.values(users).find((u) => u.id === userId)
   if (!user) return null
-  return { login: user.login, discord: user.discordName ?? null, hasPassword: Boolean(user.hash) }
+  // У старых учётных записей с паролем (до входа через Discord) имени в Discord нет.
+  return { login: user.login, discord: user.discordName ?? null }
 }
 
 /** Логин для нового пользователя из Discord: имя оттуда, а если занято или не подходит — с числом. */
@@ -185,8 +146,6 @@ export async function discordSignIn(discord: DiscordProfile): Promise<{ login: s
     const user: User = {
       id: newId(),
       login,
-      salt: '',
-      hash: '',
       createdAt: new Date().toISOString(),
       discordId: discord.id,
       discordName: discord.name,
@@ -195,29 +154,6 @@ export async function discordSignIn(discord: DiscordProfile): Promise<{ login: s
     return { user, created: true }
   })
   return { login: user.login, token: await newSession(user.id), created }
-}
-
-/** Привязывает Discord к уже существующей учётной записи (чтобы входить и так, и так). */
-export async function linkDiscord(userId: string, discord: DiscordProfile) {
-  await update<Record<string, User>, void>(USERS, {}, (users) => {
-    const other = Object.values(users).find((u) => u.discordId === discord.id)
-    if (other && other.id !== userId) throw new AccountError(409, 'this Discord account is linked to another user')
-    const user = Object.values(users).find((u) => u.id === userId)
-    if (!user) throw new AccountError(401, 'sign in first')
-    user.discordId = discord.id
-    user.discordName = discord.name
-  })
-}
-
-/** Отвязать Discord можно, только если есть пароль — иначе в учётную запись будет не войти. */
-export async function unlinkDiscord(userId: string) {
-  await update<Record<string, User>, void>(USERS, {}, (users) => {
-    const user = Object.values(users).find((u) => u.id === userId)
-    if (!user) throw new AccountError(401, 'sign in first')
-    if (!user.hash) throw new AccountError(400, 'set a password first')
-    delete user.discordId
-    delete user.discordName
-  })
 }
 
 // --- Фильтры пользователя
@@ -318,21 +254,6 @@ export async function sharedFilter(code: string): Promise<{ name: string; owner:
   return { name: filter.name, owner, config: filter.config, updatedAt: filter.updatedAt }
 }
 
-// --- Защита от перебора паролей: не больше 10 неудачных попыток входа с адреса за 10 минут.
-const ATTEMPTS = 10
-const WINDOW_MS = 10 * 60 * 1000
-const failures = new Map<string, number[]>()
-
-export function tooManyAttempts(ip: string, now = Date.now()): boolean {
-  const recent = (failures.get(ip) ?? []).filter((at) => now - at < WINDOW_MS)
-  failures.set(ip, recent)
-  return recent.length >= ATTEMPTS
-}
-
-export function recordFailure(ip: string, now = Date.now()) {
-  failures.set(ip, [...(failures.get(ip) ?? []), now])
-}
-
 // --- Сайт открыт всем: не больше 5 новых учётных записей с адреса за час, чтобы их не плодили скриптом.
 const REGISTRATIONS = 5
 const REGISTRATION_WINDOW_MS = 60 * 60 * 1000
@@ -405,21 +326,6 @@ export async function handleAccounts(req: IncomingMessage, res: ServerResponse, 
   if (path === '/api/auth/me' && method === 'GET') {
     const user = await sessionUser(readToken(req))
     return user ? profile(user.id) : null
-  }
-  if ((path === '/api/auth/register' || path === '/api/auth/login') && method === 'POST') {
-    const ip = clientIp(req)
-    const isRegister = path.endsWith('register')
-    if (tooManyAttempts(ip) || (isRegister && tooManyRegistrations(ip))) throw new AccountError(429, 'too many attempts, try again later')
-    const body = await readBody(req)
-    try {
-      const result = isRegister ? await register(body.login, body.password) : await login(body.login, body.password)
-      if (isRegister) recordRegistration(ip)
-      setToken(req, res, result.token)
-      return { login: result.login }
-    } catch (e) {
-      if (e instanceof AccountError && e.status === 401) recordFailure(ip)
-      throw e
-    }
   }
   if (path === '/api/auth/logout' && method === 'POST') {
     const token = readToken(req)

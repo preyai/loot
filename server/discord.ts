@@ -1,17 +1,12 @@
 import { randomBytes } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import {
-  AccountError,
   clientIp,
   discordSignIn,
-  linkDiscord,
   readCookie,
-  readToken,
   recordRegistration,
-  sessionUser,
   setToken,
   tooManyRegistrations,
-  unlinkDiscord,
   type DiscordProfile,
 } from './accounts'
 
@@ -90,8 +85,7 @@ export async function handleDiscord(req: IncomingMessage, res: ServerResponse, u
     }
     // state защищает от подмены входа: Discord вернёт его, и он должен совпасть с тем, что в cookie.
     const state = randomBytes(16).toString('base64url')
-    const mode = url.searchParams.get('link') ? 'link' : 'login'
-    setState(req, res, `${state}.${mode}`)
+    setState(req, res, state)
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: creds.id,
@@ -109,19 +103,13 @@ export async function handleDiscord(req: IncomingMessage, res: ServerResponse, u
       redirect(res, location)
       return true
     }
-    const [state, mode] = (readCookie(req, STATE_COOKIE) ?? '').split('.')
+    const state = readCookie(req, STATE_COOKIE)
     setState(req, res, null)
     if (url.searchParams.get('error')) return go(back('denied'))
     const code = url.searchParams.get('code')
     if (!creds || !code || !state || url.searchParams.get('state') !== state) return go(back('failed'))
     try {
       const discord = await fetchProfile(req, code, creds)
-      if (mode === 'link') {
-        const user = await sessionUser(readToken(req))
-        if (!user) return go(back('failed'))
-        await linkDiscord(user.id, discord)
-        return go(back('linked'))
-      }
       const ip = clientIp(req)
       // Новых пользователей через Discord ограничиваем так же, как обычные регистрации.
       if (tooManyRegistrations(ip)) return go(back('limit'))
@@ -131,16 +119,9 @@ export async function handleDiscord(req: IncomingMessage, res: ServerResponse, u
       return go(back('ok'))
     } catch (e) {
       console.error('Discord:', e instanceof Error ? e.message : e)
-      return go(back(e instanceof AccountError && e.status === 409 ? 'taken' : 'failed'))
+      return go(back('failed'))
     }
   }
 
-  if (path === '/api/auth/discord/unlink' && req.method === 'POST') {
-    const user = await sessionUser(readToken(req))
-    if (!user) throw new AccountError(401, 'sign in first')
-    await unlinkDiscord(user.id)
-    res.end('{}')
-    return true
-  }
   return false
 }

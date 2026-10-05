@@ -15,46 +15,13 @@ beforeAll(async () => {
 
 afterAll(() => rm(dir, { recursive: true, force: true }))
 
-describe('пользователи', () => {
-  it('регистрация, вход, сессия и выход', async () => {
-    const { login, token } = await accounts.register('Exile_1', 'secret-pass')
-    expect(login).toBe('Exile_1')
-    expect(await accounts.sessionUser(token)).toMatchObject({ login: 'Exile_1' })
-
-    // Логин не зависит от регистра, занятый — второй раз не зарегистрировать.
-    await expect(accounts.register('exile_1', 'other-pass')).rejects.toMatchObject({ status: 409 })
-    const again = await accounts.login('EXILE_1', 'secret-pass')
-    expect(again.login).toBe('Exile_1')
-    await expect(accounts.login('Exile_1', 'wrong-pass')).rejects.toMatchObject({ status: 401 })
-    await expect(accounts.login('Nobody', 'secret-pass')).rejects.toMatchObject({ status: 401 })
-
-    await accounts.logout(token)
-    expect(await accounts.sessionUser(token)).toBeNull()
-    expect(await accounts.sessionUser(again.token)).toMatchObject({ login: 'Exile_1' })
-  })
-
-  it('проверяет логин и пароль', async () => {
-    await expect(accounts.register('ab', 'secret-pass')).rejects.toMatchObject({ status: 400 })
-    await expect(accounts.register('bad login', 'secret-pass')).rejects.toMatchObject({ status: 400 })
-    await expect(accounts.register('Good', 'short')).rejects.toMatchObject({ status: 400 })
-  })
-
-  it('после 10 неудачных попыток с адреса — пауза', () => {
-    const now = 1_000_000
-    for (let i = 0; i < 10; i++) accounts.recordFailure('1.2.3.4', now)
-    expect(accounts.tooManyAttempts('1.2.3.4', now)).toBe(true)
-    expect(accounts.tooManyAttempts('5.6.7.8', now)).toBe(false)
-    expect(accounts.tooManyAttempts('1.2.3.4', now + 11 * 60 * 1000)).toBe(false)
-  })
-
-  it('не больше 5 регистраций с адреса за час', () => {
-    const now = 1_000_000
-    for (let i = 0; i < 5; i++) accounts.recordRegistration('9.9.9.9', now)
-    expect(accounts.tooManyRegistrations('9.9.9.9', now)).toBe(true)
-    expect(accounts.tooManyRegistrations('8.8.8.8', now)).toBe(false)
-    expect(accounts.tooManyRegistrations('9.9.9.9', now + 61 * 60 * 1000)).toBe(false)
-  })
-})
+/** Пользователь, вошедший через Discord: id учётной записи и токен сессии. */
+let discordIds = 5000
+async function signIn(name: string) {
+  const { token } = await accounts.discordSignIn({ id: String(discordIds++), name })
+  const { id } = (await accounts.sessionUser(token))!
+  return { id, token }
+}
 
 describe('вход через Discord', () => {
   it('создаёт пользователя один раз, дальше входит в него же', async () => {
@@ -63,35 +30,35 @@ describe('вход через Discord', () => {
     const again = await accounts.discordSignIn({ id: '1001', name: 'tul_renamed' })
     expect(again).toMatchObject({ login: 'tul_exile', created: false })
     const { id } = (await accounts.sessionUser(again.token))!
-    expect(await accounts.profile(id)).toEqual({ login: 'tul_exile', discord: 'tul_renamed', hasPassword: false })
-    // Без пароля войти паролем нельзя — и это не падение сервера, а обычный отказ.
-    await expect(accounts.login('tul_exile', 'any-password')).rejects.toMatchObject({ status: 401 })
-    // Отвязать Discord без пароля нельзя: в учётную запись будет не войти.
-    await expect(accounts.unlinkDiscord(id)).rejects.toMatchObject({ status: 400 })
+    expect(await accounts.profile(id)).toEqual({ login: 'tul_exile', discord: 'tul_renamed' })
   })
 
   it('занятое или неподходящее имя — логин с числом', async () => {
-    await accounts.register('Xesht', 'secret-pass')
-    expect((await accounts.discordSignIn({ id: '1002', name: 'xesht' })).login).toMatch(/^xesht-\d+$/)
-    expect((await accounts.discordSignIn({ id: '1003', name: 'ab' })).login).toMatch(/^ab-\d+$/)
+    await accounts.discordSignIn({ id: '1002', name: 'xesht' })
+    expect((await accounts.discordSignIn({ id: '1003', name: 'XESHT' })).login).toMatch(/^XESHT-\d+$/)
+    expect((await accounts.discordSignIn({ id: '1004', name: 'ab' })).login).toMatch(/^ab-\d+$/)
   })
 
-  it('привязка к существующему логину', async () => {
-    const user = await accounts.register('Linker', 'secret-pass')
-    const { id } = (await accounts.sessionUser(user.token))!
-    await accounts.linkDiscord(id, { id: '2001', name: 'linker_dc' })
-    expect((await accounts.discordSignIn({ id: '2001', name: 'linker_dc' })).login).toBe('Linker')
-    // Чужой Discord не привязать.
-    await expect(accounts.linkDiscord(id, { id: '1001', name: 'tul_exile' })).rejects.toMatchObject({ status: 409 })
-    await accounts.unlinkDiscord(id)
-    expect(await accounts.profile(id)).toMatchObject({ discord: null, hasPassword: true })
+  it('сессия и выход', async () => {
+    const first = await accounts.discordSignIn({ id: '1005', name: 'session_user' })
+    const second = await accounts.discordSignIn({ id: '1005', name: 'session_user' })
+    await accounts.logout(first.token)
+    expect(await accounts.sessionUser(first.token)).toBeNull()
+    expect(await accounts.sessionUser(second.token)).toMatchObject({ login: 'session_user' })
+  })
+
+  it('не больше 5 новых учётных записей с адреса за час', () => {
+    const now = 1_000_000
+    for (let i = 0; i < 5; i++) accounts.recordRegistration('9.9.9.9', now)
+    expect(accounts.tooManyRegistrations('9.9.9.9', now)).toBe(true)
+    expect(accounts.tooManyRegistrations('8.8.8.8', now)).toBe(false)
+    expect(accounts.tooManyRegistrations('9.9.9.9', now + 61 * 60 * 1000)).toBe(false)
   })
 })
 
 describe('фильтры и ссылки', () => {
   it('сохранение, список, изменение, ссылка и удаление', async () => {
-    const owner = await accounts.register('Owner', 'secret-pass')
-    const { id: userId } = (await accounts.sessionUser(owner.token))!
+    const { id: userId } = await signIn('Owner')
 
     const saved = await accounts.createFilter(userId, '  Мой фильтр ', { filterName: 'Mine', thresholds: { S: 500 } })
     expect(saved).toMatchObject({ name: 'Мой фильтр' })
@@ -106,8 +73,7 @@ describe('фильтры и ссылки', () => {
     expect(await accounts.sharedFilter(shareCode)).toMatchObject({ name: 'Строгий', owner: 'Owner', config: { filterName: 'Strict' } })
 
     // Чужой пользователь не видит и не меняет чужие фильтры.
-    const other = await accounts.register('Other', 'secret-pass')
-    const { id: otherId } = (await accounts.sessionUser(other.token))!
+    const { id: otherId } = await signIn('Other')
     await expect(accounts.getFilter(otherId, saved.id)).rejects.toMatchObject({ status: 404 })
     await expect(accounts.updateFilter(otherId, saved.id, { name: 'x' })).rejects.toMatchObject({ status: 404 })
 
@@ -120,8 +86,7 @@ describe('фильтры и ссылки', () => {
   })
 
   it('проверяет название и настройки', async () => {
-    const user = await accounts.register('Checker', 'secret-pass')
-    const { id } = (await accounts.sessionUser(user.token))!
+    const { id } = await signIn('Checker')
     await expect(accounts.createFilter(id, '', {})).rejects.toMatchObject({ status: 400 })
     await expect(accounts.createFilter(id, 'x'.repeat(61), {})).rejects.toMatchObject({ status: 400 })
     await expect(accounts.createFilter(id, 'ok', [])).rejects.toMatchObject({ status: 400 })
@@ -129,8 +94,7 @@ describe('фильтры и ссылки', () => {
   })
 
   it('одновременные сохранения не теряют друг друга', async () => {
-    const user = await accounts.register('Racer', 'secret-pass')
-    const { id } = (await accounts.sessionUser(user.token))!
+    const { id } = await signIn('Racer')
     await Promise.all(Array.from({ length: 10 }, (_, i) => accounts.createFilter(id, `f${i}`, { i })))
     expect(await accounts.listFilters(id)).toHaveLength(10)
   })

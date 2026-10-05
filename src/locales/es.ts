@@ -181,6 +181,7 @@ export const es: Dictionary = {
   'styles.visibilityNote':
     'Ajustes generales para todas las secciones; cada sección puede tener los suyos. Un nivel elegido a mano para un objeto tiene prioridad sobre el precio mínimo.',
   'styles.fontSize': 'Tamaño de fuente: {size}',
+  'styles.textByRarity': 'Sin color de texto: en el juego el objeto conserva el color de su rareza: amarillo, azul o blanco.',
   'styles.text': 'Texto',
   'styles.border': 'Borde',
   'styles.background': 'Fondo',

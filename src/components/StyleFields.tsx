@@ -14,6 +14,7 @@ const fromHex = (hex: string, a: number): Rgba => ({
   a,
 })
 const OPAQUE_BLACK: Rgba = { r: 0, g: 0, b: 0, a: 255 }
+const OPAQUE_WHITE: Rgba = { r: 255, g: 255, b: 255, a: 255 }
 const hex2 = (v: number) => v.toString(16).padStart(2, '0')
 /** Цвет с прозрачностью: #RRGGBBAA; непрозрачный — короче, #RRGGBB. */
 const toHex8 = (c: Rgba) => toHex(c) + (c.a === 255 ? '' : hex2(c.a))
@@ -105,12 +106,14 @@ function ColorField({
 interface Props {
   /** Отличает поля разных редакторов на одной странице (для связи подписи с ползунком). */
   id: string
+  /** Цвет текста можно не задавать (правила баз): тогда игра покажет предмет цветом его редкости. */
+  optionalText?: boolean
   style: TierStyle
   onChange: (style: TierStyle) => void
 }
 
 /** Поля оформления предмета: шрифт, цвета, звук, луч и значок на карте. Общие для тиров и для правил со своим оформлением. */
-export function StyleFields({ id, style, onChange }: Props) {
+export function StyleFields({ id, style, onChange, optionalText }: Props) {
   const { t } = useI18n()
   const set = <K extends keyof TierStyle>(key: K, value: TierStyle[K]) => onChange({ ...style, [key]: value })
   const [soundError, setSoundError] = useState(false)
@@ -142,7 +145,12 @@ export function StyleFields({ id, style, onChange }: Props) {
           onChange={(e) => set('fontSize', Number(e.target.value))}
         />
       </div>
-      <ColorField label={t('styles.text')} value={style.text} onChange={(v) => set('text', v)} />
+      {optionalText ? (
+        <ColorField label={t('styles.text')} optional value={style.text} onChange={(v) => set('text', v)} />
+      ) : (
+        <ColorField label={t('styles.text')} value={style.text ?? OPAQUE_WHITE} onChange={(v) => set('text', v)} />
+      )}
+      {optionalText && !style.text && <p className="note field-note">{t('styles.textByRarity')}</p>}
       <ColorField label={t('styles.border')} optional value={style.border} onChange={(v) => set('border', v)} />
       <ColorField label={t('styles.background')} optional value={style.background} onChange={(v) => set('background', v)} />
 

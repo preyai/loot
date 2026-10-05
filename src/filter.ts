@@ -62,7 +62,8 @@ export function matchConditions(items: MarketItem[]): string[][] {
 }
 
 export function styleLines(style: TierStyle): string[] {
-  const lines = [`SetFontSize ${style.fontSize}`, `SetTextColor ${color(style.text)}`]
+  const lines = [`SetFontSize ${style.fontSize}`]
+  if (style.text) lines.push(`SetTextColor ${color(style.text)}`)
   if (style.border) lines.push(`SetBorderColor ${color(style.border)}`)
   if (style.background) lines.push(`SetBackgroundColor ${color(style.background)}`)
   if (style.sound) {

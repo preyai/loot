@@ -181,6 +181,7 @@ export const de: Dictionary = {
   'styles.visibilityNote':
     'Allgemeine Einstellungen für alle Abschnitte; jeder Abschnitt kann eigene haben. Eine von Hand gewählte Stufe hat Vorrang vor dem Mindestpreis.',
   'styles.fontSize': 'Schriftgröße: {size}',
+  'styles.textByRarity': 'Keine Textfarbe: Im Spiel behält der Gegenstand die Farbe seiner Seltenheit – gelb, blau oder weiß.',
   'styles.text': 'Text',
   'styles.border': 'Rahmen',
   'styles.background': 'Hintergrund',

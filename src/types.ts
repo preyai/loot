@@ -155,7 +155,8 @@ export interface Visibility {
 
 export interface TierStyle {
   fontSize: number
-  text: Rgba
+  /** null — цвет текста не задаётся, игра красит предмет цветом его редкости (так можно только в правилах баз). */
+  text: Rgba | null
   border: Rgba | null
   background: Rgba | null
   /** Звук игры по номеру или свой файл (file) — он лежит рядом с фильтром в папке игры. */

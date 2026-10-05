@@ -216,6 +216,7 @@ const ru = {
   'styles.visibilityNote':
     'Общие настройки для всех разделов; в любом разделе их можно заменить своими. Тир, выбранный для предмета вручную, важнее минимальной цены.',
   'styles.fontSize': 'Размер шрифта: {size}',
+  'styles.textByRarity': 'Цвет текста не задан: в игре предмет будет цветом своей редкости — жёлтым, синим или белым.',
   'styles.text': 'Текст',
   'styles.border': 'Рамка',
   'styles.background': 'Фон',
@@ -832,6 +833,7 @@ const en: Dictionary = {
   'styles.visibilityNote':
     'Global settings for all sections; any section can override them. A tier chosen manually for an item takes precedence over the minimum price.',
   'styles.fontSize': 'Font size: {size}',
+  'styles.textByRarity': 'No text colour: in game the item keeps its rarity colour — yellow, blue or white.',
   'styles.text': 'Text',
   'styles.border': 'Border',
   'styles.background': 'Background',

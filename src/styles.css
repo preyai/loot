@@ -2416,3 +2416,9 @@ fieldset.thresholds:disabled {
 .section-settings > .actions {
   margin-bottom: 16px;
 }
+
+.field-note {
+  grid-column: 1 / -1;
+  margin: -2px 0 4px;
+  font-size: 12px;
+}

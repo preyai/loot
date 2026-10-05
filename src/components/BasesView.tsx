@@ -35,7 +35,7 @@ import {
   type UniqueInfo,
 } from '../types'
 import { ExceptionalPanel } from './ExceptionalPanel'
-import { ItemLabel } from './ItemLabel'
+import { ItemLabel, RARITY_TEXT } from './ItemLabel'
 import { StyleFields } from './StyleFields'
 import { EnglishName } from './ItemName'
 
@@ -380,7 +380,7 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
         {!open &&
           (rule.action === 'show' ? (
             <div className="ground">
-              <ItemLabel name={rule.style ? t('rules.customLabel') : t('tier.label', { tier: rule.tier })} style={ruleStyle(rule, config.tiers)} />
+              <ItemLabel name={rule.style ? t('rules.customLabel') : t('tier.label', { tier: rule.tier })} style={ruleStyle(rule, config.tiers)} fallbackText={rarityText(rule)} />
             </div>
           ) : (
             <span className="badge">{t('rules.hideBadge')}</span>
@@ -428,7 +428,7 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
                   </select>
                 </label>
                 <div className="ground">
-                  <ItemLabel name={covered[0] ? name(covered[0]) : t('rules.sampleItem')} style={ruleStyle(rule, config.tiers)} />
+                  <ItemLabel name={covered[0] ? name(covered[0]) : t('rules.sampleItem')} style={ruleStyle(rule, config.tiers)} fallbackText={rarityText(rule)} />
                 </div>
               </>
             )}
@@ -436,7 +436,7 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
 
           {rule.action === 'show' && rule.style && (
             <div className="rule-style">
-              <StyleFields id={rule.id} style={rule.style} onChange={(style) => onChange({ ...rule, style })} />
+              <StyleFields id={rule.id} style={rule.style} optionalText onChange={(style) => onChange({ ...rule, style })} />
             </div>
           )}
 
@@ -513,6 +513,13 @@ interface Props {
   update: UpdateConfig
   /** null, пока цены не загружены. */
   snapshot: MarketSnapshot | null
+}
+
+/** Цвет текста образца, если правило его не задаёт: редкость правила; несколько или любая — самая высокая из них. */
+function rarityText(rule: BaseRule) {
+  const order = ['Rare', 'Magic', 'Normal'] as const
+  const rarity = order.find((r) => rule.rarities.length === 0 || rule.rarities.includes(r)) ?? 'Normal'
+  return RARITY_TEXT[rarity]
 }
 
 export function BasesView({ config, update, snapshot }: Props) {

@@ -181,6 +181,7 @@ export const fr: Dictionary = {
   'styles.visibilityNote':
     'Réglages généraux pour toutes les sections ; chaque section peut avoir les siens. Un palier choisi à la main pour un objet prime sur le prix minimal.',
   'styles.fontSize': 'Taille de police : {size}',
+  'styles.textByRarity': 'Pas de couleur de texte : en jeu, l’objet garde la couleur de sa rareté — jaune, bleu ou blanc.',
   'styles.text': 'Texte',
   'styles.border': 'Bordure',
   'styles.background': 'Fond',

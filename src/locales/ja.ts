@@ -181,6 +181,7 @@ export const ja: Dictionary = {
   'styles.visibilityNote':
     'すべてのセクション共通の設定です。セクションごとに個別の設定もできます。アイテムに手動で選んだティアは最低価格より優先されます。',
   'styles.fontSize': '文字サイズ: {size}',
+  'styles.textByRarity': '文字色なし：ゲームではレアリティの色（黄・青・白）で表示されます。',
   'styles.text': '文字',
   'styles.border': '枠',
   'styles.background': '背景',

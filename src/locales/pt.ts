@@ -181,6 +181,7 @@ export const pt: Dictionary = {
   'styles.visibilityNote':
     'Configurações gerais para todas as seções; cada seção pode ter as suas. Um tier escolhido manualmente para um item tem prioridade sobre o preço mínimo.',
   'styles.fontSize': 'Tamanho da fonte: {size}',
+  'styles.textByRarity': 'Sem cor de texto: no jogo o item mantém a cor da raridade — amarelo, azul ou branco.',
   'styles.text': 'Texto',
   'styles.border': 'Borda',
   'styles.background': 'Fundo',

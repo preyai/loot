@@ -181,6 +181,7 @@ export const th: Dictionary = {
   'styles.visibilityNote':
     'การตั้งค่าทั่วไปสำหรับทุกหมวด แต่ละหมวดตั้งค่าของตัวเองได้ ระดับที่เลือกเองให้ไอเทมจะมีผลเหนือราคาขั้นต่ำ',
   'styles.fontSize': 'ขนาดตัวอักษร: {size}',
+  'styles.textByRarity': 'ไม่กำหนดสีตัวอักษร: ในเกมไอเทมจะเป็นสีตามความหายาก — เหลือง น้ำเงิน หรือขาว',
   'styles.text': 'ตัวอักษร',
   'styles.border': 'กรอบ',
   'styles.background': 'พื้นหลัง',

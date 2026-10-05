@@ -181,6 +181,7 @@ export const ko: Dictionary = {
   'styles.visibilityNote':
     '모든 항목에 공통인 설정이며, 항목마다 따로 설정할 수도 있습니다. 아이템에 직접 고른 등급은 최저 가격보다 우선합니다.',
   'styles.fontSize': '글자 크기: {size}',
+  'styles.textByRarity': '글자 색 없음: 게임에서는 등급 색(노랑, 파랑, 흰색)으로 표시됩니다.',
   'styles.text': '글자',
   'styles.border': '테두리',
   'styles.background': '배경',

@@ -5,7 +5,7 @@ import { normalizeConfig } from './store'
 import { BASE_CLASSES, baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, GEAR_CLASSES, moveItem, RULE_TEMPLATES, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
 import { applyPreset, restRules, RULE_PRESETS } from './presets'
-import { evaluate, parseFilter } from './filterEval'
+import { evaluate, parseFilter, type DroppedItem } from './filterEval'
 import { generateLoot } from './lootSim'
 import { baseRuleBlock, extraBlocks, generateFilter, goldBlocks, HIDDEN_LINES, hiddenLines, matchConditions, styleLines, waystoneBlocks } from './filter'
 import { DEFAULT_GOLD } from './gold'
@@ -302,6 +302,35 @@ describe('правила баз', () => {
     expect(baseRuleBlock(hide, 2, tiers)).toBe(
       ['Hide # Bases / rule 3', '    BaseType == "Gemini Bow"', '    Rarity <= Rare', '    Quality >= 20', '    Sockets >= 2', ...hiddenLines(tiers.C).map((l) => `    ${l}`)].join('\n'),
     )
+  })
+
+  it('без цвета текста правило не пишет SetTextColor — игра красит предмет цветом редкости', () => {
+    const custom: BaseRule = { ...rule, style: { ...tiers.C, text: null } }
+    const text = baseRuleBlock(custom, 0, tiers)!
+    expect(text).toContain('SetFontSize')
+    expect(text).not.toContain('SetTextColor')
+    const filter = parseFilter(text)
+    const bow: DroppedItem = {
+      itemClass: 'Bows',
+      baseType: 'Shortbow',
+      rarity: 'Magic',
+      itemLevel: 82,
+      quality: 0,
+      sockets: 0,
+      stackSize: 1,
+      unidentifiedTier: 0,
+      corrupted: false,
+      mirrored: false,
+      enchanted: false,
+      twiceCorrupted: false,
+      explicitMods: 2,
+      dropLevel: 1,
+    }
+    const look = evaluate(filter, bow, 70)
+    expect(look.block?.comment).toBe('Bases / rule 1')
+    expect(look.style.fontSize).toBe(tiers.C.fontSize)
+    // Синий — цвет магических предметов.
+    expect(look.style.text).toEqual({ r: 136, g: 136, b: 255, a: 255 })
   })
 
   it('своё оформление правила важнее тира; скрытое правилом — в этом же оформлении, но тихо', () => {

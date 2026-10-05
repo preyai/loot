@@ -799,19 +799,43 @@ main {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8));
 }
 
+/* Уники базы: плашки «название | цена» в одну строку; хвост, который не поместился, плавно затухает. */
 .uniques {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0 14px;
-  margin: 3px 0 0;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 4px 0 0;
   padding: 0 8px;
+  overflow: hidden;
   list-style: none;
   /* Цвет уникальных предметов в игре. */
   color: #af6025;
   font-size: 12px;
+  mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
 }
 
-.uniques span {
+.uniques li {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  border: 1px solid rgba(175, 96, 37, 0.45);
+  border-radius: 3px;
+  background: rgba(175, 96, 37, 0.07);
+  white-space: nowrap;
+}
+
+.uniques li > button {
+  padding: 1px 7px;
+}
+
+.unique-price {
+  padding: 1px 7px;
+  border-left: 1px solid rgba(175, 96, 37, 0.35);
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.unique-price--none {
   color: var(--muted);
 }
 

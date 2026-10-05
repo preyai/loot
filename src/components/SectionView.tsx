@@ -356,13 +356,21 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                         )}
                       </div>
                       {item.uniques && (
-                        <ul className="uniques">
+                        // Уники базы — плашками в одну строку; не поместившиеся видны в подсказке со всем списком.
+                        <ul
+                          className="uniques"
+                          title={item.uniques
+                            .map((u) => `${name(u.name)} — ${u.divine === null ? t('items.fewListings') : formatPrice(u.divine, snapshot.rates, config.currency, t)}`)
+                            .join('\n')}
+                        >
                           {item.uniques.map((u) => (
                             <li key={u.name}>
                               <button title={t('items.uniqueHint')} onClick={() => setOpened({ unique: u, base: item.name })}>
                                 {name(u.name)}
-                              </button>{' '}
-                              <span>{u.divine === null ? t('items.fewListings') : formatPrice(u.divine, snapshot.rates, config.currency, t)}</span>
+                              </button>
+                              <span className={u.divine === null ? 'unique-price unique-price--none' : 'unique-price'}>
+                                {u.divine === null ? t('items.fewListings') : formatPrice(u.divine, snapshot.rates, config.currency, t)}
+                              </span>
                             </li>
                           ))}
                         </ul>

@@ -493,7 +493,7 @@ export const ja: Dictionary = {
   'account.error': 'エラー：{error}',
   'account.wrong': 'ログイン名またはパスワードが違います。',
   'account.taken': 'このログイン名は既に使われています。',
-  'account.tooMany': '試行回数が多すぎます。10分後にもう一度お試しください。',
+  'account.tooMany': '試行回数が多すぎます。しばらくしてからもう一度お試しください。',
   'account.noAccount': 'アカウントがない場合は新規登録',
   'account.haveAccount': 'アカウントをお持ちの場合はログイン',
   'account.signedAs': '{login} としてログイン中',

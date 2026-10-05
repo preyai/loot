@@ -15,6 +15,8 @@ ALIASES=${6:--}
 if [ "$ALIASES" = "-" ]; then ALIASES=""; fi
 REDIRECTS=${7:--}
 if [ "$REDIRECTS" = "-" ]; then REDIRECTS=""; fi
+# public — сайт открыт всем, пароль снимается; password — пароль как раньше.
+ACCESS=${8:-password}
 
 SRC=$(cd "$(dirname "$0")" && pwd)
 ENV_FILE="$APP_DIR/.env"
@@ -52,7 +54,10 @@ write_env() {
   $SUDO chmod 600 "$ENV_FILE"
 }
 
-if [ -f "$SRC/password.txt" ]; then
+if [ "$ACCESS" = "public" ]; then
+  write_env ""
+  echo "Пароль снят: сайт открыт всем."
+elif [ -f "$SRC/password.txt" ]; then
   # Пароль задан в deploy.config.json — он главнее того, что лежит на сервере.
   write_env "$(tr -d '\r\n' <"$SRC/password.txt")"
   echo "Пароль взят из deploy.config.json (логин loot)."

@@ -24,8 +24,9 @@ Set-Location $root
 #   domain   — если задан, редактор отдаётся по HTTPS на этом домене (ставится Caddy);
 #   aliases  — ещё домены, на которых открывается тот же редактор (через запятую или списком);
 #   redirects — домены, которые перенаправляют на основной (например, www и старый адрес);
-#   password — пароль входа; пусто — оставить тот, что уже на сервере (при первом деплое создаётся случайный).
-$config = @{ server = ''; appDir = '/opt/loot-filter'; service = 'loot-filter'; port = 8080; domain = ''; aliases = ''; redirects = ''; password = '' }
+#   password — пароль входа; пусто — оставить тот, что уже на сервере (при первом деплое создаётся случайный);
+#   public   — true: сайт открыт всем, пароль на сервере снимается (у пользователей свои учётные записи).
+$config = @{ server = ''; appDir = '/opt/loot-filter'; service = 'loot-filter'; port = 8080; domain = ''; aliases = ''; redirects = ''; password = ''; public = $false }
 $configFile = Join-Path $root 'deploy.config.json'
 if (Test-Path $configFile) {
   # Без явной кодировки Windows PowerShell прочитает файл как ANSI и испортит пароль не на латинице.
@@ -45,6 +46,8 @@ function Get-Domains($value) { @("$(@($value) -join ',')".ToLower() -split '[,\s
 $aliases = @(Get-Domains $config.aliases)
 $redirects = @(Get-Domains $config.redirects)
 $config.password = "$($config.password)"
+$public = $config.public -eq $true -or "$($config.public)" -eq 'true'
+if ($public -and $config.password) { throw 'Заданы и public, и password: выберите что-то одно.' }
 
 if (-not $DryRun -and -not $config.server) {
   throw 'Не указан сервер. Передайте -Server user@host или создайте deploy.config.json по образцу deploy.config.example.json.'
@@ -88,7 +91,8 @@ if ($DryRun) {
   if ($aliases.Count) { Write-Host "Тот же сайт: $($aliases -join ', ')" }
   if ($redirects.Count) { Write-Host "Перенаправление на основной: $($redirects -join ', ')" }
   if ($config.domain) { Write-Host "Домен: $($config.domain)" } else { Write-Host 'Домен не задан: редактор будет доступен по HTTP на порту.' }
-  if ($config.password) { Write-Host 'Пароль: будет взят из deploy.config.json.' } else { Write-Host 'Пароль: останется тот, что на сервере.' }
+  if ($public) { Write-Host 'Пароль: снимается, сайт открыт всем.' }
+  elseif ($config.password) { Write-Host 'Пароль: будет взят из deploy.config.json.' } else { Write-Host 'Пароль: останется тот, что на сервере.' }
   Write-Host 'Пробный запуск: на сервер ничего не отправлено.' -ForegroundColor Yellow
   exit 0
 }
@@ -122,9 +126,10 @@ try {
 $domainArg = if ($config.domain) { $config.domain } else { '-' }
 $aliasesArg = if ($aliases.Count) { $aliases -join ',' } else { '-' }
 $redirectsArg = if ($redirects.Count) { $redirects -join ',' } else { '-' }
+$accessArg = if ($public) { 'public' } else { 'password' }
 # -t нужен, чтобы sudo на сервере мог спросить пароль.
 Invoke-Step 'Установка на сервере' {
-  ssh -t $target "bash $remoteTmp/remote-install.sh $($config.appDir) $($config.service) $($config.port) $tag $domainArg $aliasesArg $redirectsArg"
+  ssh -t $target "bash $remoteTmp/remote-install.sh $($config.appDir) $($config.service) $($config.port) $tag $domainArg $aliasesArg $redirectsArg $accessArg"
 }
 
 Remove-Item $archive -ErrorAction SilentlyContinue

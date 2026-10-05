@@ -493,7 +493,7 @@ export const ko: Dictionary = {
   'account.error': '오류: {error}',
   'account.wrong': '아이디 또는 비밀번호가 올바르지 않습니다.',
   'account.taken': '이미 사용 중인 아이디입니다.',
-  'account.tooMany': '시도 횟수가 너무 많습니다. 10분 후에 다시 시도하세요.',
+  'account.tooMany': '시도 횟수가 너무 많습니다. 나중에 다시 시도하세요.',
   'account.noAccount': '계정이 없나요? 회원가입',
   'account.haveAccount': '이미 계정이 있나요? 로그인',
   'account.signedAs': '{login}(으)로 로그인됨',

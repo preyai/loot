@@ -493,7 +493,7 @@ export const pt: Dictionary = {
   'account.error': 'Erro: {error}',
   'account.wrong': 'Usuário ou senha incorretos.',
   'account.taken': 'Esse usuário já está em uso.',
-  'account.tooMany': 'Muitas tentativas, tente novamente em 10 minutos.',
+  'account.tooMany': 'Muitas tentativas, tente novamente mais tarde.',
   'account.noAccount': 'Não tem conta? Cadastre-se',
   'account.haveAccount': 'Já tem conta? Entrar',
   'account.signedAs': 'Conectado como {login}',

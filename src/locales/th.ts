@@ -493,7 +493,7 @@ export const th: Dictionary = {
   'account.error': 'ข้อผิดพลาด: {error}',
   'account.wrong': 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
   'account.taken': 'ชื่อผู้ใช้นี้ถูกใช้แล้ว',
-  'account.tooMany': 'พยายามหลายครั้งเกินไป โปรดลองใหม่ใน 10 นาที',
+  'account.tooMany': 'พยายามหลายครั้งเกินไป โปรดลองใหม่ภายหลัง',
   'account.noAccount': 'ยังไม่มีบัญชี? สมัครสมาชิก',
   'account.haveAccount': 'มีบัญชีแล้ว? เข้าสู่ระบบ',
   'account.signedAs': 'เข้าสู่ระบบในชื่อ {login}',

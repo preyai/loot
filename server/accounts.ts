@@ -257,6 +257,21 @@ export function recordFailure(ip: string, now = Date.now()) {
   failures.set(ip, [...(failures.get(ip) ?? []), now])
 }
 
+// --- Сайт открыт всем: не больше 5 новых учётных записей с адреса за час, чтобы их не плодили скриптом.
+const REGISTRATIONS = 5
+const REGISTRATION_WINDOW_MS = 60 * 60 * 1000
+const registrations = new Map<string, number[]>()
+
+export function tooManyRegistrations(ip: string, now = Date.now()): boolean {
+  const recent = (registrations.get(ip) ?? []).filter((at) => now - at < REGISTRATION_WINDOW_MS)
+  registrations.set(ip, recent)
+  return recent.length >= REGISTRATIONS
+}
+
+export function recordRegistration(ip: string, now = Date.now()) {
+  registrations.set(ip, [...(registrations.get(ip) ?? []), now])
+}
+
 // --- HTTP
 
 const COOKIE = 'loot_session'
@@ -299,8 +314,9 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
   }
 }
 
+// Последний адрес в цепочке дописал наш прокси (Caddy), первые клиент может подставить сам.
 const clientIp = (req: IncomingMessage) =>
-  String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() || req.socket.remoteAddress || '?'
+  String(req.headers['x-forwarded-for'] ?? '').split(',').pop()?.trim() || req.socket.remoteAddress || '?'
 
 /** Запросы к /api/auth/, /api/filters и /api/shared/; undefined — запрос не про пользователей. */
 export async function handleAccounts(req: IncomingMessage, res: ServerResponse, url: URL): Promise<unknown> {
@@ -313,10 +329,12 @@ export async function handleAccounts(req: IncomingMessage, res: ServerResponse, 
   }
   if ((path === '/api/auth/register' || path === '/api/auth/login') && method === 'POST') {
     const ip = clientIp(req)
-    if (tooManyAttempts(ip)) throw new AccountError(429, 'too many attempts, try again later')
+    const isRegister = path.endsWith('register')
+    if (tooManyAttempts(ip) || (isRegister && tooManyRegistrations(ip))) throw new AccountError(429, 'too many attempts, try again later')
     const body = await readBody(req)
     try {
-      const result = path.endsWith('register') ? await register(body.login, body.password) : await login(body.login, body.password)
+      const result = isRegister ? await register(body.login, body.password) : await login(body.login, body.password)
+      if (isRegister) recordRegistration(ip)
       setToken(req, res, result.token)
       return { login: result.login }
     } catch (e) {

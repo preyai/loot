@@ -46,6 +46,14 @@ describe('пользователи', () => {
     expect(accounts.tooManyAttempts('5.6.7.8', now)).toBe(false)
     expect(accounts.tooManyAttempts('1.2.3.4', now + 11 * 60 * 1000)).toBe(false)
   })
+
+  it('не больше 5 регистраций с адреса за час', () => {
+    const now = 1_000_000
+    for (let i = 0; i < 5; i++) accounts.recordRegistration('9.9.9.9', now)
+    expect(accounts.tooManyRegistrations('9.9.9.9', now)).toBe(true)
+    expect(accounts.tooManyRegistrations('8.8.8.8', now)).toBe(false)
+    expect(accounts.tooManyRegistrations('9.9.9.9', now + 61 * 60 * 1000)).toBe(false)
+  })
 })
 
 describe('фильтры и ссылки', () => {

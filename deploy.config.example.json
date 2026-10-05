@@ -6,5 +6,6 @@
   "domain": "",
   "aliases": [],
   "redirects": [],
-  "password": ""
+  "password": "",
+  "public": false
 }

@@ -109,7 +109,7 @@ if (process.env.VITEST === undefined) {
   server.listen(PORT, HOST, () => {
     console.log(`Редактор лутфильтра: http://${HOST}:${PORT}`)
     if (!AUTH_PASSWORD && HOST !== '127.0.0.1' && HOST !== 'localhost') {
-      console.warn('ВНИМАНИЕ: пароль не задан (AUTH_PASSWORD) — редактор доступен всем, кто знает адрес.')
+      console.log('Пароль не задан (AUTH_PASSWORD): сайт открыт всем.')
     }
     if (process.env.SCHEDULER !== 'off') startScheduler()
   })

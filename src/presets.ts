@@ -1,6 +1,6 @@
 import { BASE_CLASSES, classesOf, classNames, EMPTY_RULE, GEAR_CLASSES, POPULAR_SHARE, popularBases, topBases } from './bases'
 import { GEAR_STYLES } from './gearStyles'
-import type { T } from './i18n'
+import { keyOf, type T } from './i18n'
 import type { BaseRule, Config, Rarity, Rgba, TierId, TierStyle, Visibility } from './types'
 
 type Draft = Omit<BaseRule, 'id'>
@@ -300,4 +300,31 @@ export function applyLevel(
   chancing: Draft | null = null,
 ): Config {
   return { ...applyPreset(config, preset, shares, t, chancing), visibility: MARKET_LEVELS[preset.id], level: preset.id }
+}
+
+/**
+ * Свойства под рекомбинатор, как в фильтре NeverSink (раздел «Identified Mods: Recombinator Mods»):
+ * опознанные неосквернённые вещи с топовым свойством для своего класса. Названия свойств — английские, как в игре.
+ */
+export const RECOMBINATOR_MODS: { classes: string[]; mods: string[] }[] = [
+  { classes: ['Boots'], mods: ["Hellion's"] },
+  { classes: ['Amulets'], mods: ["Countess'", 'of the Sharpshooter'] },
+  { classes: ['Staves', 'Wands'], mods: ['Runic', 'of the Wizard', 'of Inferno', 'of Frostbite', 'of Thunder', 'of Armageddon', 'of Grief'] },
+  { classes: ['Sceptres'], mods: ["King's", 'of the Slavedriver', 'Empowering'] },
+  { classes: ['Bows', 'Crossbows'], mods: ['of Many', 'Merciless', 'of the Sniper'] },
+  { classes: ['Spears'], mods: ['Merciless', 'Flaring', "Amazon's", 'of the Sniper'] },
+  { classes: ['Quarterstaves', 'Talismans', 'Two Hand Maces'], mods: ['Merciless', 'of War'] },
+]
+
+export function recombinatorRules(t: T): Draft[] {
+  return RECOMBINATOR_MODS.map(({ classes, mods }) => ({
+    ...EMPTY_RULE,
+    name: t('template.recombinatorRule', { classes: classes.map((c) => t(keyOf('class', c))).join(', ') }),
+    classes,
+    identified: true,
+    excludeCorrupted: true,
+    mods,
+    tier: 'B',
+    style: GEAR_STYLES.recombinator,
+  }))
 }

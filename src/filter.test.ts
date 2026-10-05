@@ -4,7 +4,7 @@ import { DEFAULT_CONFIG, UNIQUE_TIERS } from './defaults'
 import { normalizeConfig } from './store'
 import { BASE_CLASSES, baseTradeQuery, baseTradeUrl, describeRule, EMPTY_RULE, GEAR_CLASSES, moveItem, RULE_TEMPLATES, topBases, wikiUrl } from './bases'
 import { baseOffers, exceptionalBases, exceptionalRules, withExceptionalRules } from './exceptional'
-import { applyPreset, restRules, RULE_PRESETS } from './presets'
+import { applyPreset, recombinatorRules, restRules, RULE_PRESETS } from './presets'
 import { evaluate, parseFilter, type DroppedItem } from './filterEval'
 import { generateLoot } from './lootSim'
 import { baseRuleBlock, extraBlocks, generateFilter, goldBlocks, HIDDEN_LINES, hiddenLines, matchConditions, styleLines, waystoneBlocks } from './filter'
@@ -275,6 +275,9 @@ describe('правила баз', () => {
     minAreaLevel: 0,
     maxAreaLevel: 0,
     excludeCorrupted: false,
+    identified: false,
+    mods: [],
+    minMods: 1,
     tier: 'C',
   }
   const { tiers } = DEFAULT_CONFIG
@@ -302,6 +305,20 @@ describe('правила баз', () => {
     expect(baseRuleBlock(hide, 2, tiers)).toBe(
       ['Hide # Bases / rule 3', '    BaseType == "Gemini Bow"', '    Rarity <= Rare', '    Quality >= 20', '    Sockets >= 2', ...hiddenLines(tiers.C).map((l) => `    ${l}`)].join('\n'),
     )
+  })
+
+  it('свойства под рекомбинатор: опознанные, неосквернённые, со свойством по названию — как у NeverSink', () => {
+    const rules = recombinatorRules(t)
+    expect(rules).toHaveLength(7)
+    const boots = baseRuleBlock({ ...rules[0], id: 'r' }, 0, tiers)!
+    expect(boots).toContain('Class == "Boots"')
+    expect(boots).toContain('Rarity <= Rare')
+    expect(boots).toContain('Corrupted False\n    Mirrored False\n    Identified True\n    HasExplicitMod >=1 "Hellion\'s"')
+    expect(boots).toContain('SetBackgroundColor 47 0 74 255')
+    expect(boots).toContain('MinimapIcon 0 Blue Diamond')
+    expect(describeRule({ ...rules[0], id: 'r' }, t)).toContain("опознанные · свойства (1+): Hellion's")
+    // Несколько свойств и «хотя бы 2 из них».
+    expect(baseRuleBlock({ ...rules[2], id: 'r', minMods: 2 }, 0, tiers)).toContain('HasExplicitMod >=2 "Runic" "of the Wizard"')
   })
 
   it('без цвета текста правило не пишет SetTextColor — игра красит предмет цветом редкости', () => {

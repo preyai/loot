@@ -114,6 +114,8 @@ export function baseRuleBlock(rule: BaseRule, index: number, tiers: Config['tier
   if (rule.minSockets > 0) lines.push(`Sockets >= ${rule.minSockets}`)
   if (rule.minUnidentifiedTier > 0) lines.push(`UnidentifiedItemTier >= ${rule.minUnidentifiedTier}`)
   if (rule.excludeCorrupted) lines.push('Corrupted False', 'Mirrored False')
+  if (rule.identified) lines.push('Identified True')
+  if (rule.mods.length) lines.push(`HasExplicitMod >=${Math.max(1, rule.minMods)} ${quote(rule.mods)}`)
   if (rule.minAreaLevel > 0) lines.push(`AreaLevel >= ${rule.minAreaLevel}`)
   if (rule.maxAreaLevel > 0) lines.push(`AreaLevel <= ${rule.maxAreaLevel}`)
   const show = rule.action === 'show'

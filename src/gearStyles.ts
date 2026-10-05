@@ -24,6 +24,16 @@ const style = (fields: Partial<TierStyle> & Pick<TierStyle, 'text'>): TierStyle 
 })
 
 export const GEAR_STYLES = {
+  /** Опознанные вещи со свойством под рекомбинатор (exotics_identifiedmod). */
+  recombinator: style({
+    fontSize: 42,
+    text: TEAL,
+    border: TEAL,
+    background: rgba(47, 0, 74),
+    sound: { id: 3, volume: 300 },
+    effect: { color: 'Blue', temp: false },
+    icon: { size: 0, color: 'Blue', shape: 'Diamond' },
+  }),
   /** Лучшие исключительные: 3+ гнезда, качество 27%+ (exotics_artifacthigh). */
   exceptionalTop: style({
     fontSize: 42,

@@ -86,6 +86,9 @@ Hide # rest
           minAreaLevel: 65,
           maxAreaLevel: 80,
           excludeCorrupted: true,
+          identified: true,
+          mods: ["Hellion's", 'of the Sniper'],
+          minMods: 1,
           tier: 'B',
         },
       ],
@@ -121,6 +124,15 @@ describe('условия', () => {
     expect(matchCondition('HasExplicitMod >=5 "a" "o" "e" "u" "i" "y"', boots, 70)).toBe(true)
     expect(matchCondition('HasExplicitMod >=7 "a" "o" "e" "u" "i" "y"', boots, 70)).toBe(false)
     expect(matchCondition('SomethingNew 1', boots, 70)).toBe(false)
+  })
+
+  it('HasExplicitMod с названиями — по свойствам предмета; свойства неизвестны — не совпадает', () => {
+    const fast = { ...boots, mods: ["Hellion's", 'of the Lynx'] }
+    expect(matchCondition('HasExplicitMod >=1 "Hellion\'s"', fast, 70)).toBe(true)
+    expect(matchCondition('HasExplicitMod >=2 "Hellion\'s" "of the Sniper"', fast, 70)).toBe(false)
+    expect(matchCondition('HasExplicitMod >=2 "Hellion\'s" "Lynx"', fast, 70)).toBe(true)
+    // У неопознанного предмета свойств не видно: даже при 5 свойствах название не угадать.
+    expect(matchCondition('HasExplicitMod >=1 "Hellion\'s"', boots, 70)).toBe(false)
   })
 })
 

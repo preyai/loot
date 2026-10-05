@@ -2449,3 +2449,13 @@ fieldset.thresholds:disabled {
   margin: 18px 6px 0;
   font-size: 13px;
 }
+
+/* Свойства по названию в правиле баз: поле пошире — названия длинные. */
+.mods-field {
+  flex: 1 1 320px;
+}
+
+.mods-field input {
+  flex: 1;
+  min-width: 200px;
+}

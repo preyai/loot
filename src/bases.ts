@@ -133,6 +133,9 @@ export const EMPTY_RULE: Omit<BaseRule, 'id' | 'name'> = {
   minAreaLevel: 0,
   maxAreaLevel: 0,
   excludeCorrupted: false,
+  identified: false,
+  mods: [],
+  minMods: 1,
   tier: 'C',
 }
 
@@ -154,6 +157,9 @@ export function describeRule(rule: BaseRule, t: T): string {
     rule.minSockets > 0 && t('desc.sockets', { n: rule.minSockets }),
     rule.minUnidentifiedTier > 0 && t('desc.unidentified', { n: rule.minUnidentifiedTier }),
     rule.excludeCorrupted && t('desc.notCorrupted'),
+    rule.identified && t('desc.identified'),
+    rule.mods.length > 0 &&
+      t('desc.mods', { n: rule.minMods, list: rule.mods.slice(0, 3).join(', ') + (rule.mods.length > 3 ? ' …' : '') }),
     rule.minAreaLevel > 0 && t('desc.area', { n: rule.minAreaLevel }),
     rule.maxAreaLevel > 0 && t('desc.areaTo', { n: rule.maxAreaLevel }),
     rule.action === 'show' && rule.style && t('desc.customStyle'),

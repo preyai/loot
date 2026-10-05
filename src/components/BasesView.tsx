@@ -20,7 +20,7 @@ import { baseOffers } from '../exceptional'
 import { keyOf, translateOr, type T } from '../i18n'
 import { useFocus } from '../focus'
 import { useI18n } from '../i18n-react'
-import { applyPreset, RULE_PRESETS, type RulePreset } from '../presets'
+import { applyPreset, recombinatorRules, RULE_PRESETS, type RulePreset } from '../presets'
 import { useExceptionalScan, type UpdateConfig } from '../store'
 import { usePresetInputs } from '../usePresetInputs'
 import { formatPrice } from '../tiering'
@@ -462,6 +462,30 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
             </label>
           </div>
 
+          <div className="rule-row">
+            <label className="check" title={t('rules.identifiedHint')}>
+              <input type="checkbox" checked={rule.identified} onChange={(e) => set('identified', e.target.checked)} />
+              {t('rules.identified')}
+            </label>
+            <label className="check mods-field" title={t('rules.modsHint')}>
+              {t('rules.mods')}
+              <ModsInput value={rule.mods} onChange={(mods) => set('mods', mods)} />
+            </label>
+            {rule.mods.length > 1 && (
+              <label className="check">
+                {t('rules.minMods')}
+                <input
+                  type="number"
+                  min={1}
+                  max={rule.mods.length}
+                  value={rule.minMods}
+                  onChange={(e) => set('minMods', Math.min(rule.mods.length, Math.max(1, Math.round(Number(e.target.value)) || 1)))}
+                />
+              </label>
+            )}
+          </div>
+          {rule.mods.length > 0 && !rule.identified && <p className="note">{t('rules.modsNeedIdentified')}</p>}
+
           {BASE_GROUPS.map((group) => {
             const names = BASE_CLASSES.filter((c) => c.group === group).map((c) => c.name)
             const allSelected = names.every((n) => rule.classes.includes(n))
@@ -513,6 +537,28 @@ interface Props {
   update: UpdateConfig
   /** null, пока цены не загружены. */
   snapshot: MarketSnapshot | null
+}
+
+/**
+ * Свойства по названию через запятую. Набранный текст хранится, пока его правят, и разбирается при уходе из поля:
+ * иначе запятая в конце сразу пропадала бы. Кавычки убираются — в фильтре ими обрамлено каждое название.
+ */
+function ModsInput({ value, onChange }: { value: string[]; onChange: (mods: string[]) => void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const commit = () => {
+    if (draft !== null) onChange([...new Set(draft.split(',').map((m) => m.replace(/"/g, '').trim()).filter(Boolean))])
+    setDraft(null)
+  }
+  return (
+    <input
+      type="text"
+      placeholder="Hellion's, of the Sniper"
+      value={draft ?? value.join(', ')}
+      onChange={(e) => setDraft(e.target.value)}
+      onKeyDown={(e) => e.key === 'Enter' && commit()}
+      onBlur={commit}
+    />
+  )
 }
 
 /** Цвет текста образца, если правило его не задаёт: редкость правила; несколько или любая — самая высокая из них. */
@@ -618,6 +664,9 @@ export function BasesView({ config, update, snapshot }: Props) {
           </button>
           <button disabled={!chancing} onClick={() => chancing && addRule(chancing)}>
             {t('template.chancing')}
+          </button>
+          <button title={t('template.recombinatorHint')} onClick={() => recombinatorRules(t).forEach(addRule)}>
+            {t('template.recombinator')}
           </button>
           {RULE_TEMPLATES.map((template) => (
             <button key={template.title} onClick={() => addRule(template.make(t))}>

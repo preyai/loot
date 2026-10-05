@@ -29,6 +29,8 @@ export interface DroppedItem {
   mirrored: boolean
   enchanted: boolean
   twiceCorrupted: boolean
+  /** Названия явных свойств (если известны) — для HasExplicitMod с названиями. */
+  mods?: string[]
   /** Число явных свойств (для HasExplicitMod с подсчётом). */
   explicitMods: number
   dropLevel: number
@@ -136,9 +138,14 @@ export function matchCondition(condition: string, item: DroppedItem, area: numbe
     return list.includes(item.rarity)
   }
   if (name === 'HasExplicitMod') {
-    // Наш приём «>=N "a" "o" …»: любое свойство содержит гласную, поэтому это просто «не меньше N свойств».
     const count = /^(\d+)/.exec(arg)
-    return count ? compare(item.explicitMods, op || '>=', Number(count[1])) : false
+    const wanted = values(arg.slice(count?.[0].length ?? 0))
+    const need = count ? Number(count[1]) : 1
+    // Наш приём «>=N "a" "o" …»: любое свойство содержит гласную, поэтому это просто «не меньше N свойств».
+    if (wanted.every((v) => /^[aeiouy]$/.test(v))) return count ? compare(item.explicitMods, op || '>=', need) : false
+    // Свойства по названию: сколько из перечисленных есть на предмете. Свойства неизвестны (неопознан) — нет.
+    if (!item.mods) return false
+    return compare(wanted.filter((w) => item.mods!.some((m) => m.includes(w))).length, op || '>=', need)
   }
   if (name in BOOLEAN) return BOOLEAN[name](item) === (arg.trim() === 'True')
   if (name in NUMERIC) {

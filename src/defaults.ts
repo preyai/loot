@@ -164,6 +164,7 @@ export const DEFAULT_CONFIG: Config = {
   visibility: { minTier: 'E', minPrice: 0, stacks: true },
   sectionVisibility: {},
   sectionTiers: {},
+  sectionThresholds: {},
   gear: { hideLowRarity: false, areaLevel: 65, plainHidden: true },
   waystones: DEFAULT_WAYSTONES,
   gold: DEFAULT_GOLD,

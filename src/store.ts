@@ -34,6 +34,7 @@ export function normalizeConfig(stored: Partial<Config>): Config {
       styles: { ...DEFAULT_CONFIG.gold.styles, ...stored.gold?.styles },
     },
     itemStacks: { ...stored.itemStacks },
+    sectionThresholds: { ...stored.sectionThresholds },
     baseRules: (stored.baseRules ?? []).map((rule) => ({ ...EMPTY_RULE, ...rule })),
   }
 }

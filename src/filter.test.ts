@@ -125,6 +125,16 @@ describe('itemDisplay', () => {
     expect(text.indexOf('custom style / stacks of 25+')).toBeLessThan(text.indexOf('Hide # Currency / hidden'))
   })
 
+  it('свои границы раздела меняют тиры только в нём', () => {
+    // Уник за 5 div и валюта за 5 div: по общим границам (S от 500 ex) обе в S.
+    const robe: MarketItem = { ...item('Silk Robe', 5, 'uq-armour'), uniques: [{ name: 'X', divine: 5 }] as MarketItem['uniques'] }
+    const orb = item('Divine Orb', 5)
+    const config: Config = { ...EX, sectionThresholds: { 'uq-armour': bounds('divine', 50, 10, 2, 1, 0.5) } }
+    expect(itemDisplay(robe, config, rates)).toEqual({ kind: 'show', tier: 'B' })
+    expect(itemDisplay(orb, config, rates)).toEqual({ kind: 'show', tier: 'S' })
+    expect(generateFilter(snapshot([robe, orb]), config)).toContain('Show # Unique Armours / B\n    Rarity Unique\n    BaseType == "Silk Robe"')
+  })
+
   it('без стопок дешёвое просто скрывается', () => {
     const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'E', minPrice: 12, stacks: false } }
     expect(itemDisplay(jeweller, config, rates)).toEqual({ kind: 'hide' })

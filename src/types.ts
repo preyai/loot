@@ -256,6 +256,8 @@ export interface Config {
   visibility: Visibility
   /** Разделы со своими настройками показа вместо общих. */
   sectionVisibility: Partial<Record<SectionId, Visibility>>
+  /** Разделы со своими границами тиров вместо общих (например, уники). */
+  sectionThresholds: Partial<Record<SectionId, Record<ThresholdTier, Threshold>>>
   /** Строгость, выбранная на стартовой странице; меняется и вручную — тогда это просто последний выбор. */
   level?: 'leveling' | 'soft' | 'balanced' | 'strict'
   /** Своё оформление тиров в разделе рынка; тиров, которых здесь нет, — общее оформление (tiers). */

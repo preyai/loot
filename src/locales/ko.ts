@@ -69,6 +69,9 @@ export const ko: Dictionary = {
   'items.settingsGlobalUnique': '공통, 티어 모양은 NeverSink 고유 아이템과 같음',
   'items.settingsOwnVisibility': '자체 표시',
   'items.settingsOwnTiers': '티어 자체 모양: {tiers}',
+  'items.ownThresholds': '이 섹션 전용 티어 기준',
+  'items.settingsOwnThresholds': '자체 티어 기준',
+  'items.thresholdsToUniques': '이 기준을 모든 고유 아이템 섹션에 적용',
   'items.ownVisibility': '이 항목 전용 표시 설정',
   'items.globalNote': '공통 설정이 적용됩니다. 변경은 다음 페이지에서',
   'items.uniqueNote':

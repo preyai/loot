@@ -62,9 +62,13 @@ export function tierByValue(divine: number, thresholds: Config['thresholds'], ra
 export const thresholdIn = (thresholds: Config['thresholds'], tier: ThresholdTier, currency: Currency, rates: Rates) =>
   (thresholds[tier].value / perDivine(thresholds[tier].currency, rates)) * perDivine(currency, rates)
 
+/** Границы тиров раздела: свои, если заданы, иначе общие. */
+export const thresholdsFor = (config: Config, section: SectionId): Config['thresholds'] =>
+  config.sectionThresholds[section] ?? config.thresholds
+
 export function autoTier(item: MarketItem, config: Config, rates: Rates): TierId {
   if (item.divine === null) return UNPRICED_TIER
-  return tierByValue(item.divine, config.thresholds, rates)
+  return tierByValue(item.divine, thresholdsFor(config, item.section), rates)
 }
 
 /** Оформление тира раздела по умолчанию: у уников своё, как у NeverSink, у остальных — общее со страницы «Тиры и стили». */
@@ -98,7 +102,7 @@ export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Dis
   const largest = maxStack(item.name)
   if (manualStack && override !== 'hide' && largest >= 2) {
     const stackSize = Math.min(largest, Math.max(2, manualStack))
-    const tier = override ?? (item.divine === null ? UNPRICED_TIER : tierByValue(stackSize * item.divine, config.thresholds, rates))
+    const tier = override ?? (item.divine === null ? UNPRICED_TIER : tierByValue(stackSize * item.divine, thresholdsFor(config, item.section), rates))
     return config.itemStyles[itemKey(item)] ? { kind: 'stack', tier, stackSize, custom: true } : { kind: 'stack', tier, stackSize }
   }
   // Своё оформление — значит, предмет нужен: показываем всегда, тир — только для группы на экране.
@@ -120,8 +124,9 @@ export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Dis
 
   // Не меньше 2: одиночный предмет сюда попал именно потому, что его показывать не нужно.
   // Не больше полной стопки: стопку больше той, что бывает в игре, фильтр ждал бы зря.
-  const stackSize = Math.min(largest, Math.max(2, Math.ceil(roundPrice(cutoffPrice(visibility, config.thresholds, config.currency, rates)) / price)))
-  return { kind: 'stack', tier: tierByValue(stackSize * item.divine, config.thresholds, rates), stackSize }
+  const thresholds = thresholdsFor(config, item.section)
+  const stackSize = Math.min(largest, Math.max(2, Math.ceil(roundPrice(cutoffPrice(visibility, thresholds, config.currency, rates)) / price)))
+  return { kind: 'stack', tier: tierByValue(stackSize * item.divine, thresholds, rates), stackSize }
 }
 
 const convertPrice = (value: number, from: Currency, to: Currency, rates: Rates) =>

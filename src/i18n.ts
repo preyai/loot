@@ -103,6 +103,9 @@ const ru = {
   'items.settingsGlobalUnique': 'общие; оформление тиров — как у уников NeverSink',
   'items.settingsOwnVisibility': 'свой показ',
   'items.settingsOwnTiers': 'своё оформление тиров: {tiers}',
+  'items.ownThresholds': 'Свои границы тиров для этого раздела',
+  'items.settingsOwnThresholds': 'свои границы тиров',
+  'items.thresholdsToUniques': 'Применить эти границы ко всем разделам уников',
   'items.ownVisibility': 'Свои настройки показа для этого раздела',
   'items.globalNote': 'Действуют общие настройки — они меняются на странице',
   'items.uniqueNote':
@@ -717,6 +720,9 @@ const en: Dictionary = {
   'items.settingsGlobalUnique': 'shared; tier look — like NeverSink’s uniques',
   'items.settingsOwnVisibility': 'own visibility',
   'items.settingsOwnTiers': 'own tier look: {tiers}',
+  'items.ownThresholds': 'Own tier thresholds for this section',
+  'items.settingsOwnThresholds': 'own tier thresholds',
+  'items.thresholdsToUniques': 'Apply these thresholds to all unique sections',
   'items.ownVisibility': 'Custom visibility settings for this section',
   'items.globalNote': 'Global settings apply — change them on the page',
   'items.uniqueNote':

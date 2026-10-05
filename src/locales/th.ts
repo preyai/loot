@@ -69,6 +69,9 @@ export const th: Dictionary = {
   'items.settingsGlobalUnique': 'ทั่วไป รูปลักษณ์ระดับเหมือนไอเทมยูนีคของ NeverSink',
   'items.settingsOwnVisibility': 'การแสดงผลของตัวเอง',
   'items.settingsOwnTiers': 'รูปลักษณ์ระดับของตัวเอง: {tiers}',
+  'items.ownThresholds': 'เกณฑ์ระดับของหมวดนี้เอง',
+  'items.settingsOwnThresholds': 'เกณฑ์ระดับของตัวเอง',
+  'items.thresholdsToUniques': 'ใช้เกณฑ์นี้กับทุกหมวดไอเทมยูนีค',
   'items.ownVisibility': 'การตั้งค่าการแสดงผลเฉพาะหมวดนี้',
   'items.globalNote': 'ใช้การตั้งค่าทั่วไป — เปลี่ยนได้ที่หน้า',
   'items.uniqueNote':

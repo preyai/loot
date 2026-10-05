@@ -69,6 +69,9 @@ export const fr: Dictionary = {
   'items.settingsGlobalUnique': 'communs ; style des paliers comme les uniques de NeverSink',
   'items.settingsOwnVisibility': 'affichage propre',
   'items.settingsOwnTiers': 'style propre des paliers : {tiers}',
+  'items.ownThresholds': 'Seuils de paliers propres à cette section',
+  'items.settingsOwnThresholds': 'seuils propres',
+  'items.thresholdsToUniques': 'Appliquer ces seuils à toutes les sections d’uniques',
   'items.ownVisibility': 'Réglages d’affichage propres à cette section',
   'items.globalNote': 'Les réglages généraux s’appliquent — ils se modifient sur la page',
   'items.uniqueNote':

@@ -2397,3 +2397,22 @@ input[type='range'].alpha-slider::-webkit-slider-thumb {
 .tier-picker svg {
   display: block;
 }
+
+/* Границы тиров: тот же вид, что у числовых полей; в настройках раздела — отступ до следующей настройки. */
+input[type='text'].number-input {
+  width: 84px;
+}
+
+fieldset.thresholds {
+  margin: 8px 0 14px;
+  padding: 0;
+  border: 0;
+}
+
+fieldset.thresholds:disabled {
+  opacity: 0.55;
+}
+
+.section-settings > .actions {
+  margin-bottom: 16px;
+}

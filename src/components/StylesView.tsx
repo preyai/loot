@@ -1,13 +1,13 @@
-import { CURRENCIES, DEFAULT_CONFIG } from '../defaults'
+import { DEFAULT_CONFIG } from '../defaults'
 import { keyOf } from '../i18n'
-import { useMemo } from 'react'
 import { useI18n } from '../i18n-react'
 import type { UpdateConfig } from '../store'
-import { autoTier, perDivine } from '../tiering'
-import { TIER_IDS, type Config, type Currency, type MarketSnapshot, type ThresholdTier, type TierId, type TierStyle } from '../types'
+import { perDivine } from '../tiering'
+import { TIER_IDS, type Config, type MarketSnapshot, type TierId, type TierStyle } from '../types'
 import { ItemLabel } from './ItemLabel'
 import { SoundLibrary } from './SoundLibrary'
 import { StyleFields } from './StyleFields'
+import { ThresholdFields } from './ThresholdFields'
 import { VisibilityFields } from './VisibilityFields'
 
 /** Предмет для образца плашки: его знают все, и название есть на обоих языках. */
@@ -36,19 +36,9 @@ interface Props {
 }
 
 export function StylesView({ config, update, snapshot }: Props) {
-  const { t, name } = useI18n()
+  const { t } = useI18n()
   const rates = snapshot?.rates ?? null
-  const thresholdTiers = TIER_IDS.filter((tier): tier is ThresholdTier => tier !== 'E')
   const overrideCount = Object.keys(config.overrides).length
-  // Сколько предметов рынка попадает в каждый тир по этим границам — чтобы двигать их осознанно.
-  const counts = useMemo(() => {
-    const result = Object.fromEntries(TIER_IDS.map((tier) => [tier, 0])) as Record<TierId, number>
-    if (!snapshot) return null
-    for (const item of snapshot.items) if (item.divine !== null) result[autoTier(item, config, snapshot.rates)]++
-    return result
-  }, [snapshot, config])
-  const setThreshold = (tier: ThresholdTier, change: Partial<Config['thresholds'][ThresholdTier]>) =>
-    update((c) => ({ ...c, thresholds: { ...c.thresholds, [tier]: { ...c.thresholds[tier], ...change } } }))
 
   return (
     <div>
@@ -63,29 +53,7 @@ export function StylesView({ config, update, snapshot }: Props) {
           {rates &&
             ` ${t('styles.rates', { exalted: Math.round(perDivine('exalted', rates)), chaos: perDivine('chaos', rates).toFixed(1) })}`}
         </p>
-        <div className="thresholds">
-          {thresholdTiers.map((tier) => (
-            <label key={tier}>
-              {t('styles.from', { tier })}
-              <input
-                type="number"
-                min={0}
-                step="any"
-                value={config.thresholds[tier].value}
-                onChange={(e) => setThreshold(tier, { value: Math.max(0, Number(e.target.value)) })}
-              />
-              <select value={config.thresholds[tier].currency} onChange={(e) => setThreshold(tier, { currency: e.target.value as Currency })}>
-                {(Object.keys(CURRENCIES) as Currency[]).map((id) => (
-                  <option key={id} value={id} title={name(CURRENCIES[id].title)}>
-                    {CURRENCIES[id].short}
-                  </option>
-                ))}
-              </select>
-              {counts && <span className="count">{t('styles.count', { n: counts[tier] })}</span>}
-            </label>
-          ))}
-          {counts && <span className="count">{t('styles.countE', { n: counts.E })}</span>}
-        </div>
+        <ThresholdFields thresholds={config.thresholds} onChange={(thresholds) => update((c) => ({ ...c, thresholds }))} config={config} snapshot={snapshot} />
       </section>
 
       <section className="panel">

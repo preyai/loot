@@ -69,6 +69,9 @@ export const pt: Dictionary = {
   'items.settingsGlobalUnique': 'gerais; visual dos tiers como os únicos do NeverSink',
   'items.settingsOwnVisibility': 'exibição própria',
   'items.settingsOwnTiers': 'visual próprio dos tiers: {tiers}',
+  'items.ownThresholds': 'Limites de tier próprios para esta seção',
+  'items.settingsOwnThresholds': 'limites próprios',
+  'items.thresholdsToUniques': 'Aplicar estes limites a todas as seções de únicos',
   'items.ownVisibility': 'Configurações de exibição próprias para esta seção',
   'items.globalNote': 'Valem as configurações gerais — elas são alteradas na página',
   'items.uniqueNote':

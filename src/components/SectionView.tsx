@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react'
 import { REST_STYLES } from '../filter'
 import { keyOf } from '../i18n'
 import { useI18n } from '../i18n-react'
-import type { Section } from '../sections'
+import { SECTIONS, type Section } from '../sections'
 import type { UpdateConfig } from '../store'
-import { autoTier, defaultSectionTierStyle, formatPrice, itemDisplay, itemKey, maxStack, sectionTierStyle, visibilityFor, type Display } from '../tiering'
+import { autoTier, defaultSectionTierStyle, formatPrice, itemDisplay, itemKey, maxStack, sectionTierStyle, thresholdsFor, visibilityFor, type Display } from '../tiering'
 import {
   TIER_IDS,
   type Config,
@@ -22,6 +22,7 @@ import { StyleFields } from './StyleFields'
 import { StyleRow } from './StyleRow'
 import { EnglishName } from './ItemName'
 import { UniqueCard } from './UniqueCard'
+import { ThresholdFields } from './ThresholdFields'
 import { VisibilityFields } from './VisibilityFields'
 
 const CHOICES: TierChoice[] = [...TIER_IDS, 'hide']
@@ -157,6 +158,21 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         : c.disabledSections.filter((id) => id !== section.id),
     }))
 
+  const sectionItems = useMemo(() => snapshot.items.filter((item) => item.section === section.id), [snapshot, section.id])
+  const setThresholds = (value: Config['thresholds'] | null) =>
+    update((c) => {
+      const { [section.id]: _old, ...rest } = c.sectionThresholds
+      return { ...c, sectionThresholds: value ? { ...rest, [section.id]: value } : rest }
+    })
+  /** Одни и те же границы — во все разделы уников: цены у них одного порядка. */
+  const copyThresholdsToUniques = () =>
+    update((c) => {
+      const own = c.sectionThresholds[section.id]
+      if (!own) return c
+      const uniques = SECTIONS.filter((s) => s.unique).map((s) => [s.id, structuredClone(own)] as const)
+      return { ...c, sectionThresholds: { ...c.sectionThresholds, ...Object.fromEntries(uniques) } }
+    })
+
   const setVisibility = (value: Visibility | null) =>
     update((c) => {
       const sectionVisibility = { ...c.sectionVisibility }
@@ -168,9 +184,14 @@ export function SectionView({ section, snapshot, config, update }: Props) {
   const failed = snapshot.failed.includes(section.id)
   // Свои настройки раздела: блок раскрыт, только если что-то изменено, — иначе предметы видны сразу.
   const ownTiers = TIER_IDS.filter((tier) => config.sectionTiers[section.id]?.[tier])
-  const customized = ownVisibility !== undefined || ownTiers.length > 0
+  const ownThresholds = config.sectionThresholds[section.id]
+  const customized = ownVisibility !== undefined || ownTiers.length > 0 || ownThresholds !== undefined
   const settingsSummary = customized
-    ? [ownVisibility !== undefined && t('items.settingsOwnVisibility'), ownTiers.length > 0 && t('items.settingsOwnTiers', { tiers: ownTiers.join(', ') })]
+    ? [
+        ownThresholds !== undefined && t('items.settingsOwnThresholds'),
+        ownVisibility !== undefined && t('items.settingsOwnVisibility'),
+        ownTiers.length > 0 && t('items.settingsOwnTiers', { tiers: ownTiers.join(', ') }),
+      ]
         .filter(Boolean)
         .join(' · ')
     : t(section.unique ? 'items.settingsGlobalUnique' : 'items.settingsGlobal')
@@ -203,6 +224,28 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         <label className="check">
           <input
             type="checkbox"
+            checked={ownThresholds !== undefined}
+            // Свои границы начинаются с копии действующих — так понятно, от чего отталкиваться.
+            onChange={(e) => setThresholds(e.target.checked ? structuredClone(config.thresholds) : null)}
+          />
+          {t('items.ownThresholds')}
+        </label>
+        <ThresholdFields
+          thresholds={thresholdsFor(config, section.id)}
+          onChange={setThresholds}
+          config={config}
+          snapshot={snapshot}
+          items={sectionItems}
+          disabled={ownThresholds === undefined}
+        />
+        {section.unique && ownThresholds !== undefined && (
+          <div className="actions">
+            <button onClick={copyThresholdsToUniques}>{t('items.thresholdsToUniques')}</button>
+          </div>
+        )}
+        <label className="check">
+          <input
+            type="checkbox"
             checked={ownVisibility !== undefined}
             onChange={(e) => setVisibility(e.target.checked ? config.visibility : null)}
           />
@@ -210,7 +253,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         </label>
         <VisibilityFields
           value={visibilityFor(config, section.id)}
-          thresholds={config.thresholds}
+          thresholds={thresholdsFor(config, section.id)}
           currency={config.currency}
           rates={snapshot?.rates ?? null}
           onChange={setVisibility}

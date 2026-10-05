@@ -69,6 +69,9 @@ export const de: Dictionary = {
   'items.settingsGlobalUnique': 'allgemein; Tier-Aussehen wie bei NeverSinks Uniques',
   'items.settingsOwnVisibility': 'eigene Anzeige',
   'items.settingsOwnTiers': 'eigenes Tier-Aussehen: {tiers}',
+  'items.ownThresholds': 'Eigene Tier-Grenzen für diesen Bereich',
+  'items.settingsOwnThresholds': 'eigene Tier-Grenzen',
+  'items.thresholdsToUniques': 'Diese Grenzen auf alle Unique-Bereiche anwenden',
   'items.ownVisibility': 'Eigene Anzeigeeinstellungen für diesen Abschnitt',
   'items.globalNote': 'Es gelten die allgemeinen Einstellungen — sie werden auf der Seite geändert',
   'items.uniqueNote':

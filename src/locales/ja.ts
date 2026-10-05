@@ -69,6 +69,9 @@ export const ja: Dictionary = {
   'items.settingsGlobalUnique': '共通。ティアの見た目は NeverSink のユニークと同じ',
   'items.settingsOwnVisibility': '独自の表示',
   'items.settingsOwnTiers': 'ティアの独自の見た目：{tiers}',
+  'items.ownThresholds': 'このセクション独自のティアしきい値',
+  'items.settingsOwnThresholds': '独自のしきい値',
+  'items.thresholdsToUniques': 'このしきい値をすべてのユニークセクションに適用',
   'items.ownVisibility': 'このセクション専用の表示設定',
   'items.globalNote': '共通設定が適用されています。変更はこちらのページで',
   'items.uniqueNote':

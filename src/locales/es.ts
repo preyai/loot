@@ -69,6 +69,9 @@ export const es: Dictionary = {
   'items.settingsGlobalUnique': 'generales; estilo de niveles como los únicos de NeverSink',
   'items.settingsOwnVisibility': 'visibilidad propia',
   'items.settingsOwnTiers': 'estilo propio de niveles: {tiers}',
+  'items.ownThresholds': 'Umbrales de nivel propios para esta sección',
+  'items.settingsOwnThresholds': 'umbrales propios',
+  'items.thresholdsToUniques': 'Aplicar estos umbrales a todas las secciones de únicos',
   'items.ownVisibility': 'Ajustes de visualización propios para esta sección',
   'items.globalNote': 'Se aplican los ajustes generales — se cambian en la página',
   'items.uniqueNote':

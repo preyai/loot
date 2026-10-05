@@ -106,6 +106,8 @@ export const es: Dictionary = {
   'extra.trials.ultimatumLow': 'Ultimátum, hasta el nivel 74',
   'extra.relics.any': 'Reliquias normales y mágicas',
   'extra.gems.twiceTop': 'Doblemente corruptas, calidad y nivel por encima de 20',
+  'extra.gems.twice': 'Doblemente corruptas',
+  'extra.gems.any': 'Otras gemas de habilidad y de apoyo',
   'extra.unknown.currency': 'Moneda y similares que no están en las secciones (novedades de la liga)',
   'waystones.enable': 'Activar las reglas de piedras guía',
   'waystones.note':

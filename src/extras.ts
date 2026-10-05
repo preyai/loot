@@ -72,7 +72,13 @@ export const EXTRA_GROUPS: ExtraGroup[] = [
   },
   {
     id: 'gems',
-    rules: [{ id: 'twiceTop', tier: 'S', blocks: [['Class == "Skill Gems" "Support Gems"', 'TwiceCorrupted True', 'Quality > 20', 'GemLevel > 20']] }],
+    // Готовые (огранённые) камни: на полу — только из особых источников, поэтому заметно, как у NeverSink.
+    // Родословные камни поддержки сюда не доходят: их раньше ловит раздел рынка.
+    rules: [
+      { id: 'twiceTop', tier: 'S', blocks: [['Class == "Skill Gems" "Support Gems"', 'TwiceCorrupted True', 'Quality > 20', 'GemLevel > 20']] },
+      { id: 'twice', tier: 'B', blocks: [['Class == "Skill Gems" "Support Gems"', 'TwiceCorrupted True']] },
+      { id: 'any', tier: 'C', blocks: [['Class == "Skill Gems" "Support Gems"']] },
+    ],
   },
   {
     // Последней: ловит валюту и прочее, чего нет ни в одном разделе (новинки лиги), — поэтому громко.

@@ -106,6 +106,8 @@ export const th: Dictionary = {
   'extra.trials.ultimatumLow': 'Ultimatum ถึงเลเวล 74',
   'extra.relics.any': 'วัตถุโบราณธรรมดาและเมจิก',
   'extra.gems.twiceTop': 'มีมลทินคู่ คุณภาพและเลเวลเกิน 20',
+  'extra.gems.twice': 'มีมลทินคู่',
+  'extra.gems.any': 'เจมสกิลและเจมสนับสนุนอื่น ๆ',
   'extra.unknown.currency': 'เงินตราและอื่น ๆ ที่ไม่มีในหมวด (ของใหม่ในลีก)',
   'waystones.enable': 'เปิดใช้กฎของศิลานำทาง',
   'waystones.note':

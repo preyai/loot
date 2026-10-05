@@ -106,6 +106,8 @@ export const fr: Dictionary = {
   'extra.trials.ultimatumLow': 'Ultimatum, jusqu’au niveau 74',
   'extra.relics.any': 'Reliques normales et magiques',
   'extra.gems.twiceTop': 'Double corruption, qualité et niveau au-delà de 20',
+  'extra.gems.twice': 'Double corruption',
+  'extra.gems.any': 'Autres gemmes de compétence et de soutien',
   'extra.unknown.currency': 'Monnaie et autres absents des sections (nouveautés de la ligue)',
   'waystones.enable': 'Activer les règles des pierres de téléportation',
   'waystones.note':

@@ -141,6 +141,8 @@ const ru = {
   'extra.trials.ultimatumLow': 'Ультиматум, до уровня 74',
   'extra.relics.any': 'Обычные и магические реликвии',
   'extra.gems.twiceTop': 'Дважды осквернённые, качество и уровень выше 20',
+  'extra.gems.twice': 'Дважды осквернённые',
+  'extra.gems.any': 'Остальные камни умений и поддержки',
   'extra.unknown.currency': 'Валюта и прочее, чего нет в разделах (новинки лиги)',
   'waystones.enable': 'Включить правила путевых камней',
   'waystones.note':
@@ -713,6 +715,8 @@ const en: Dictionary = {
   'extra.trials.ultimatumLow': 'Inscribed Ultimatum, up to level 74',
   'extra.relics.any': 'Normal and magic relics',
   'extra.gems.twiceTop': 'Twice corrupted, quality and level above 20',
+  'extra.gems.twice': 'Twice corrupted',
+  'extra.gems.any': 'Other skill and support gems',
   'extra.unknown.currency': 'Currency and the like missing from the sections (league novelties)',
   'waystones.enable': 'Enable waystone rules',
   'waystones.note':

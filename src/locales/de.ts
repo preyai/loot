@@ -106,6 +106,8 @@ export const de: Dictionary = {
   'extra.trials.ultimatumLow': 'Ultimatum, bis Stufe 74',
   'extra.relics.any': 'Normale und magische Relikte',
   'extra.gems.twiceTop': 'Doppelt verderbt, Qualität und Stufe über 20',
+  'extra.gems.twice': 'Doppelt verderbt',
+  'extra.gems.any': 'Übrige Fertigkeits- und Unterstützungsgemmen',
   'extra.unknown.currency': 'Währung und Ähnliches, das in keinem Abschnitt steht (Neues der Liga)',
   'waystones.enable': 'Wegsteinregeln aktivieren',
   'waystones.note':

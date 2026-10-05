@@ -136,6 +136,13 @@ describe('вид предмета', () => {
     expect(look.style.sound).toEqual(DEFAULT_CONFIG.tiers.S.sound)
   })
 
+  it('готовые камни умений — своё правило, дважды осквернённые — выше', () => {
+    const gem = drop({ itemClass: 'Skill Gems', baseType: 'Fireball', gemLevel: 5 })
+    expect(evaluate(filter, gem, 70).block?.comment).toBe('Other / gems / any')
+    expect(evaluate(filter, { ...gem, corrupted: true, twiceCorrupted: true }, 70).block?.comment).toBe('Other / gems / twice')
+    expect(evaluate(filter, { ...gem, twiceCorrupted: true, quality: 23, gemLevel: 21 }, 70).block?.comment).toBe('Other / gems / twiceTop')
+  })
+
   it('золото — по размеру кучи', () => {
     expect(evaluate(filter, drop({ itemClass: 'Gold', baseType: 'Gold', stackSize: 6000 }), 70).block?.comment).toBe('Gold / huge pile')
     expect(evaluate(filter, drop({ itemClass: 'Gold', baseType: 'Gold', stackSize: 10 }), 70).block?.comment).toBe('Gold / small piles')

@@ -106,6 +106,8 @@ export const ko: Dictionary = {
   'extra.trials.ultimatumLow': '결전, 레벨 74까지',
   'extra.relics.any': '일반과 마법 유물',
   'extra.gems.twiceTop': '두 번 타락, 품질과 레벨 20 초과',
+  'extra.gems.twice': '두 번 타락',
+  'extra.gems.any': '그 밖의 스킬 젬과 보조 젬',
   'extra.unknown.currency': '항목에 없는 화폐 등 (리그 신규 아이템)',
   'waystones.enable': '경로석 규칙 사용',
   'waystones.note':

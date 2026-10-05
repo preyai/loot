@@ -106,6 +106,8 @@ export const ja: Dictionary = {
   'extra.trials.ultimatumLow': 'アルティメイタム、レベル 74 まで',
   'extra.relics.any': 'ノーマルとマジックのレリック',
   'extra.gems.twiceTop': '二重コラプト、品質とレベル 20 超',
+  'extra.gems.twice': '二重コラプト',
+  'extra.gems.any': 'その他のスキルジェムとサポートジェム',
   'extra.unknown.currency': 'セクションにないカレンシーなど（リーグの新アイテム）',
   'waystones.enable': 'ウェイストーンのルールを有効にする',
   'waystones.note':

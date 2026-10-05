@@ -2,8 +2,9 @@ import type { Dictionary } from '../i18n'
 
 // Termos do jogo (classes, raridades, orbes, pedras-guia) — como no site oficial de comércio em português.
 export const pt: Dictionary = {
-  'app.title': 'Editor de filtro de itens — Path of Exile 2',
-  'app.brand': 'Filtro de itens',
+  'app.title': 'Exile Filter — editor de filtro de itens para Path of Exile 2',
+  'app.brand': 'Exile Filter',
+  'app.disclaimer': 'Projeto de fã. Não é afiliado à Grinding Gear Games nem endossado por ela.',
 
   'nav.market': 'Mercado',
   'nav.uniques': 'Únicos',

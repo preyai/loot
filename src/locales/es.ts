@@ -2,8 +2,9 @@ import type { Dictionary } from '../i18n'
 
 // Términos del juego (clases, rarezas, orbes, piedras guía) — como en el sitio oficial de comercio en español.
 export const es: Dictionary = {
-  'app.title': 'Editor de filtro de botín — Path of Exile 2',
-  'app.brand': 'Filtro de botín',
+  'app.title': 'Exile Filter — editor de filtro de botín para Path of Exile 2',
+  'app.brand': 'Exile Filter',
+  'app.disclaimer': 'Proyecto de fans. No está afiliado a Grinding Gear Games ni avalado por ella.',
 
   'nav.market': 'Mercado',
   'nav.uniques': 'Únicos',

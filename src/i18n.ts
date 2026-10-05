@@ -36,8 +36,9 @@ export const LOCALES: Record<Lang, string> = {
 }
 
 const ru = {
-  'app.title': 'Редактор лутфильтра — Path of Exile 2',
-  'app.brand': 'Лутфильтр',
+  'app.title': 'Exile Filter — редактор лутфильтра для Path of Exile 2',
+  'app.brand': 'Exile Filter',
+  'app.disclaimer': 'Фан-проект. Не связан с Grinding Gear Games и не одобрен ею.',
 
   'nav.market': 'Рынок',
   'nav.uniques': 'Уникальные',
@@ -585,8 +586,9 @@ export type Dictionary = Record<Key, string>
 export const KEYS = Object.keys(ru) as Key[]
 
 const en: Dictionary = {
-  'app.title': 'Loot filter editor — Path of Exile 2',
-  'app.brand': 'Loot Filter',
+  'app.title': 'Exile Filter — Path of Exile 2 loot filter editor',
+  'app.brand': 'Exile Filter',
+  'app.disclaimer': 'Fan project. Not affiliated with or endorsed by Grinding Gear Games.',
 
   'nav.market': 'Market',
   'nav.uniques': 'Uniques',

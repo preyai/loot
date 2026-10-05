@@ -4,5 +4,7 @@
   "service": "loot-filter",
   "port": 8080,
   "domain": "",
+  "aliases": [],
+  "redirects": [],
   "password": ""
 }

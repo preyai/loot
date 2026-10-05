@@ -2,8 +2,9 @@ import type { Dictionary } from '../i18n'
 
 // ゲーム用語（クラス、レアリティ、オーブ、ウェイストーン）は公式トレードサイト日本語版に合わせている。
 export const ja: Dictionary = {
-  'app.title': 'ルートフィルターエディター — Path of Exile 2',
-  'app.brand': 'ルートフィルター',
+  'app.title': 'Exile Filter — Path of Exile 2 ルートフィルターエディター',
+  'app.brand': 'Exile Filter',
+  'app.disclaimer': 'ファンプロジェクトです。Grinding Gear Games とは無関係で、公認も受けていません。',
 
   'nav.market': 'マーケット',
   'nav.uniques': 'ユニーク',

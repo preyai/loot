@@ -22,8 +22,10 @@ Set-Location $root
 # Параметры командной строки важнее файла настроек, файл важнее значений по умолчанию.
 #   service  — имя контейнера и образа на сервере;
 #   domain   — если задан, редактор отдаётся по HTTPS на этом домене (ставится Caddy);
+#   aliases  — ещё домены, на которых открывается тот же редактор (через запятую или списком);
+#   redirects — домены, которые перенаправляют на основной (например, www и старый адрес);
 #   password — пароль входа; пусто — оставить тот, что уже на сервере (при первом деплое создаётся случайный).
-$config = @{ server = ''; appDir = '/opt/loot-filter'; service = 'loot-filter'; port = 8080; domain = ''; password = '' }
+$config = @{ server = ''; appDir = '/opt/loot-filter'; service = 'loot-filter'; port = 8080; domain = ''; aliases = ''; redirects = ''; password = '' }
 $configFile = Join-Path $root 'deploy.config.json'
 if (Test-Path $configFile) {
   # Без явной кодировки Windows PowerShell прочитает файл как ANSI и испортит пароль не на латинице.
@@ -38,6 +40,10 @@ if ($Service) { $config.service = $Service }
 if ($Port) { $config.port = $Port }
 if ($Domain) { $config.domain = $Domain }
 $config.domain = "$($config.domain)".Trim().ToLower()
+# Списки доменов: в файле — массив или строка через запятую.
+function Get-Domains($value) { @("$(@($value) -join ',')".ToLower() -split '[,\s]+' | Where-Object { $_ }) }
+$aliases = @(Get-Domains $config.aliases)
+$redirects = @(Get-Domains $config.redirects)
 $config.password = "$($config.password)"
 
 if (-not $DryRun -and -not $config.server) {
@@ -49,6 +55,11 @@ if ($config.service -notmatch '^[a-z][a-z0-9_-]*$') { throw "Недопусти�
 if ($config.domain -and $config.domain -notmatch '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$') {
   throw "Недопустимый домен: $($config.domain). Нужно имя вида loot.example.com, без https:// и пути."
 }
+$domainRe = '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$'
+foreach ($extra in $aliases + $redirects) {
+  if ($extra -notmatch $domainRe) { throw "Недопустимый домен: $extra" }
+}
+if (($aliases.Count -or $redirects.Count) -and -not $config.domain) { throw 'aliases и redirects работают только вместе с domain.' }
 if ($config.password -match '[\r\n]') { throw 'Пароль не должен содержать переводов строки.' }
 
 function Invoke-Step([string]$Title, [scriptblock]$Action) {
@@ -74,6 +85,8 @@ Write-Host "Архив: $archive ($sizeMb МБ), коммит $commit"
 
 if ($DryRun) {
   Write-Host ''
+  if ($aliases.Count) { Write-Host "Тот же сайт: $($aliases -join ', ')" }
+  if ($redirects.Count) { Write-Host "Перенаправление на основной: $($redirects -join ', ')" }
   if ($config.domain) { Write-Host "Домен: $($config.domain)" } else { Write-Host 'Домен не задан: редактор будет доступен по HTTP на порту.' }
   if ($config.password) { Write-Host 'Пароль: будет взят из deploy.config.json.' } else { Write-Host 'Пароль: останется тот, что на сервере.' }
   Write-Host 'Пробный запуск: на сервер ничего не отправлено.' -ForegroundColor Yellow
@@ -107,9 +120,11 @@ try {
 }
 
 $domainArg = if ($config.domain) { $config.domain } else { '-' }
+$aliasesArg = if ($aliases.Count) { $aliases -join ',' } else { '-' }
+$redirectsArg = if ($redirects.Count) { $redirects -join ',' } else { '-' }
 # -t нужен, чтобы sudo на сервере мог спросить пароль.
 Invoke-Step 'Установка на сервере' {
-  ssh -t $target "bash $remoteTmp/remote-install.sh $($config.appDir) $($config.service) $($config.port) $tag $domainArg"
+  ssh -t $target "bash $remoteTmp/remote-install.sh $($config.appDir) $($config.service) $($config.port) $tag $domainArg $aliasesArg $redirectsArg"
 }
 
 Remove-Item $archive -ErrorAction SilentlyContinue

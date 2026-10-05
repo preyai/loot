@@ -2,8 +2,9 @@ import type { Dictionary } from '../i18n'
 
 // คำศัพท์ในเกม (ประเภท ความหายาก ศิลานำทาง) ตามเว็บเทรดทางการภาษาไทย; ชื่อเคอร์เรนซีในเกมภาษาไทยเป็นภาษาอังกฤษ
 export const th: Dictionary = {
-  'app.title': 'ตัวแก้ไขฟิลเตอร์ไอเทม — Path of Exile 2',
-  'app.brand': 'ฟิลเตอร์ไอเทม',
+  'app.title': 'Exile Filter — ตัวแก้ไขฟิลเตอร์ไอเทมสำหรับ Path of Exile 2',
+  'app.brand': 'Exile Filter',
+  'app.disclaimer': 'โปรเจกต์ของแฟน ๆ ไม่มีส่วนเกี่ยวข้องและไม่ได้รับการรับรองจาก Grinding Gear Games',
 
   'nav.market': 'ตลาด',
   'nav.uniques': 'ยูนิค',

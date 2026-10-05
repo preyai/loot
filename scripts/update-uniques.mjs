@@ -39,7 +39,7 @@ for (let offset = 0; ; offset += PAGE) {
     limit: String(PAGE),
     offset: String(offset),
   })
-  const res = await fetch(`${API}?${query}`, { headers: { 'User-Agent': 'loot-filter-editor/0.1 (personal project)' } })
+  const res = await fetch(`${API}?${query}`, { headers: { 'User-Agent': 'exile-filter/0.1 (+https://exile-filter.com)' } })
   if (!res.ok) throw new Error(`вики: HTTP ${res.status}`)
   const data = await res.json()
   if (data.error) throw new Error(`вики: ${data.error.info ?? JSON.stringify(data.error)}`)

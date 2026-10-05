@@ -1,6 +1,6 @@
 {
-  "name": "Loot filter editor — Path of Exile 2",
-  "short_name": "Loot Filter",
+  "name": "Exile Filter — Path of Exile 2 loot filter editor",
+  "short_name": "Exile Filter",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

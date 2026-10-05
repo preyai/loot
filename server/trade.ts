@@ -4,7 +4,7 @@ import { readData, writeData } from './storage'
 
 const TRADE = 'https://www.pathofexile.com/api/trade2'
 const HEADERS = {
-  'User-Agent': 'loot-filter-editor/0.1 (personal project)',
+  'User-Agent': 'exile-filter/0.1 (+https://exile-filter.com)',
   Accept: 'application/json',
   'Content-Type': 'application/json',
 }

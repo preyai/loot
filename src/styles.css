@@ -372,9 +372,12 @@ input[type='number'] {
 }
 
 .status {
-  margin-left: auto;
+  /* Нулевая основа: длинная дата цен переносится внутри, а не выталкивает кнопки на новую строку. */
+  flex: 1 1 0;
+  min-width: 120px;
   color: var(--muted);
   font-size: 13px;
+  text-align: right;
 }
 
 main {
@@ -1816,4 +1819,11 @@ label.button-like:hover {
 
 .name-form input {
   width: min(320px, 100%);
+}
+
+.disclaimer {
+  margin: 18px 6px 0;
+  color: #6f6450;
+  font-size: 11px;
+  line-height: 1.4;
 }

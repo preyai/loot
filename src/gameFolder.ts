@@ -23,7 +23,7 @@ export const folderSupported = () => typeof window !== 'undefined' && 'showDirec
 /** Имя папки, куда игра смотрит за фильтрами. */
 export const GAME_FOLDER_NAME = 'Path of Exile 2'
 
-const DEFAULT_NAME = 'LootEditor'
+const DEFAULT_NAME = 'ExileFilter'
 
 /** Имя файла фильтра: без символов, запрещённых в именах файлов Windows. */
 export function filterFileName(name: string): string {

@@ -135,6 +135,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
             {t('nav.export')}
           </a>
         </nav>
+        <p className="disclaimer">{t('app.disclaimer')}</p>
       </aside>
 
       <div className="content">

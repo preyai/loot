@@ -62,7 +62,7 @@ export function ExportView({ snapshot, config, update, gameFolder }: Props) {
             type="text"
             maxLength={60}
             value={config.filterName}
-            placeholder="LootEditor"
+            placeholder="ExileFilter"
             onChange={(e) => update((c) => ({ ...c, filterName: e.target.value }))}
           />
         </label>

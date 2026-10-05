@@ -2,8 +2,9 @@ import type { Dictionary } from '../i18n'
 
 // Spielbegriffe (Klassen, Seltenheiten, Sphären, Wegsteine) — wie auf der offiziellen deutschen Handelsseite.
 export const de: Dictionary = {
-  'app.title': 'Lootfilter-Editor — Path of Exile 2',
-  'app.brand': 'Lootfilter',
+  'app.title': 'Exile Filter — Lootfilter-Editor für Path of Exile 2',
+  'app.brand': 'Exile Filter',
+  'app.disclaimer': 'Fanprojekt. Nicht mit Grinding Gear Games verbunden oder von ihr unterstützt.',
 
   'nav.market': 'Markt',
   'nav.uniques': 'Einzigartige',

@@ -10,6 +10,11 @@ TAG=${4:?метка образа}
 # «-» вместо пустого значения: пустой аргумент по пути через ssh теряется.
 DOMAIN=${5:--}
 if [ "$DOMAIN" = "-" ]; then DOMAIN=""; fi
+# Через запятую: домены с тем же сайтом и домены, перенаправляющие на основной.
+ALIASES=${6:--}
+if [ "$ALIASES" = "-" ]; then ALIASES=""; fi
+REDIRECTS=${7:--}
+if [ "$REDIRECTS" = "-" ]; then REDIRECTS=""; fi
 
 SRC=$(cd "$(dirname "$0")" && pwd)
 ENV_FILE="$APP_DIR/.env"
@@ -121,7 +126,14 @@ if [ -z "$DOMAIN" ]; then
   exit 0
 fi
 
-CADDYFILE=$(printf '%s {\n\tencode gzip\n\treverse_proxy %s:8080\n}\n' "$DOMAIN" "$NAME")
+SITES="$DOMAIN"
+if [ -n "$ALIASES" ]; then SITES="$SITES, ${ALIASES//,/, }"; fi
+CADDYFILE=$(printf '%s {\n\tencode gzip\n\treverse_proxy %s:8080\n}\n' "$SITES" "$NAME")
+if [ -n "$REDIRECTS" ]; then
+  # Путь и параметры сохраняются; #-часть адреса браузер переносит сам.
+  CADDYFILE="$CADDYFILE
+$(printf '%s {\n\tredir https://%s{uri} permanent\n}\n' "${REDIRECTS//,/, }" "$DOMAIN")"
+fi
 CADDY_RUNNING=$($DOCKER inspect -f '{{.State.Running}}' "$CADDY" 2>/dev/null || true)
 # Caddy не трогаем, если он работает с теми же настройками: сертификат и соединения остаются на месте.
 if [ "$CADDY_RUNNING" != "true" ] || [ "$CADDYFILE" != "$($SUDO cat "$CADDY_DIR/Caddyfile" 2>/dev/null || true)" ]; then

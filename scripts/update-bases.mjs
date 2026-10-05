@@ -32,7 +32,7 @@ const [items, itemClasses] = await Promise.all([load('base_items.min.json'), loa
 // В игровых данных есть базы, которые ещё не выпадают: целые классы вроде мечей и кинжалов и отдельные заготовки.
 // Выпущенными считаем те, что знает официальный трейд.
 const tradeRes = await fetch('https://www.pathofexile.com/api/trade2/data/items', {
-  headers: { 'User-Agent': 'loot-filter-editor/0.1 (personal project)' },
+  headers: { 'User-Agent': 'exile-filter/0.1 (+https://exile-filter.com)' },
 })
 if (!tradeRes.ok) throw new Error(`трейд: HTTP ${tradeRes.status}`)
 const tradeable = new Set((await tradeRes.json()).result.flatMap((group) => group.entries.map((entry) => entry.type)))

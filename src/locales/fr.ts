@@ -2,8 +2,9 @@ import type { Dictionary } from '../i18n'
 
 // Termes du jeu (classes, raretés, orbes, pierres de téléportation) — comme sur le site d’échange officiel en français.
 export const fr: Dictionary = {
-  'app.title': 'Éditeur de filtre à butin — Path of Exile 2',
-  'app.brand': 'Filtre à butin',
+  'app.title': 'Exile Filter — éditeur de filtre à butin pour Path of Exile 2',
+  'app.brand': 'Exile Filter',
+  'app.disclaimer': 'Projet de fan. Ni affilié à Grinding Gear Games, ni approuvé par elle.',
 
   'nav.market': 'Marché',
   'nav.uniques': 'Uniques',

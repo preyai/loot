@@ -25,7 +25,7 @@ export const SOUND_VOLUME_MAX = 300
 const rgba = (r: number, g: number, b: number, a = 255): Rgba => ({ r, g, b, a })
 
 export const DEFAULT_CONFIG: Config = {
-  filterName: 'LootEditor',
+  filterName: 'ExileFilter',
   language: 'ru',
   league: null,
   currency: 'exalted',

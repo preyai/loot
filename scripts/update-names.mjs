@@ -8,7 +8,7 @@
 //   • уники — справочник предметов официального трейда (по порядку в списке уников), сверка с poe2db.
 import { readFile, writeFile } from 'node:fs/promises'
 
-const HEADERS = { 'User-Agent': 'loot-filter-editor/0.1 (personal project)' }
+const HEADERS = { 'User-Agent': 'exile-filter/0.1 (+https://exile-filter.com)' }
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** Язык интерфейса → поддомен официального трейда и раздел poe2db. */

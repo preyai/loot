@@ -2,8 +2,9 @@ import type { Dictionary } from '../i18n'
 
 // 게임 용어(종류, 희귀도, 오브, 경로석)는 공식 거래 사이트 한국어판에 맞췄다.
 export const ko: Dictionary = {
-  'app.title': '아이템 필터 편집기 — Path of Exile 2',
-  'app.brand': '아이템 필터',
+  'app.title': 'Exile Filter — Path of Exile 2 아이템 필터 편집기',
+  'app.brand': 'Exile Filter',
+  'app.disclaimer': '팬 프로젝트입니다. Grinding Gear Games와 무관하며 승인받지 않았습니다.',
 
   'nav.market': '시장',
   'nav.uniques': '고유',

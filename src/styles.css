@@ -2493,3 +2493,44 @@ button.link-button:hover:not(:disabled) {
   box-shadow: none;
   color: #fff;
 }
+
+/* Группы правил баз: заголовок-разделитель, который сворачивает правила группы. */
+.rule-group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, var(--gold-dim), rgba(110, 86, 49, 0.25) 55%, transparent) 1;
+}
+
+.rule-group-head.collapsed {
+  opacity: 0.8;
+}
+
+button.rule-group-toggle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 18px;
+  text-shadow: none;
+}
+
+button.rule-group-toggle:hover:not(:disabled) {
+  box-shadow: none;
+  color: var(--gold-bright);
+}
+
+.rule-group-arrow {
+  width: 12px;
+  color: var(--gold-dim);
+  font-size: 13px;
+}

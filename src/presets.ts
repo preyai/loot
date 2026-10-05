@@ -1,7 +1,7 @@
 import { BASE_CLASSES, classesOf, classNames, EMPTY_RULE, GEAR_CLASSES, POPULAR_SHARE, popularBases, topBases } from './bases'
 import { GEAR_STYLES } from './gearStyles'
 import { keyOf, type T } from './i18n'
-import type { BaseRule, Config, Rarity, Rgba, TierId, TierStyle, Visibility } from './types'
+import type { BaseRule, Config, Rarity, Rgba, TierId, TierStyle, Visibility, RuleGroup } from './types'
 
 type Draft = Omit<BaseRule, 'id'>
 
@@ -43,7 +43,7 @@ function blocks(shares: Record<string, number> | null, t: T) {
   const onGood = { classes: classesOf(good), bases: good }
   const rule = (name: string, fields: Partial<Draft>): Draft => ({ ...EMPTY_RULE, name, ...fields })
 
-  return {
+  const all = {
     // У каждого правила — своё оформление по стилям NeverSink для экипировки (gearStyles.ts):
     // так вещи на земле не путаются с валютой того же тира.
     sockets3: rule(t('rule.sockets3'), { classes: TWO_SOCKET_CLASSES, minSockets: 3, excludeCorrupted: true, tier: 'A', style: GEAR_STYLES.exceptionalTop }),
@@ -117,6 +117,35 @@ function blocks(shares: Record<string, number> | null, t: T) {
       style: GEAR_STYLES.hiddenNormal,
     }),
   }
+  // Группа каждого блока — для заголовков в списке правил.
+  const GROUP: Record<keyof typeof all, RuleGroup> = {
+    sockets3: 'exceptional',
+    sockets2: 'exceptional',
+    quality27: 'exceptional',
+    quality21: 'exceptional',
+    quality21Good: 'exceptional',
+    rareTier: 'rares',
+    rareJewellery: 'jewellery',
+    crafting: 'crafting',
+    rare82: 'crafting',
+    hideRares: 'rares',
+    flasks: 'flasks',
+    charms: 'flasks',
+    jewelsRare: 'jewels',
+    jewelsMagic: 'jewels',
+    hideNormalMagic: 'hide',
+    hideFlasks: 'flasks',
+    hideJewellery: 'jewellery',
+  }
+  const tag = (key: keyof typeof all, draft: Draft): Draft => ({ ...draft, group: GROUP[key] })
+  return {
+    ...(Object.fromEntries(
+      Object.entries(all).filter(([, v]) => typeof v !== 'function').map(([k, v]) => [k, tag(k as keyof typeof all, v as Draft)]),
+    ) as Omit<typeof all, 'rareTier' | 'rareJewellery' | 'crafting'>),
+    rareTier: (min: number, tier: TierId) => tag('rareTier', all.rareTier(min, tier)),
+    rareJewellery: (min: number, tier: TierId) => tag('rareJewellery', all.rareJewellery(min, tier)),
+    crafting: (tier: TierId) => tag('crafting', all.crafting(tier)),
+  }
 }
 
 /**
@@ -130,6 +159,7 @@ export function restRules(t: T): Draft[] {
     classes: ALL_CLASSES,
     rarities: [rarity],
     style: quiet(rarity),
+    group: 'rest',
   })
   return [rule(t('rule.restRare'), 'Rare'), rule(t('rule.restMagic'), 'Magic'), rule(t('rule.restNormal'), 'Normal')]
 }
@@ -140,7 +170,7 @@ const FLASKS_AND_CHARMS = known(['Life Flasks', 'Mana Flasks', 'Charms'])
 
 /** Правила для кампании — по разделу «Leveling» фильтра NeverSink. В картах они не действуют. */
 function levelingRules(t: T): Draft[] {
-  const rule = (name: string, fields: Partial<Draft>): Draft => ({ ...EMPTY_RULE, name, maxAreaLevel: CAMPAIGN_END, ...fields })
+  const rule = (name: string, fields: Partial<Draft>): Draft => ({ ...EMPTY_RULE, name, maxAreaLevel: CAMPAIGN_END, group: 'leveling', ...fields })
   const everything = [...GEAR_CLASSES, ...JEWELLERY]
   return [
     rule(t('rule.levelingRareJewellery'), { classes: JEWELLERY, rarities: ['Rare'], tier: 'B', style: GEAR_STYLES.jewellery }),
@@ -326,5 +356,6 @@ export function recombinatorRules(t: T): Draft[] {
     mods,
     tier: 'B',
     style: GEAR_STYLES.recombinator,
+    group: 'topmods',
   }))
 }

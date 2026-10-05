@@ -182,6 +182,7 @@ export function popularRule(shares: Record<string, number>, t: T): Omit<BaseRule
   return {
     ...EMPTY_RULE,
     name: t('template.popular'),
+    group: 'crafting',
     classes,
     bases: popularBases(classes, shares, POPULAR_SHARE),
     rarities: ['Normal', 'Magic'],
@@ -206,6 +207,7 @@ export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule
     make: (t) => ({
       ...EMPTY_RULE,
       name: t('template.top'),
+      group: 'crafting',
       classes: GEAR_CLASSES,
       bases: topBases(GEAR_CLASSES),
       rarities: ['Normal', 'Magic'],
@@ -214,15 +216,15 @@ export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule
   },
   {
     title: 'template.quality',
-    make: (t) => ({ ...EMPTY_RULE, name: t('template.quality'), classes: GEAR_CLASSES, minQuality: 20 }),
+    make: (t) => ({ ...EMPTY_RULE, name: t('template.quality'), group: 'exceptional', classes: GEAR_CLASSES, minQuality: 20 }),
   },
   {
     title: 'template.sockets',
-    make: (t) => ({ ...EMPTY_RULE, name: t('template.sockets'), classes: GEAR_CLASSES, minSockets: 2, tier: 'D' }),
+    make: (t) => ({ ...EMPTY_RULE, name: t('template.sockets'), group: 'exceptional', classes: GEAR_CLASSES, minSockets: 2, tier: 'D' }),
   },
   {
     title: 'template.jewellery',
-    make: (t) => ({ ...EMPTY_RULE, name: t('template.jewellery'), classes: classNames('jewellery'), rarities: ['Rare'] }),
+    make: (t) => ({ ...EMPTY_RULE, name: t('template.jewellery'), group: 'jewellery', classes: classNames('jewellery'), rarities: ['Rare'] }),
   },
   // Флаконы, обереги и самоцветы — по правилам NeverSink для карт.
   {
@@ -230,6 +232,7 @@ export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule
     make: (t) => ({
       ...EMPTY_RULE,
       name: t('template.flasks'),
+      group: 'flasks',
       classes: ['Life Flasks', 'Mana Flasks'],
       bases: ['Ultimate Life Flask', 'Ultimate Mana Flask'],
       rarities: ['Normal', 'Magic'],
@@ -244,6 +247,7 @@ export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule
     make: (t) => ({
       ...EMPTY_RULE,
       name: t('template.charms'),
+      group: 'flasks',
       classes: ['Charms'],
       rarities: ['Normal', 'Magic'],
       minItemLevel: 83,
@@ -254,7 +258,7 @@ export const RULE_TEMPLATES: { title: TemplateKey; make: (t: T) => Omit<BaseRule
   },
   {
     title: 'template.jewels',
-    make: (t) => ({ ...EMPTY_RULE, name: t('template.jewels'), classes: ['Jewels'], rarities: ['Rare'], tier: 'B', style: GEAR_STYLES.jewelsRare }),
+    make: (t) => ({ ...EMPTY_RULE, name: t('template.jewels'), group: 'jewels', classes: ['Jewels'], rarities: ['Rare'], tier: 'B', style: GEAR_STYLES.jewelsRare }),
   },
   { title: 'template.empty', make: (t) => ({ ...EMPTY_RULE, name: t('template.emptyName') }) },
 ]

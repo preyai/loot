@@ -60,3 +60,21 @@ describe('готовые наборы', () => {
     }
   })
 })
+
+describe('группы правил', () => {
+  it('у каждого правила готовых наборов есть группа, а набор читается блоками', async () => {
+    const { DEFAULT_CONFIG } = await import('./defaults')
+    const { translator } = await import('./i18n')
+    const { applyPreset, RULE_PRESETS } = await import('./presets')
+    const t = translator('ru')
+    for (const preset of RULE_PRESETS) {
+      const rules = applyPreset(DEFAULT_CONFIG, preset, null, t).baseRules
+      expect(rules.filter((r) => !r.group).map((r) => r.name)).toEqual([])
+    }
+    const balanced = applyPreset(DEFAULT_CONFIG, RULE_PRESETS.find((p) => p.id === 'balanced')!, null, t).baseRules
+    // Подряд идущие одинаковые группы — один заголовок.
+    const heads = balanced.map((r) => r.group).filter((g, i, all) => i === 0 || all[i - 1] !== g)
+    expect(heads[0]).toBe('exceptional')
+    expect(heads.at(-1)).toBe('rest')
+  })
+})

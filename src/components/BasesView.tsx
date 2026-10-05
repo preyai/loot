@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
   baseIconUrl,
   baseTradeUrl,
@@ -34,6 +34,8 @@ import {
   type MarketSnapshot,
   type TierId,
   type UniqueInfo,
+  RULE_GROUPS,
+  type RuleGroup,
 } from '../types'
 import { ExceptionalPanel } from './ExceptionalPanel'
 import { ItemLabel, RARITY_TEXT } from './ItemLabel'
@@ -461,6 +463,16 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
                 </div>
               </>
             )}
+            <label className="check">
+              {t('rules.group')}
+              <select value={rule.group ?? 'custom'} onChange={(e) => set('group', e.target.value as RuleGroup)}>
+                {RULE_GROUPS.map((group) => (
+                  <option key={group} value={group}>
+                    {t(keyOf('ruleGroup', group))}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {rule.action === 'show' && rule.style && (
@@ -590,6 +602,8 @@ function ModsInput({ value, onChange }: { value: string[]; onChange: (mods: stri
   )
 }
 
+const COLLAPSED_KEY = 'loot-filter-editor:collapsedRuleGroups'
+
 /** Касается ли правило вещей этого класса: класс выбран, а если выбраны базы — хоть одна из этого класса. */
 function touchesClass(rule: BaseRule, className: string): boolean {
   if (!rule.classes.includes(className)) return false
@@ -622,6 +636,32 @@ export function BasesView({ config, update, snapshot }: Props) {
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
   // Фильтр списка по классу: только правила, которые касаются вещей этого класса, — в порядке, в каком их проверит игра.
   const [classFilter, setClassFilter] = useState<string | null>(null)
+  /** Правила подряд из той же группы, начиная с показанного под номером i: их сворачивает и включает заголовок. */
+  const groupRun = (i: number) => {
+    const group = shownRules[i].rule.group ?? 'custom'
+    const run = []
+    for (let j = i; j < shownRules.length && (shownRules[j].rule.group ?? 'custom') === group; j++) run.push(shownRules[j])
+    return run
+  }
+  // Свёрнутые группы помнит этот браузер: удобство, а не настройка фильтра.
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? '[]') as string[])
+    } catch {
+      return new Set()
+    }
+  })
+  const toggleGroup = (group: string) =>
+    setCollapsedGroups((current) => {
+      const next = new Set(current)
+      if (!next.delete(group)) next.add(group)
+      try {
+        localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...next]))
+      } catch {
+        // Без хранилища свёрнутые группы забудутся при перезагрузке — не страшно.
+      }
+      return next
+    })
   // Только что добавленное правило: карточка раскрывается, к ней прокручивается страница.
   const [added, setAdded] = useState<string | null>(null)
   /** Добавить правила в конец и показать первое из них; фильтр класса, который его прячет, снимается. */
@@ -630,6 +670,7 @@ export function BasesView({ config, update, snapshot }: Props) {
     const rules = drafts.map((draft) => ({ ...draft, id: crypto.randomUUID() }))
     setRules((list) => [...list, ...rules])
     if (classFilter && !touchesClass(rules[0], classFilter)) setClassFilter(null)
+    if (collapsedGroups.has(rules[0].group ?? 'custom')) toggleGroup(rules[0].group ?? 'custom')
     setAdded(rules[0].id)
   }
   const addRule = (rule: Omit<BaseRule, 'id'>) => addRules([rule])
@@ -651,6 +692,7 @@ export function BasesView({ config, update, snapshot }: Props) {
     const target = config.baseRules[index]
     if (!target) return
     if (classFilter && !touchesClass(target, classFilter)) setClassFilter(null)
+    if (collapsedGroups.has(target.group ?? 'custom')) toggleGroup(target.group ?? 'custom')
     requestAnimationFrame(() =>
       document.querySelector(`[data-focus="${CSS.escape(target.id)}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }),
     )
@@ -783,24 +825,60 @@ export function BasesView({ config, update, snapshot }: Props) {
       {classFilter && <p className="note">{t('rules.filterNote', { cls: t(keyOf('class', classFilter)) })}</p>}
       {classFilter && shownRules.length === 0 && <p className="note">{t('rules.filterEmpty', { section: t('rules.rest') })}</p>}
 
-      {shownRules.map(({ rule, index }) => (
-        <RuleCard
-          key={rule.id}
-          rule={rule}
-          index={index}
-          total={config.baseRules.length}
-          config={config}
-          context={context}
-          onChange={(next) => setRules((rules) => rules.map((r) => (r.id === next.id ? next : r)))}
-          onMove={(delta) => move(index, delta)}
-          onDelete={() => setRules((rules) => rules.filter((r) => r.id !== rule.id))}
-          drag={drag}
-          conflict={conflicts.get(index)}
-          onShow={showRule}
-          justAdded={added === rule.id}
-          onShown={() => setAdded(null)}
-        />
-      ))}
+      {shownRules.map(({ rule, index }, i) => {
+        const group = rule.group ?? 'custom'
+        // Заголовок — там, где начинается новая группа; порядок правил при этом не меняется.
+        const startsGroup = i === 0 || (shownRules[i - 1].rule.group ?? 'custom') !== group
+        const run = startsGroup ? groupRun(i) : []
+        const collapsed = collapsedGroups.has(group)
+        return (
+          <Fragment key={rule.id}>
+            {startsGroup && (
+              <div className={collapsed ? 'rule-group-head collapsed' : 'rule-group-head'}>
+                <button className="rule-group-toggle" aria-expanded={!collapsed} onClick={() => toggleGroup(group)}>
+                  <span className="rule-group-arrow">{collapsed ? '▸' : '▾'}</span>
+                  {t(keyOf('ruleGroup', group))}
+                  <span className="count">{run.length}</span>
+                  {run.some(({ index: n }) => conflicts.has(n)) && (
+                    <span className="rule-filter-warn">⚠ {run.filter(({ index: n }) => conflicts.has(n)).length}</span>
+                  )}
+                </button>
+                <label className="check" title={t('rules.groupEnable')}>
+                  <input
+                    type="checkbox"
+                    aria-label={t('rules.groupEnable')}
+                    checked={run.every(({ rule: r }) => r.enabled)}
+                    ref={(el) => {
+                      if (el) el.indeterminate = run.some(({ rule: r }) => r.enabled) && !run.every(({ rule: r }) => r.enabled)
+                    }}
+                    onChange={(e) => {
+                      const ids = new Set(run.map(({ rule: r }) => r.id))
+                      setRules((rules) => rules.map((r) => (ids.has(r.id) ? { ...r, enabled: e.target.checked } : r)))
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+            {!collapsed && (
+              <RuleCard
+                rule={rule}
+                index={index}
+                total={config.baseRules.length}
+                config={config}
+                context={context}
+                onChange={(next) => setRules((rules) => rules.map((r) => (r.id === next.id ? next : r)))}
+                onMove={(delta) => move(index, delta)}
+                onDelete={() => setRules((rules) => rules.filter((r) => r.id !== rule.id))}
+                drag={drag}
+                conflict={conflicts.get(index)}
+                onShow={showRule}
+                justAdded={added === rule.id}
+                onShown={() => setAdded(null)}
+              />
+            )}
+          </Fragment>
+        )
+      })}
 
       <section className="panel" data-focus="rest">
         <h2>{t('rules.rest')}</h2>

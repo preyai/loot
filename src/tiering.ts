@@ -30,7 +30,20 @@ export function perDivine(currency: Currency, rates: Rates): number {
   return currency === 'divine' ? 1 : rates[currency]
 }
 
-export function tierByValue(value: number, thresholds: Config['thresholds']): TierId {
+/**
+ * Цена так, как её видно на экране: до 2 знаков после запятой, а меньше единицы — 2 значащие цифры.
+ * С порогами сравниваем её, а не точную: poe.ninja округляет цену в divine и курс по отдельности,
+ * и Chaos Orb выходит 0.9998 c — на экране «1 c», а в тир «от 1 c» без округления не попал бы.
+ */
+export function roundPrice(value: number): number {
+  if (value >= 100) return Math.round(value)
+  if (value >= 10) return Math.round(value * 10) / 10
+  if (value >= 1) return Math.round(value * 100) / 100
+  return Number(value.toPrecision(2))
+}
+
+export function tierByValue(exact: number, thresholds: Config['thresholds']): TierId {
+  const value = roundPrice(exact)
   if (value >= thresholds.S) return 'S'
   if (value >= thresholds.A) return 'A'
   if (value >= thresholds.B) return 'B'
@@ -80,7 +93,7 @@ export function itemDisplay(item: MarketItem, config: Config, rates: Rates): Dis
   if (item.divine === null) return { kind: 'show', tier }
 
   const visibility = visibilityFor(config, item.section)
-  const price = item.divine * perDivine(config.currency, rates)
+  const price = roundPrice(item.divine * perDivine(config.currency, rates))
   // Ручной тир важнее мин. цены: предмет, поднятый вручную, показывается, даже если он дешёвый.
   const passes = rank(tier) <= rank(visibility.minTier) && (override !== undefined || price >= visibility.minPrice)
   if (passes) return { kind: 'show', tier }
@@ -120,8 +133,10 @@ export function convertCurrency(config: Config, to: Currency, rates: Rates): Con
 
 export function formatPrice(divine: number | null, rates: Rates, currency: Currency, t: T): string {
   if (divine === null) return t('price.none')
-  const round = (v: number) =>
-    v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : String(Number(v.toPrecision(2)))
+  const round = (v: number) => {
+    const rounded = roundPrice(v)
+    return v >= 100 ? rounded.toFixed(0) : v >= 10 ? rounded.toFixed(1) : v >= 1 ? rounded.toFixed(2) : String(rounded)
+  }
   // Дорогое нагляднее в divine, какой бы ни была основная валюта.
   if (divine >= 1) return `${round(divine)} ${CURRENCIES.divine.short}`
   return `${round(divine * perDivine(currency, rates))} ${CURRENCIES[currency].short}`

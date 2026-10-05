@@ -60,6 +60,20 @@ describe('itemDisplay', () => {
     expect(itemDisplay(scroll, DEFAULT_CONFIG, rates)).toEqual({ kind: 'show', tier: 'E' })
   })
 
+  it('цена, которая на экране равна порогу, в тир попадает', () => {
+    // Как в данных poe.ninja: Chaos Orb 0.09821 div при курсе 10.18 c — это 0.99978 c, на экране «1 c».
+    const ninja = { exalted: 689.4, chaos: 10.18 }
+    const chaos = item('Chaos Orb', 0.09821)
+    const config: Config = {
+      ...DEFAULT_CONFIG,
+      currency: 'chaos',
+      thresholds: { S: 100, A: 20, B: 5, C: 1, D: 0.5 },
+      visibility: { minTier: 'E', minPrice: 1, stacks: false },
+    }
+    expect(formatPrice(chaos.divine, ninja, 'chaos', t)).toBe('1 c')
+    expect(itemDisplay(chaos, config, ninja)).toEqual({ kind: 'show', tier: 'C' })
+  })
+
   it('ниже мин. тира — только стопка на сумму не меньше границы тира', () => {
     const config: Config = { ...DEFAULT_CONFIG, visibility: { minTier: 'C', minPrice: 0, stacks: true } }
     expect(itemDisplay(jeweller, config, rates)).toEqual({ kind: 'show', tier: 'C' })

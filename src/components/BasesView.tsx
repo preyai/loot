@@ -251,6 +251,9 @@ interface CardProps {
   conflict?: RuleConflict
   /** Показать правило по номеру в списке (переход к мешающему правилу). */
   onShow: (index: number) => void
+  /** Правило только что добавлено — показать его. */
+  justAdded: boolean
+  onShown: () => void
 }
 
 /** Перетаскивание правил: что тащим, куда собираемся бросить и как об этом сообщить списку. */
@@ -265,7 +268,7 @@ interface DragState {
   end: () => void
 }
 
-function RuleCard({ rule, index, total, config, context, onChange, onMove, onDelete, drag, conflict, onShow }: CardProps) {
+function RuleCard({ rule, index, total, config, context, onChange, onMove, onDelete, drag, conflict, onShow, justAdded, onShown }: CardProps) {
   const { t, name } = useI18n()
   const cardRef = useRef<HTMLElement>(null)
   const dropSide = drag.target?.id === rule.id && drag.dragging !== rule.id ? (drag.target.after ? 'after' : 'before') : null
@@ -276,6 +279,19 @@ function RuleCard({ rule, index, total, config, context, onChange, onMove, onDel
   useEffect(() => {
     if (focus === rule.id) setOpen(true)
   }, [focus, rule.id])
+  // Новое правило сразу на виду: раскрыто, страница прокручена к нему, карточка ненадолго подсвечена.
+  useEffect(() => {
+    if (!justAdded) return
+    setOpen(true)
+    const card = cardRef.current
+    requestAnimationFrame(() => {
+      card?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      card?.classList.add('is-focused')
+    })
+    const timer = setTimeout(() => card?.classList.remove('is-focused'), 2500)
+    onShown()
+    return () => clearTimeout(timer)
+  }, [justAdded])
   // Список баз длинный — рисуем его, только пока он раскрыт.
   const [pickerOpen, setPickerOpen] = useState(false)
   const set = <K extends keyof BaseRule>(key: K, value: BaseRule[K]) => onChange({ ...rule, [key]: value })
@@ -604,7 +620,19 @@ export function BasesView({ config, update, snapshot }: Props) {
   }
 
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
-  const addRule = (rule: Omit<BaseRule, 'id'>) => setRules((rules) => [...rules, { ...rule, id: crypto.randomUUID() }])
+  // Фильтр списка по классу: только правила, которые касаются вещей этого класса, — в порядке, в каком их проверит игра.
+  const [classFilter, setClassFilter] = useState<string | null>(null)
+  // Только что добавленное правило: карточка раскрывается, к ней прокручивается страница.
+  const [added, setAdded] = useState<string | null>(null)
+  /** Добавить правила в конец и показать первое из них; фильтр класса, который его прячет, снимается. */
+  const addRules = (drafts: Omit<BaseRule, 'id'>[]) => {
+    if (!drafts.length) return
+    const rules = drafts.map((draft) => ({ ...draft, id: crypto.randomUUID() }))
+    setRules((list) => [...list, ...rules])
+    if (classFilter && !touchesClass(rules[0], classFilter)) setClassFilter(null)
+    setAdded(rules[0].id)
+  }
+  const addRule = (rule: Omit<BaseRule, 'id'>) => addRules([rule])
 
   const choosePreset = (preset: RulePreset) => {
     // Правила из опроса трейда набор не трогает — они остаются первыми.
@@ -614,8 +642,6 @@ export function BasesView({ config, update, snapshot }: Props) {
     update((c) => applyPreset(c, preset, shares, t, chancing))
   }
 
-  // Фильтр списка по классу: только правила, которые касаются вещей этого класса, — в порядке, в каком их проверит игра.
-  const [classFilter, setClassFilter] = useState<string | null>(null)
   const conflicts = useMemo(() => ruleConflicts(config.baseRules), [config.baseRules])
   const shownRules = config.baseRules
     .map((rule, index) => ({ rule, index }))
@@ -702,7 +728,7 @@ export function BasesView({ config, update, snapshot }: Props) {
           <button disabled={!chancing} onClick={() => chancing && addRule(chancing)}>
             {t('template.chancing')}
           </button>
-          <button title={t('template.recombinatorHint')} onClick={() => recombinatorRules(t).forEach(addRule)}>
+          <button title={t('template.recombinatorHint')} onClick={() => addRules(recombinatorRules(t))}>
             {t('template.recombinator')}
           </button>
           {RULE_TEMPLATES.map((template) => (
@@ -771,6 +797,8 @@ export function BasesView({ config, update, snapshot }: Props) {
           drag={drag}
           conflict={conflicts.get(index)}
           onShow={showRule}
+          justAdded={added === rule.id}
+          onShown={() => setAdded(null)}
         />
       ))}
 

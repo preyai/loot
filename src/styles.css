@@ -114,30 +114,94 @@ input[type='text'] {
     color 0.15s;
 }
 
+/* Поля и списки: тёмная вставка в бронзовой рамке; наведение — рамка ярче, фокус — золото с мягким свечением. */
 select,
 input[type='number'],
 input[type='search'],
-input[type='text'] {
-  background: var(--inset);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+input[type='text'],
+textarea {
+  min-height: 34px;
+  border: 1px solid #4a3a24;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #090705 0%, #120e09 100%);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.75),
+    0 1px 0 rgba(255, 226, 160, 0.05);
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+textarea {
+  padding: 7px 11px;
+  line-height: 1.4;
 }
 
 select:hover:not(:disabled),
-input:hover:not(:disabled) {
+input:hover:not(:disabled),
+textarea:hover:not(:disabled) {
   border-color: var(--bronze);
 }
 
 select:focus,
-input:focus {
+input:focus,
+textarea:focus {
   border-color: var(--gold);
   outline: none;
   box-shadow:
-    inset 0 2px 4px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(201, 164, 92, 0.35);
+    inset 0 2px 5px rgba(0, 0, 0, 0.75),
+    0 0 0 3px rgba(201, 164, 92, 0.14),
+    0 0 12px rgba(201, 164, 92, 0.18);
 }
 
-input::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: #6f6450;
+}
+
+/* Список: своя золотая стрелка вместо системной. */
+select {
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23c9a45c' stroke-width='1.6'/%3E%3C/svg%3E"), linear-gradient(180deg, #090705 0%, #120e09 100%);
+  background-repeat: no-repeat;
+  background-position:
+    right 11px center,
+    0 0;
+  background-size:
+    11px 7px,
+    100% 100%;
+  cursor: pointer;
+}
+
+select:hover:not(:disabled) {
+  color: var(--gold-bright);
+}
+
+select option {
+  background: #16110b;
+  color: var(--text);
+}
+
+/* Поиск: лупа слева, золотой крестик очистки. */
+input[type='search'] {
+  padding-left: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6.5' cy='6.5' r='5' fill='none' stroke='%238b6f3e' stroke-width='1.6'/%3E%3Cpath d='M10.4 10.4 15 15' stroke='%238b6f3e' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"), linear-gradient(180deg, #090705 0%, #120e09 100%);
+  background-repeat: no-repeat;
+  background-position:
+    11px center,
+    0 0;
+  background-size:
+    14px 14px,
+    100% 100%;
+}
+
+input[type='search']::-webkit-search-cancel-button {
+  width: 12px;
+  height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 2 10 10M10 2 2 10' stroke='%23c9a45c' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  cursor: pointer;
+  -webkit-appearance: none;
 }
 
 button {
@@ -193,22 +257,163 @@ button.primary:hover:not(:disabled) {
   outline-offset: 2px;
 }
 
-input[type='checkbox'],
-input[type='range'] {
-  accent-color: var(--gold);
+/* Галочка: тёмный квадрат в бронзе; отмеченная — золотая, как главная кнопка. */
+input[type='checkbox'] {
+  display: inline-grid;
+  flex: none;
+  place-content: center;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  border: 1px solid var(--bronze);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #090705 0%, #120e09 100%);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.75);
+  vertical-align: middle;
+  cursor: pointer;
+  appearance: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
 }
 
+input[type='checkbox']::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: #1a1004;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  transform: scale(0);
+  transition: transform 0.12s;
+}
+
+input[type='checkbox']:checked {
+  border-color: #f3dc9c;
+  background: linear-gradient(180deg, #ecd08a 0%, #c59c50 55%, #9a7634 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 6px rgba(241, 216, 146, 0.3);
+}
+
+input[type='checkbox']:checked::before {
+  transform: scale(1);
+}
+
+input[type='checkbox']:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+
+/* Ползунок: тонкая дорожка, золотой бегунок; в Firefox дорожка ещё и заливается до бегунка. */
+input[type='range'] {
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 1px solid #3a2d1d;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #070504, #16110b);
+}
+
+input[type='range']::-moz-range-track {
+  height: 4px;
+  border: 1px solid #3a2d1d;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #070504, #16110b);
+}
+
+input[type='range']::-moz-range-progress {
+  height: 4px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+}
+
+input[type='range']::-webkit-slider-thumb {
+  width: 15px;
+  height: 15px;
+  margin-top: -6px;
+  border: 1px solid #f3dc9c;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f6e2a8, #c59c50 60%, #8b6f3e);
+  box-shadow:
+    0 0 6px rgba(241, 216, 146, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.8);
+  appearance: none;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: 1px solid #f3dc9c;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f6e2a8, #c59c50 60%, #8b6f3e);
+  box-shadow:
+    0 0 6px rgba(241, 216, 146, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+input[type='range']:hover:not(:disabled)::-webkit-slider-thumb {
+  box-shadow:
+    0 0 10px rgba(241, 216, 146, 0.6),
+    0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+input[type='range']:focus {
+  box-shadow: none;
+}
+
+/* Цвет: образец во всю рамку, без системной обводки. */
 input[type='color'] {
   width: 34px;
   height: 28px;
-  padding: 0;
+  padding: 2px;
   border: 1px solid var(--bronze);
-  border-radius: 2px;
-  background: none;
+  border-radius: 3px;
+  background: var(--inset);
+  cursor: pointer;
 }
 
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+input[type='color']::-moz-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+input[type='color']:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+
+/* Число: без системных стрелок — значения меняют с клавиатуры (стрелки вверх-вниз) или вводом. */
 input[type='number'] {
   width: 84px;
+  appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+/* Отключённое поле — пунктирная рамка: видно, что значение есть, но сейчас не действует. */
+select:disabled,
+input:disabled,
+textarea:disabled {
+  border-style: dashed;
 }
 
 /* Каркас */
@@ -410,6 +615,7 @@ main {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
 }
 
 .check {
@@ -2085,10 +2291,5 @@ a.discord-button:hover {
 }
 
 .publish-form textarea {
-  padding: 6px 11px;
-  border: 1px solid var(--line);
-  background: var(--inset);
-  color: var(--text);
-  font: inherit;
   resize: vertical;
 }

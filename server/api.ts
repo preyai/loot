@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { AccountError, handleAccounts } from './accounts'
+import { handleDiscord } from './discord'
 import { getLeagues, getSnapshot } from './market'
 import { getPopularity } from './popularity'
 import { getExceptionalScan, getTradeJob, startExceptionalScan, stopExceptionalScan } from './trade'
@@ -76,6 +77,8 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse): Prom
   res.setHeader('Cache-Control', 'no-store')
   try {
     // Пользователи и их фильтры — свой обработчик (server/accounts.ts), остальное — данные о ценах.
+    // Вход через Discord отвечает перенаправлением — сам, без JSON.
+    if (await handleDiscord(req, res, url)) return true
     const accounts = await handleAccounts(req, res, url)
     const result = accounts !== undefined ? accounts : await route(req, url)
     // null — законный ответ («данных ещё нет»), не найденным считается только undefined.

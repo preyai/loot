@@ -23,9 +23,19 @@ export class AccountError extends Error {
 interface User {
   id: string
   login: string
+  /** Пусто у тех, кто зарегистрировался через Discord: войти паролем они не могут. */
   salt: string
   hash: string
   createdAt: string
+  discordId?: string
+  /** Имя в Discord — только чтобы показать, к чему привязана учётная запись. */
+  discordName?: string
+}
+
+/** Учётная запись Discord, которой вошёл пользователь. */
+export interface DiscordProfile {
+  id: string
+  name: string
 }
 
 interface Session {
@@ -95,7 +105,7 @@ function checkCredentials(login: unknown, password: unknown): { login: string; p
   return { login, password }
 }
 
-async function newSession(userId: string): Promise<string> {
+export async function newSession(userId: string): Promise<string> {
   const token = newId(32)
   await update<Record<string, Session>, void>(SESSIONS, {}, (sessions) => {
     const now = Date.now()
@@ -125,7 +135,7 @@ export async function login(loginValue: unknown, passwordValue: unknown): Promis
   const user = users[login.toLowerCase()]
   // Хеш считаем и для несуществующего логина: по времени ответа нельзя понять, есть ли такой пользователь.
   const hash = Buffer.from(await hashPassword(password, Buffer.from(user?.salt ?? '00'.repeat(16), 'hex')), 'hex')
-  if (!user || !timingSafeEqual(hash, Buffer.from(user.hash, 'hex'))) throw new AccountError(401, 'wrong login or password')
+  if (!user?.hash || !timingSafeEqual(hash, Buffer.from(user.hash, 'hex'))) throw new AccountError(401, 'wrong login or password')
   return { login: user.login, token: await newSession(user.id) }
 }
 
@@ -142,6 +152,72 @@ export async function sessionUser(token: string | null): Promise<{ id: string; l
   const users = (await readData<Record<string, User>>(USERS)) ?? {}
   const user = Object.values(users).find((u) => u.id === session.userId)
   return user ? { id: user.id, login: user.login } : null
+}
+
+/** Что показывает интерфейс о вошедшем пользователе. */
+export async function profile(userId: string) {
+  const users = (await readData<Record<string, User>>(USERS)) ?? {}
+  const user = Object.values(users).find((u) => u.id === userId)
+  if (!user) return null
+  return { login: user.login, discord: user.discordName ?? null, hasPassword: Boolean(user.hash) }
+}
+
+/** Логин для нового пользователя из Discord: имя оттуда, а если занято или не подходит — с числом. */
+function freeLogin(users: Record<string, User>, name: string): string {
+  const base = name.replace(/[^\p{L}\p{N}_.-]/gu, '').slice(0, 26) || 'exile'
+  const fits = (login: string) => LOGIN.test(login) && !users[login.toLowerCase()]
+  if (fits(base)) return base
+  for (;;) {
+    const login = `${base}-${randomBytes(2).readUInt16BE() % 10000}`
+    if (fits(login)) return login
+  }
+}
+
+/** Вход через Discord: находит пользователя с этой учётной записью Discord или создаёт нового. */
+export async function discordSignIn(discord: DiscordProfile): Promise<{ login: string; token: string; created: boolean }> {
+  const { user, created } = await update<Record<string, User>, { user: User; created: boolean }>(USERS, {}, (users) => {
+    const found = Object.values(users).find((u) => u.discordId === discord.id)
+    if (found) {
+      found.discordName = discord.name
+      return { user: found, created: false }
+    }
+    const login = freeLogin(users, discord.name)
+    const user: User = {
+      id: newId(),
+      login,
+      salt: '',
+      hash: '',
+      createdAt: new Date().toISOString(),
+      discordId: discord.id,
+      discordName: discord.name,
+    }
+    users[login.toLowerCase()] = user
+    return { user, created: true }
+  })
+  return { login: user.login, token: await newSession(user.id), created }
+}
+
+/** Привязывает Discord к уже существующей учётной записи (чтобы входить и так, и так). */
+export async function linkDiscord(userId: string, discord: DiscordProfile) {
+  await update<Record<string, User>, void>(USERS, {}, (users) => {
+    const other = Object.values(users).find((u) => u.discordId === discord.id)
+    if (other && other.id !== userId) throw new AccountError(409, 'this Discord account is linked to another user')
+    const user = Object.values(users).find((u) => u.id === userId)
+    if (!user) throw new AccountError(401, 'sign in first')
+    user.discordId = discord.id
+    user.discordName = discord.name
+  })
+}
+
+/** Отвязать Discord можно, только если есть пароль — иначе в учётную запись будет не войти. */
+export async function unlinkDiscord(userId: string) {
+  await update<Record<string, User>, void>(USERS, {}, (users) => {
+    const user = Object.values(users).find((u) => u.id === userId)
+    if (!user) throw new AccountError(401, 'sign in first')
+    if (!user.hash) throw new AccountError(400, 'set a password first')
+    delete user.discordId
+    delete user.discordName
+  })
 }
 
 // --- Фильтры пользователя
@@ -276,18 +352,21 @@ export function recordRegistration(ip: string, now = Date.now()) {
 
 const COOKIE = 'loot_session'
 
-function readToken(req: IncomingMessage): string | null {
+export function readCookie(req: IncomingMessage, name: string): string | null {
   for (const part of (req.headers.cookie ?? '').split(';')) {
     const [key, ...value] = part.trim().split('=')
-    if (key === COOKIE) return decodeURIComponent(value.join('='))
+    if (key === name) return decodeURIComponent(value.join('='))
   }
   return null
 }
 
-function setToken(req: IncomingMessage, res: ServerResponse, token: string | null) {
+export const readToken = (req: IncomingMessage) => readCookie(req, COOKIE)
+
+export function setToken(req: IncomingMessage, res: ServerResponse, token: string | null) {
   // За Caddy запрос приходит по http, но сайт открыт по https: смотрим заголовок прокси.
   const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''
-  res.setHeader(
+  // append, а не set: рядом может уходить и другая cookie (состояние входа через Discord).
+  res.appendHeader(
     'Set-Cookie',
     token
       ? `${COOKIE}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${SESSION_MS / 1000}${secure}`
@@ -315,7 +394,7 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
 }
 
 // Последний адрес в цепочке дописал наш прокси (Caddy), первые клиент может подставить сам.
-const clientIp = (req: IncomingMessage) =>
+export const clientIp = (req: IncomingMessage) =>
   String(req.headers['x-forwarded-for'] ?? '').split(',').pop()?.trim() || req.socket.remoteAddress || '?'
 
 /** Запросы к /api/auth/, /api/filters и /api/shared/; undefined — запрос не про пользователей. */
@@ -325,7 +404,7 @@ export async function handleAccounts(req: IncomingMessage, res: ServerResponse, 
 
   if (path === '/api/auth/me' && method === 'GET') {
     const user = await sessionUser(readToken(req))
-    return user ? { login: user.login } : null
+    return user ? profile(user.id) : null
   }
   if ((path === '/api/auth/register' || path === '/api/auth/login') && method === 'POST') {
     const ip = clientIp(req)

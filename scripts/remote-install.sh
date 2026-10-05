@@ -74,6 +74,16 @@ elif [ ! -f "$ENV_FILE" ]; then
   echo
 fi
 
+if [ -f "$SRC/env.txt" ]; then
+  # Переменные из deploy.config.json: заменяем одноимённые в .env, остальные строки не трогаем.
+  KEYS=$(cut -d= -f1 "$SRC/env.txt" | paste -sd'|' -)
+  REST=$($SUDO grep -vE "^($KEYS)=" "$ENV_FILE" 2>/dev/null || true)
+  { if [ -n "$REST" ]; then printf '%s\n' "$REST"; fi; cat "$SRC/env.txt"; } | $SUDO tee "$ENV_FILE" >/dev/null
+  $SUDO chown "$(id -u):$(id -g)" "$ENV_FILE"
+  $SUDO chmod 600 "$ENV_FILE"
+  echo "Переменные окружения обновлены: ${KEYS//|/, }."
+fi
+
 tar -xzf "$SRC/release.tar.gz" -C "$SRC"
 $DOCKER build --quiet -t "$NAME:$TAG" -f "$SRC/release.Dockerfile" "$SRC" >/dev/null
 echo "Собран образ $NAME:$TAG"

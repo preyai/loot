@@ -56,6 +56,38 @@ describe('пользователи', () => {
   })
 })
 
+describe('вход через Discord', () => {
+  it('создаёт пользователя один раз, дальше входит в него же', async () => {
+    const first = await accounts.discordSignIn({ id: '1001', name: 'tul_exile' })
+    expect(first).toMatchObject({ login: 'tul_exile', created: true })
+    const again = await accounts.discordSignIn({ id: '1001', name: 'tul_renamed' })
+    expect(again).toMatchObject({ login: 'tul_exile', created: false })
+    const { id } = (await accounts.sessionUser(again.token))!
+    expect(await accounts.profile(id)).toEqual({ login: 'tul_exile', discord: 'tul_renamed', hasPassword: false })
+    // Без пароля войти паролем нельзя — и это не падение сервера, а обычный отказ.
+    await expect(accounts.login('tul_exile', 'any-password')).rejects.toMatchObject({ status: 401 })
+    // Отвязать Discord без пароля нельзя: в учётную запись будет не войти.
+    await expect(accounts.unlinkDiscord(id)).rejects.toMatchObject({ status: 400 })
+  })
+
+  it('занятое или неподходящее имя — логин с числом', async () => {
+    await accounts.register('Xesht', 'secret-pass')
+    expect((await accounts.discordSignIn({ id: '1002', name: 'xesht' })).login).toMatch(/^xesht-\d+$/)
+    expect((await accounts.discordSignIn({ id: '1003', name: 'ab' })).login).toMatch(/^ab-\d+$/)
+  })
+
+  it('привязка к существующему логину', async () => {
+    const user = await accounts.register('Linker', 'secret-pass')
+    const { id } = (await accounts.sessionUser(user.token))!
+    await accounts.linkDiscord(id, { id: '2001', name: 'linker_dc' })
+    expect((await accounts.discordSignIn({ id: '2001', name: 'linker_dc' })).login).toBe('Linker')
+    // Чужой Discord не привязать.
+    await expect(accounts.linkDiscord(id, { id: '1001', name: 'tul_exile' })).rejects.toMatchObject({ status: 409 })
+    await accounts.unlinkDiscord(id)
+    expect(await accounts.profile(id)).toMatchObject({ discord: null, hasPassword: true })
+  })
+})
+
 describe('фильтры и ссылки', () => {
   it('сохранение, список, изменение, ссылка и удаление', async () => {
     const owner = await accounts.register('Owner', 'secret-pass')

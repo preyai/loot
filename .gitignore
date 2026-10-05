@@ -6,3 +6,5 @@ dist-server
 *.log
 # адрес сервера для npm run deploy
 deploy.config.json
+# ключи Discord для разработки (vite.config.ts)
+.env.local

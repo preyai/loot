@@ -7,5 +7,6 @@
   "aliases": [],
   "redirects": [],
   "password": "",
-  "public": false
+  "public": false,
+  "env": {}
 }

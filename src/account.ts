@@ -15,6 +15,15 @@ export interface FilterSummary {
   shareCode?: string
 }
 
+/** Вошедший пользователь. */
+export interface Me {
+  login: string
+  /** Имя в Discord, если учётная запись к нему привязана. */
+  discord: string | null
+  /** Без пароля (зарегистрирован через Discord) отвязать Discord нельзя. */
+  hasPassword: boolean
+}
+
 export interface SharedFilter {
   name: string
   owner: string
@@ -54,9 +63,11 @@ export const applySaved = (current: Config, saved: Partial<Config>): Config =>
   normalizeConfig({ ...saved, language: current.language, league: current.league })
 
 export const api = {
-  me: () => call<{ login: string } | null>('/api/auth/me'),
-  register: (login: string, password: string) => call<{ login: string }>('/api/auth/register', 'POST', { login, password }),
-  login: (login: string, password: string) => call<{ login: string }>('/api/auth/login', 'POST', { login, password }),
+  me: () => call<Me | null>('/api/auth/me'),
+  providers: () => call<{ discord: boolean }>('/api/auth/providers'),
+  register: (login: string, password: string) => call<object>('/api/auth/register', 'POST', { login, password }),
+  login: (login: string, password: string) => call<object>('/api/auth/login', 'POST', { login, password }),
+  unlinkDiscord: () => call<object>('/api/auth/discord/unlink', 'POST'),
   logout: () => call<object>('/api/auth/logout', 'POST'),
   list: () => call<FilterSummary[]>('/api/filters'),
   get: (id: string) => call<FilterSummary & { config: Partial<Config> }>(`/api/filters/${id}`),
@@ -72,13 +83,16 @@ export const api = {
   shared: (code: string) => call<SharedFilter>(`/api/shared/${encodeURIComponent(code)}`),
 }
 
+/** Вход через Discord — обычный переход: сервер перенаправит на Discord и обратно на «Мои фильтры». */
+export const discordUrl = (link = false) => '/api/auth/discord/start' + (link ? '?link=1' : '')
+
 /** Ссылка на фильтр для других. */
 export const shareUrl = (code: string) => `${location.origin}${location.pathname}#/shared/${code}`
 
 // --- Кто вошёл: общий для всех компонентов.
-let me: { login: string } | null | undefined
+let me: Me | null | undefined
 const listeners = new Set<() => void>()
-const setMe = (value: { login: string } | null) => {
+const setMe = (value: Me | null) => {
   me = value
   listeners.forEach((l) => l())
 }
@@ -97,8 +111,19 @@ export function useAccount() {
   return {
     /** undefined — ещё не знаем, null — не вошёл. */
     me: current,
-    register: async (login: string, password: string) => setMe(await api.register(login, password)),
-    login: async (login: string, password: string) => setMe(await api.login(login, password)),
+    register: async (login: string, password: string) => {
+      await api.register(login, password)
+      setMe(await api.me())
+    },
+    login: async (login: string, password: string) => {
+      await api.login(login, password)
+      setMe(await api.me())
+    },
+    unlinkDiscord: async () => {
+      await api.unlinkDiscord()
+      setMe(await api.me())
+    },
+    refresh: async () => setMe(await api.me()),
     logout: async () => {
       await api.logout()
       setMe(null)

@@ -1,8 +1,32 @@
 import { useEffect, useState } from 'react'
-import { api, ApiError, applySaved, setActive, shareUrl, snapshotOf, useAccount, useActiveFilter, type FilterSummary } from '../account'
+import { api, ApiError, applySaved, discordUrl, setActive, shareUrl, snapshotOf, useAccount, useActiveFilter, type FilterSummary } from '../account'
 import { useI18n } from '../i18n-react'
 import type { UpdateConfig } from '../store'
 import type { Config } from '../types'
+
+/** Есть ли на сервере вход через Discord (заданы ли ключи приложения). */
+function useProviders() {
+  const [providers, setProviders] = useState({ discord: false })
+  useEffect(() => {
+    api.providers().then(setProviders, () => undefined)
+  }, [])
+  return providers
+}
+
+const AUTH_RESULTS = ['ok', 'linked', 'denied', 'failed', 'taken', 'limit', 'unavailable'] as const
+type AuthResult = (typeof AUTH_RESULTS)[number]
+
+/** Чем закончился вход через Discord: сервер возвращает на #/filters?auth=<итог>. Итог показываем один раз. */
+function useAuthResult(): AuthResult | null {
+  const [result] = useState(() => {
+    const value = new URLSearchParams(location.hash.split('?')[1] ?? '').get('auth')
+    return AUTH_RESULTS.find((r) => r === value) ?? null
+  })
+  useEffect(() => {
+    if (result) history.replaceState(null, '', '#/filters')
+  }, [result])
+  return result
+}
 
 interface Props {
   config: Config
@@ -10,7 +34,7 @@ interface Props {
 }
 
 /** Вход и регистрация. */
-function SignIn() {
+function SignIn({ discord }: { discord: boolean }) {
   const { t } = useI18n()
   const { login, register } = useAccount()
   const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -45,6 +69,14 @@ function SignIn() {
     <section className="panel account-form">
       <h2>{mode === 'login' ? t('account.signIn') : t('account.register')}</h2>
       <p className="note">{t('account.intro')}</p>
+      {discord && (
+        <>
+          <a className="button discord-button" href={discordUrl()}>
+            {t('account.discord')}
+          </a>
+          <p className="note or">{t('account.or')}</p>
+        </>
+      )}
       <form onSubmit={submit}>
         <label className="check">
           {t('account.login')}
@@ -77,7 +109,9 @@ function SignIn() {
 
 export function FiltersView({ config, update }: Props) {
   const { t, locale } = useI18n()
-  const { me, logout } = useAccount()
+  const { me, logout, unlinkDiscord } = useAccount()
+  const providers = useProviders()
+  const authResult = useAuthResult()
   const { active, dirty } = useActiveFilter(config)
   const [filters, setFilters] = useState<FilterSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -144,13 +178,31 @@ export function FiltersView({ config, update }: Props) {
         {me && (
           <div className="actions">
             <span>{t('account.signedAs', { login: me.login })}</span>
+            {me.discord ? (
+              <span className="count">{t('account.discordAs', { name: me.discord })}</span>
+            ) : (
+              providers.discord && (
+                <a className="button" href={discordUrl(true)}>
+                  {t('account.discordLink')}
+                </a>
+              )
+            )}
+            {/* Без пароля отвязывать нельзя: в учётную запись будет не войти. */}
+            {me.discord && me.hasPassword && (
+              <button onClick={() => run(unlinkDiscord)}>{t('account.discordUnlink')}</button>
+            )}
             <button onClick={() => void logout()}>{t('account.signOut')}</button>
           </div>
         )}
       </header>
+      {authResult && authResult !== 'ok' && (
+        <p className={authResult === 'linked' ? 'note note--ok' : 'note note--error'}>
+          {t(`account.auth.${authResult}` as 'account.auth.failed')}
+        </p>
+      )}
 
       {!me ? (
-        <SignIn />
+        <SignIn discord={providers.discord} />
       ) : (
         <>
           <section className="panel">

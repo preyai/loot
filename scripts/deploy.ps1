@@ -25,8 +25,9 @@ Set-Location $root
 #   aliases  — ещё домены, на которых открывается тот же редактор (через запятую или списком);
 #   redirects — домены, которые перенаправляют на основной (например, www и старый адрес);
 #   password — пароль входа; пусто — оставить тот, что уже на сервере (при первом деплое создаётся случайный);
-#   public   — true: сайт открыт всем, пароль на сервере снимается (у пользователей свои учётные записи).
-$config = @{ server = ''; appDir = '/opt/loot-filter'; service = 'loot-filter'; port = 8080; domain = ''; aliases = ''; redirects = ''; password = ''; public = $false }
+#   public   — true: сайт открыт всем, пароль на сервере снимается (у пользователей свои учётные записи);
+#   env      — переменные окружения приложения, например ключи входа через Discord: { "DISCORD_CLIENT_ID": "…" }.
+$config = @{ server = ''; appDir = '/opt/loot-filter'; service = 'loot-filter'; port = 8080; domain = ''; aliases = ''; redirects = ''; password = ''; public = $false; env = $null }
 $configFile = Join-Path $root 'deploy.config.json'
 if (Test-Path $configFile) {
   # Без явной кодировки Windows PowerShell прочитает файл как ANSI и испортит пароль не на латинице.
@@ -48,6 +49,15 @@ $redirects = @(Get-Domains $config.redirects)
 $config.password = "$($config.password)"
 $public = $config.public -eq $true -or "$($config.public)" -eq 'true'
 if ($public -and $config.password) { throw 'Заданы и public, и password: выберите что-то одно.' }
+# Переменные окружения едут на сервер файлом, как пароль; имена — только такие, которые не сломают .env.
+$envLines = @()
+if ($config.env) {
+  foreach ($prop in $config.env.PSObject.Properties) {
+    if ($prop.Name -notmatch '^[A-Z][A-Z0-9_]*$' -or $prop.Name -match '^AUTH_') { throw "Недопустимое имя переменной: $($prop.Name)" }
+    if ("$($prop.Value)" -match '[\r\n]') { throw "Значение $($prop.Name) не должно содержать переводов строки." }
+    $envLines += "$($prop.Name)=$($prop.Value)"
+  }
+}
 
 if (-not $DryRun -and -not $config.server) {
   throw 'Не указан сервер. Передайте -Server user@host или создайте deploy.config.json по образцу deploy.config.example.json.'
@@ -93,6 +103,7 @@ if ($DryRun) {
   if ($config.domain) { Write-Host "Домен: $($config.domain)" } else { Write-Host 'Домен не задан: редактор будет доступен по HTTP на порту.' }
   if ($public) { Write-Host 'Пароль: снимается, сайт открыт всем.' }
   elseif ($config.password) { Write-Host 'Пароль: будет взят из deploy.config.json.' } else { Write-Host 'Пароль: останется тот, что на сервере.' }
+  if ($envLines.Count) { Write-Host "Переменные окружения: $(($envLines | ForEach-Object { $_.Split('=')[0] }) -join ', ')" }
   Write-Host 'Пробный запуск: на сервер ничего не отправлено.' -ForegroundColor Yellow
   exit 0
 }
@@ -109,6 +120,11 @@ if ($config.password) {
   [IO.File]::WriteAllText($passwordFile, $config.password, (New-Object Text.UTF8Encoding($false)))
   $uploads += $passwordFile
 }
+$envFile = Join-Path ([IO.Path]::GetTempPath()) 'env.txt'
+if ($envLines.Count) {
+  [IO.File]::WriteAllText($envFile, ($envLines -join "`n") + "`n", (New-Object Text.UTF8Encoding($false)))
+  $uploads += $envFile
+}
 
 try {
   Invoke-Step "Отправка на $target" {
@@ -121,6 +137,7 @@ try {
   }
 } finally {
   Remove-Item $passwordFile -ErrorAction SilentlyContinue
+  Remove-Item $envFile -ErrorAction SilentlyContinue
 }
 
 $domainArg = if ($config.domain) { $config.domain } else { '-' }

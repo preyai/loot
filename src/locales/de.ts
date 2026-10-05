@@ -58,6 +58,7 @@ export const de: Dictionary = {
   'tier.D': 'D — Kleinkram',
   'tier.E': 'E — Müll',
   'tier.label': 'Stufe {tier}',
+  'group.custom': 'Eigenes Aussehen',
   'group.stack': 'Nur als Stapel',
   'group.hide': 'Ausgeblendet',
 

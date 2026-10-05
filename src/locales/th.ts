@@ -58,6 +58,7 @@ export const th: Dictionary = {
   'tier.D': 'D — เศษเงิน',
   'tier.E': 'E — ขยะ',
   'tier.label': 'ระดับ {tier}',
+  'group.custom': 'รูปลักษณ์ของตัวเอง',
   'group.stack': 'เฉพาะเป็นกอง',
   'group.hide': 'ซ่อน',
 

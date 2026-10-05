@@ -58,6 +58,7 @@ export const ja: Dictionary = {
   'tier.D': 'D — 小銭',
   'tier.E': 'E — ゴミ',
   'tier.label': 'ティア {tier}',
+  'group.custom': '独自の見た目',
   'group.stack': 'スタックのみ',
   'group.hide': '非表示',
 

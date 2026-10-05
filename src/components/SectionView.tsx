@@ -26,7 +26,8 @@ import { VisibilityFields } from './VisibilityFields'
 
 const CHOICES: TierChoice[] = [...TIER_IDS, 'hide']
 
-const GROUPS = [...TIER_IDS, 'stack', 'hide'] as const
+// Предметы со своим оформлением — отдельной группой сверху: их настраивали вручную, и искать их проще в одном месте.
+const GROUPS = ['custom', ...TIER_IDS, 'stack', 'hide'] as const
 type GroupId = (typeof GROUPS)[number]
 
 /** Корзина на кнопке «скрыть предмет»: крестик читался как «закрыть», а не как «выбросить из показа». */
@@ -68,7 +69,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
       const names = [item.name, ...(item.uniques ?? []).map((u) => u.name)].flatMap((n) => [n, name(n)])
       if (needle && !names.some((n) => n.toLowerCase().includes(needle))) continue
       const display = itemDisplay(item, config, snapshot.rates)
-      const group = display.kind === 'show' ? display.tier : display.kind
+      const group = display.kind === 'show' ? (display.custom ? 'custom' : display.tier) : display.kind
       const list = map.get(group) ?? []
       list.push({ item, display })
       map.set(group, list)
@@ -93,6 +94,9 @@ export function SectionView({ section, snapshot, config, update }: Props) {
       const { [section.id]: _section, ...others } = c.sectionTiers
       return { ...c, sectionTiers: Object.keys(tiers).length ? { ...others, [section.id]: tiers } : others }
     })
+  /** К строке предмета после того, как он сменил группу (кадр спустя — когда список уже перерисован). */
+  const scrollToItem = (key: string) =>
+    requestAnimationFrame(() => document.querySelector(`[data-focus="${CSS.escape(key)}"]`)?.scrollIntoView({ block: 'start' }))
   const setItemStyle = (key: string, style: TierStyle | null) =>
     update((c) => {
       const { [key]: _old, ...itemStyles } = c.itemStyles
@@ -124,7 +128,8 @@ export function SectionView({ section, snapshot, config, update }: Props) {
         .filter(Boolean)
         .join(' · ')
     : t(section.unique ? 'items.settingsGlobalUnique' : 'items.settingsGlobal')
-  const groupTitle = (group: GroupId) => (group === 'stack' || group === 'hide' ? t(keyOf('group', group)) : t(keyOf('tier', group)))
+  const groupTitle = (group: GroupId) =>
+    group === 'stack' || group === 'hide' || group === 'custom' ? t(keyOf('group', group)) : t(keyOf('tier', group))
 
   return (
     <div className={enabled ? 'section' : 'section section--disabled'}>
@@ -301,7 +306,11 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                         aria-expanded={editing === key}
                         onClick={() => {
                           // Первое нажатие — копия текущего вида предмета, чтобы править, а не собирать с нуля.
-                          if (!own) setItemStyle(key, structuredClone(sectionTierStyle(config, section.id, display.kind === 'hide' ? 'E' : display.tier)))
+                          if (!own) {
+                            setItemStyle(key, structuredClone(sectionTierStyle(config, section.id, display.kind === 'hide' ? 'E' : display.tier)))
+                            // Предмет переезжает в группу «Своё оформление» наверху — прокручиваем к нему, чтобы не потерять.
+                            scrollToItem(key)
+                          }
                           setEditing(editing === key ? null : key)
                         }}
                       >
@@ -316,6 +325,7 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                             onClick={() => {
                               setItemStyle(key, null)
                               setEditing(null)
+                              scrollToItem(key)
                             }}
                           >
                             {t('items.customReset')}

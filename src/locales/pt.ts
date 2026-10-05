@@ -58,6 +58,7 @@ export const pt: Dictionary = {
   'tier.D': 'D — trocados',
   'tier.E': 'E — lixo',
   'tier.label': 'Tier {tier}',
+  'group.custom': 'Visual próprio',
   'group.stack': 'Só em pilhas',
   'group.hide': 'Oculto',
 

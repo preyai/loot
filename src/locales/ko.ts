@@ -58,6 +58,7 @@ export const ko: Dictionary = {
   'tier.D': 'D — 잔돈',
   'tier.E': 'E — 쓰레기',
   'tier.label': '{tier} 등급',
+  'group.custom': '자체 모양',
   'group.stack': '묶음만',
   'group.hide': '숨김',
 

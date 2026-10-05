@@ -58,6 +58,7 @@ export const es: Dictionary = {
   'tier.D': 'D — calderilla',
   'tier.E': 'E — basura',
   'tier.label': 'Nivel {tier}',
+  'group.custom': 'Estilo propio',
   'group.stack': 'Solo montones',
   'group.hide': 'Oculto',
 

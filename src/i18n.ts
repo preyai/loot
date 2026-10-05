@@ -92,6 +92,7 @@ const ru = {
   'tier.D': 'D — мелочь',
   'tier.E': 'E — мусор',
   'tier.label': 'Тир {tier}',
+  'group.custom': 'Своё оформление',
   'group.stack': 'Только стопками',
   'group.hide': 'Скрыто',
 
@@ -672,6 +673,7 @@ const en: Dictionary = {
   'tier.D': 'D — small change',
   'tier.E': 'E — trash',
   'tier.label': 'Tier {tier}',
+  'group.custom': 'Custom look',
   'group.stack': 'Stacks only',
   'group.hide': 'Hidden',
 

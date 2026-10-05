@@ -559,6 +559,10 @@ main {
   --tier: #5aa7d6;
 }
 
+[data-tier='custom'] {
+  --tier: #c58be8;
+}
+
 [data-tier='hide'] {
   --tier: #4a4338;
 }

@@ -58,6 +58,7 @@ export const fr: Dictionary = {
   'tier.D': 'D — menue monnaie',
   'tier.E': 'E — déchets',
   'tier.label': 'Palier {tier}',
+  'group.custom': 'Style personnalisé',
   'group.stack': 'Piles uniquement',
   'group.hide': 'Masqué',
 

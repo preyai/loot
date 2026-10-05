@@ -168,24 +168,6 @@ export interface TierStyle {
 export const RARITIES = ['Normal', 'Magic', 'Rare'] as const
 export type Rarity = (typeof RARITIES)[number]
 
-/** Группа правила баз — только для списка на экране (заголовки), на фильтр не влияет. */
-export const RULE_GROUPS = [
-  'trade',
-  'exceptional',
-  'chancing',
-  'topmods',
-  'crafting',
-  'rares',
-  'jewellery',
-  'flasks',
-  'jewels',
-  'leveling',
-  'hide',
-  'rest',
-  'custom',
-] as const
-export type RuleGroup = (typeof RULE_GROUPS)[number]
-
 /** Правило для неуникальной экипировки: что показать или скрыть и по каким признакам. */
 export interface BaseRule {
   id: string
@@ -220,8 +202,6 @@ export interface BaseRule {
   tier: TierId
   /** Своё оформление правила; если задано, тир не используется. */
   style?: TierStyle
-  /** Группа в списке правил; нет — «Свои правила». */
-  group?: RuleGroup
   /** Правило создано опросом трейда и будет заменено следующим опросом. */
   source?: 'trade'
 }

@@ -102,7 +102,6 @@ export function exceptionalRules(scan: ExceptionalScan, priceLabel: string, tier
       ...EMPTY_RULE,
       name: t('rule.exceptional', { price: priceLabel, kind: t(keyOf('exceptional', kind)) }),
       source: 'trade' as const,
-      group: 'trade' as const,
       classes: classesOf(bases[kind]),
       bases: bases[kind],
       // Опрос ищет только обычные предметы: у магических и редких цену задают свойства, а не база.

@@ -71,7 +71,6 @@ export function chancingRule(bases: string[], priceLabel: string, t: T): Omit<Ba
     rarities: ['Normal'],
     excludeCorrupted: true,
     tier: 'B',
-    group: 'chancing',
     // Как у NeverSink для баз под шансинг: салатовое на зелёном — сразу видно, что это не валюта.
     style: GEAR_STYLES.chancing,
   }

@@ -203,18 +203,17 @@ function BasePicker({ rule, context, onChange }: { rule: BaseRule; context: Base
                 <span className="count">{describe(b, t)}</span>
                 {shares?.[b.name] !== undefined && <span className="share">{t('rules.worn', { share: percent(shares[b.name]) })}</span>}
                 {uniques.has(b.name) && (
-                  <span className="base-card-unique" title={t('rules.uniqueHint')}>
-                    {name(uniques.get(b.name)!.name)}: {priceOf(uniques.get(b.name)!)}
+                  // Цена — плашкой в рамке и в одну строку: длинное название уника сокращается, цена видна целиком.
+                  <span className="price-chip price-chip--unique" title={`${name(uniques.get(b.name)!.name)}: ${priceOf(uniques.get(b.name)!)}. ${t('rules.uniqueHint')}`}>
+                    <span className="price-chip-name">{name(uniques.get(b.name)!.name)}</span>
+                    <span className="price-chip-value">{priceOf(uniques.get(b.name)!)}</span>
                   </span>
                 )}
                 {scan &&
                   offers?.get(b.name)?.map((offer) => (
-                    <span key={offer.kind} className="base-card-price" title={t('rules.offerHint')}>
-                      {t('rules.offer', {
-                        kind: t(keyOf('exceptional', offer.kind)),
-                        price: `${scan.minExalted} ${CURRENCIES.exalted.short}`,
-                      })}
-                      <span className="count">{t('rules.sellers', { n: offer.sellers })}</span>
+                    <span key={offer.kind} className="price-chip" title={`${t('rules.offerHint')} ${t('rules.sellers', { n: offer.sellers })}`}>
+                      <span className="price-chip-name">{t(keyOf('exceptional', offer.kind))}</span>
+                      <span className="price-chip-value">{`${scan.minExalted}+ ${CURRENCIES.exalted.short}`}</span>
                     </span>
                   ))}
                 {/* Ссылка внутри label не переключает галочку: браузер отдаёт клик самой ссылке. */}

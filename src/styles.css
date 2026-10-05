@@ -1894,18 +1894,6 @@ label.button-like:hover {
   color: var(--gold-bright);
 }
 
-.base-card-unique {
-  /* Цвет уникальных предметов в игре. */
-  color: #c9742f;
-  font-size: 12px;
-}
-
-.base-card-price {
-  color: var(--gold);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
 .base-card-links {
   display: flex;
   gap: 12px;
@@ -2516,4 +2504,45 @@ button.link-button {
 button.link-button:hover:not(:disabled) {
   box-shadow: none;
   color: #fff;
+}
+
+/* Цена на карточке базы: плашка «название | цена» в рамке, всегда в одну строку. */
+.price-chip {
+  display: inline-flex;
+  max-width: 100%;
+  margin: 2px auto 0;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.price-chip-name {
+  min-width: 0;
+  padding: 1px 6px;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+}
+
+.price-chip-value {
+  flex: none;
+  padding: 1px 6px;
+  border-left: 1px solid var(--line);
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Уник на базе — в цвете уникальных предметов игры. */
+.price-chip--unique {
+  border-color: rgba(175, 96, 37, 0.5);
+}
+
+.price-chip--unique .price-chip-name {
+  color: #af6025;
+}
+
+.price-chip--unique .price-chip-value {
+  border-left-color: rgba(175, 96, 37, 0.4);
 }

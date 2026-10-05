@@ -6,11 +6,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 // DATA_DIR читается при загрузке модуля хранилища, поэтому каталог задаём до импорта.
 let dir: string
 let accounts: typeof import('./accounts')
+let catalog: typeof import('./catalog')
 
 beforeAll(async () => {
   dir = await mkdtemp(path.join(tmpdir(), 'loot-accounts-'))
   process.env.DATA_DIR = dir
   accounts = await import('./accounts')
+  catalog = await import('./catalog')
 })
 
 afterAll(() => rm(dir, { recursive: true, force: true }))
@@ -70,7 +72,7 @@ describe('фильтры и ссылки', () => {
 
     const { shareCode } = await accounts.shareFilter(userId, saved.id)
     expect((await accounts.shareFilter(userId, saved.id)).shareCode).toBe(shareCode)
-    expect(await accounts.sharedFilter(shareCode)).toMatchObject({ name: 'Строгий', owner: 'Owner', config: { filterName: 'Strict' } })
+    expect(await catalog.sharedFilter(shareCode)).toMatchObject({ name: 'Строгий', owner: 'Owner', config: { filterName: 'Strict' } })
 
     // Чужой пользователь не видит и не меняет чужие фильтры.
     const { id: otherId } = await signIn('Other')
@@ -78,7 +80,7 @@ describe('фильтры и ссылки', () => {
     await expect(accounts.updateFilter(otherId, saved.id, { name: 'x' })).rejects.toMatchObject({ status: 404 })
 
     await accounts.unshareFilter(userId, saved.id)
-    await expect(accounts.sharedFilter(shareCode)).rejects.toMatchObject({ status: 404 })
+    await expect(catalog.sharedFilter(shareCode)).rejects.toMatchObject({ status: 404 })
 
     await accounts.shareFilter(userId, saved.id)
     await accounts.deleteFilter(userId, saved.id)

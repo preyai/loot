@@ -7,13 +7,36 @@ import type { Config } from './types'
  * в браузере; «открыть» подменяет её сохранённым фильтром, «сохранить» отправляет её на сервер.
  */
 
+export interface FilterStats {
+  /** Средняя оценка 1–5; null — оценок нет. */
+  rating: number | null
+  ratings: number
+  subscribers: number
+  copies: number
+}
+
 export interface FilterSummary {
   id: string
   name: string
   createdAt: string
   updatedAt: string
   shareCode?: string
+  /** Опубликован в «Фильтрах сообщества». */
+  isPublic: boolean
+  description: string
+  stats?: FilterStats
 }
+
+/** Фильтр в каталоге (server/catalog.ts); поля зрителя — только для вошедшего. */
+export interface CatalogEntry extends FilterSummary {
+  owner: string
+  publishedAt: string | null
+  myRating?: number | null
+  subscribed?: boolean
+  own?: boolean
+}
+
+export type CatalogSort = 'popular' | 'rating' | 'new'
 
 /** Вошедший пользователь. */
 export interface Me {
@@ -22,11 +45,8 @@ export interface Me {
   discord: string | null
 }
 
-export interface SharedFilter {
-  name: string
-  owner: string
+export interface SharedFilter extends CatalogEntry {
   config: Partial<Config>
-  updatedAt: string
 }
 
 /** Ошибка сервера: по коду интерфейс показывает понятное сообщение на своём языке. */
@@ -76,6 +96,14 @@ export const api = {
   share: (id: string) => call<{ shareCode: string }>(`/api/filters/${id}/share`, 'POST'),
   unshare: (id: string) => call<object>(`/api/filters/${id}/share`, 'DELETE'),
   shared: (code: string) => call<SharedFilter>(`/api/shared/${encodeURIComponent(code)}`),
+  publish: (id: string, description: string) => call<FilterSummary>(`/api/filters/${id}/publish`, 'POST', { description }),
+  unpublish: (id: string) => call<object>(`/api/filters/${id}/publish`, 'DELETE'),
+  catalog: (sort: CatalogSort, q: string) => call<CatalogEntry[]>(`/api/catalog?sort=${sort}&q=${encodeURIComponent(q)}`),
+  subscriptions: () => call<CatalogEntry[]>('/api/subscriptions'),
+  rate: (code: string, value: number) => call<object>(`/api/shared/${encodeURIComponent(code)}/rate`, 'POST', { value }),
+  subscribe: (code: string) => call<object>(`/api/shared/${encodeURIComponent(code)}/subscribe`, 'POST'),
+  unsubscribe: (code: string) => call<object>(`/api/shared/${encodeURIComponent(code)}/subscribe`, 'DELETE'),
+  copy: (code: string) => call<FilterSummary>(`/api/shared/${encodeURIComponent(code)}/copy`, 'POST'),
 }
 
 /** Вход через Discord — обычный переход: сервер перенаправит на Discord и обратно на «Мои фильтры». */

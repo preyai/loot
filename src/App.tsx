@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAccount, useActiveFilter } from './account'
 import { BasesView } from './components/BasesView'
+import { CatalogView } from './components/CatalogView'
 import { ExtrasView } from './components/ExtrasView'
 import { FiltersView } from './components/FiltersView'
 import { GoldView } from './components/GoldView'
@@ -22,7 +23,7 @@ import { useConfig, useMarket, type UpdateConfig } from './store'
 import { convertCurrency, perDivine } from './tiering'
 import type { Config, Currency } from './types'
 
-const PAGES = ['start', 'filters', 'waystones', 'gold', 'extras', 'bases', 'preview', 'styles', 'export'] as const
+const PAGES = ['start', 'filters', 'catalog', 'waystones', 'gold', 'extras', 'bases', 'preview', 'styles', 'export'] as const
 type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number] | 'shared'
 
 /** Код из ссылки «поделиться»: #/shared/<код>. */
@@ -131,6 +132,9 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
             {t('nav.filters')}
             {active && <span className="count">{dirty ? `${active.name} •` : active.name}</span>}
           </a>
+          <a href="#/catalog" className={route === 'catalog' ? 'active' : ''}>
+            {t('nav.catalog')}
+          </a>
           <a href="#/preview" className={route === 'preview' ? 'active' : ''}>
             {t('nav.preview')}
           </a>
@@ -220,7 +224,8 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
           {!snapshot && market.loading && <p className="note">{t('top.loading')}</p>}
           {route === 'start' && <StartView config={config} update={update} snapshot={snapshot} gameFolder={gameFolder} />}
           {route === 'filters' && <FiltersView config={config} update={update} />}
-          {route === 'shared' && <SharedView code={sharedCode()!} config={config} update={update} />}
+          {route === 'shared' && <SharedView code={sharedCode()!} update={update} />}
+          {route === 'catalog' && <CatalogView />}
           {route === 'waystones' && <WaystonesView config={config} update={update} />}
           {route === 'gold' && <GoldView config={config} update={update} />}
           {route === 'extras' && <ExtrasView config={config} update={update} />}

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { api, applySaved, discordUrl, setActive, shareUrl, snapshotOf, useAccount, useActiveFilter, type FilterSummary } from '../account'
+import { api, applySaved, discordUrl, type CatalogEntry, setActive, shareUrl, snapshotOf, useAccount, useActiveFilter, type FilterSummary } from '../account'
 import { useI18n } from '../i18n-react'
 import type { UpdateConfig } from '../store'
 import type { Config } from '../types'
+import { FilterCard, StatsLine } from './CatalogView'
 
 /** Есть ли на сервере вход через Discord (заданы ли ключи приложения). */
 function useProviders() {
@@ -63,9 +64,13 @@ export function FiltersView({ config, update }: Props) {
   // Окна prompt/confirm во встроенных браузерах (например, в VS Code) не работают — всё спрашиваем на странице.
   const [newName, setNewName] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null)
-  const [confirming, setConfirming] = useState<{ id: string; action: 'open' | 'delete' } | null>(null)
+  const [confirming, setConfirming] = useState<{ id: string; action: 'open' | 'delete' | 'subscription' } | null>(null)
+  // Публикация: форма описания открыта для этого фильтра.
+  const [publishing, setPublishing] = useState<{ id: string; description: string } | null>(null)
+  const [subs, setSubs] = useState<CatalogEntry[] | null>(null)
 
-  const refresh = () => api.list().then(setFilters, (e: Error) => setError(e.message))
+  const refresh = () =>
+    Promise.all([api.list().then(setFilters), api.subscriptions().then(setSubs)]).catch((e: Error) => setError(e.message))
   useEffect(() => {
     if (me) void refresh()
   }, [me])
@@ -104,6 +109,21 @@ export function FiltersView({ config, update }: Props) {
       const saved = await api.create(name, config)
       setActive({ id: saved.id, name: saved.name, saved: snapshotOf(config) })
       setNewName(null)
+    })
+
+  const publish = (id: string, description: string) =>
+    run(async () => {
+      await api.publish(id, description)
+      setPublishing(null)
+    })
+
+  /** Подписка открывается всегда в последней версии автора; связи с «Сохранить» у неё нет. */
+  const openSubscription = (entry: CatalogEntry) =>
+    run(async () => {
+      setConfirming(null)
+      const shared = await api.shared(entry.shareCode!)
+      update((c) => applySaved(c, shared.config))
+      setActive(null)
     })
 
   const rename = (id: string, name: string) =>
@@ -222,6 +242,7 @@ export function FiltersView({ config, update }: Props) {
                       <strong>{filter.name}</strong>
                     )}
                     {active?.id === filter.id && <span className="badge">{t('filters.active')}</span>}
+                    {filter.isPublic && <span className="badge badge--public">{t('filters.public')}</span>}
                     <span className="count">{t('filters.updated', { time: when(filter.updatedAt) })}</span>
                   </div>
                   {confirming?.id === filter.id ? (
@@ -255,10 +276,44 @@ export function FiltersView({ config, update }: Props) {
                       ) : (
                         <button onClick={() => run(() => api.share(filter.id))}>{t('filters.share')}</button>
                       )}
+                      <button onClick={() => setPublishing({ id: filter.id, description: filter.description })}>
+                        {filter.isPublic ? t('filters.editDescription') : t('filters.publish')}
+                      </button>
+                      {filter.isPublic && <button onClick={() => run(() => api.unpublish(filter.id))}>{t('filters.unpublish')}</button>}
                       <button className="danger" onClick={() => setConfirming({ id: filter.id, action: 'delete' })}>
                         {t('filters.delete')}
                       </button>
                     </div>
+                  )}
+                  {filter.isPublic && filter.stats && <StatsLine stats={filter.stats} />}
+                  {publishing?.id === filter.id && (
+                    <form
+                      className="publish-form"
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        void publish(filter.id, publishing.description)
+                      }}
+                    >
+                      <label>
+                        {t('filters.description')}
+                        <textarea
+                          autoFocus
+                          maxLength={300}
+                          rows={2}
+                          value={publishing.description}
+                          onChange={(e) => setPublishing({ id: filter.id, description: e.target.value })}
+                        />
+                      </label>
+                      <p className="note">{t('filters.publishNote')}</p>
+                      <div className="actions">
+                        <button className="primary" type="submit">
+                          {filter.isPublic ? t('filters.save') : t('filters.publish')}
+                        </button>
+                        <button type="button" onClick={() => setPublishing(null)}>
+                          {t('filters.cancel')}
+                        </button>
+                      </div>
+                    </form>
                   )}
                   {filter.shareCode && (
                     <div className="share-link">
@@ -276,6 +331,38 @@ export function FiltersView({ config, update }: Props) {
                     </div>
                   )}
                 </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="panel">
+            <h2>{t('subs.title')}</h2>
+            <p className="note">{t('subs.note')}</p>
+            {subs?.length === 0 && (
+              <p className="note">
+                {t('subs.empty')} <a href="#/catalog">{t('nav.catalog')}</a>
+              </p>
+            )}
+            <ul className="catalog">
+              {subs?.map((entry) => (
+                <FilterCard key={entry.id} entry={entry} onChanged={() => void refresh()}>
+                  {confirming?.id === entry.id && confirming.action === 'subscription' ? (
+                    <span className="confirm-row">
+                      <span>{t('filters.openConfirm', { name: entry.name })}</span>
+                      <button className="primary" onClick={() => openSubscription(entry)}>
+                        {t('filters.yes')}
+                      </button>
+                      <button onClick={() => setConfirming(null)}>{t('filters.cancel')}</button>
+                    </span>
+                  ) : (
+                    <button
+                      className="primary"
+                      onClick={() => (active && dirty ? setConfirming({ id: entry.id, action: 'subscription' }) : void openSubscription(entry))}
+                    >
+                      {t('filters.open')}
+                    </button>
+                  )}
+                </FilterCard>
               ))}
             </ul>
           </section>

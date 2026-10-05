@@ -7,6 +7,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest'
 // Данные в старом формате (JSON-файлы) кладём до импорта модуля: перенос идёт при первом обращении к базе.
 let dir: string
 let accounts: typeof import('./accounts')
+let catalog: typeof import('./catalog')
 
 beforeAll(async () => {
   dir = await mkdtemp(path.join(tmpdir(), 'loot-import-'))
@@ -25,16 +26,17 @@ beforeAll(async () => {
     { id: 'f1', name: 'Мой', config: { filterName: 'Mine' }, createdAt: '2026-10-02T00:00:00.000Z', updatedAt: '2026-10-03T00:00:00.000Z', shareCode: 'share123' },
   ])
   accounts = await import('./accounts')
+  catalog = await import('./catalog')
 })
 
 afterAll(() => rm(dir, { recursive: true, force: true }))
 
 it('переносит пользователей, сессии, фильтры и ссылки из JSON-файлов в базу', async () => {
   expect(await accounts.sessionUser('token-1')).toEqual({ id: 'u1', login: 'Tul' })
-  expect(await accounts.listFilters('u1')).toEqual([
-    { id: 'f1', name: 'Мой', createdAt: '2026-10-02T00:00:00.000Z', updatedAt: '2026-10-03T00:00:00.000Z', shareCode: 'share123' },
+  expect(await accounts.listFilters('u1')).toMatchObject([
+    { id: 'f1', name: 'Мой', createdAt: '2026-10-02T00:00:00.000Z', updatedAt: '2026-10-03T00:00:00.000Z', shareCode: 'share123', isPublic: false },
   ])
-  expect(await accounts.sharedFilter('share123')).toMatchObject({ name: 'Мой', owner: 'Tul', config: { filterName: 'Mine' } })
+  expect(await catalog.sharedFilter('share123')).toMatchObject({ name: 'Мой', owner: 'Tul', config: { filterName: 'Mine' } })
   // Тот же Discord входит в перенесённую учётную запись, а не создаёт новую.
   expect(await accounts.discordSignIn({ id: '42', name: 'tul' })).toMatchObject({ login: 'Tul', created: false })
   // Старые файлы не удаляются, а откладываются.

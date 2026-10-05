@@ -1980,3 +1980,115 @@ a.discord-button:hover {
 .section-settings-state.is-own {
   color: var(--gold);
 }
+
+/* Фильтры сообщества: карточки, звёзды оценки, публикация. */
+.catalog {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.catalog-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.catalog-card:hover {
+  border-color: var(--bronze);
+}
+
+.catalog-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.catalog-name {
+  color: var(--gold-bright);
+  font-size: 18px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.catalog-name:hover {
+  text-decoration: underline;
+}
+
+.catalog-description {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.catalog-tabs {
+  margin-bottom: 4px;
+}
+
+.filter-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.stars {
+  display: inline-flex;
+  gap: 1px;
+  color: #4a4338;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.stars .star.on {
+  color: #f1c24a;
+}
+
+.stars--input .star {
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: #4a4338;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.stars--input .star.on {
+  color: #f1c24a;
+}
+
+.my-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.badge--public {
+  border-color: #5aa7d6;
+  color: #8cc8ee;
+}
+
+.publish-form {
+  display: grid;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.publish-form label {
+  display: grid;
+  gap: 4px;
+}
+
+.publish-form textarea {
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  background: var(--inset);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}

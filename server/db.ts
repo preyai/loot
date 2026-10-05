@@ -42,6 +42,27 @@ const MIGRATIONS = [
     updated_at timestamptz NOT NULL DEFAULT now()
   );
   CREATE INDEX filters_user ON filters (user_id, updated_at DESC);`,
+  // 2: публичные фильтры — каталог, оценки, подписки, счётчик копий.
+  `ALTER TABLE filters
+    ADD COLUMN is_public boolean NOT NULL DEFAULT false,
+    ADD COLUMN description text NOT NULL DEFAULT '',
+    ADD COLUMN published_at timestamptz,
+    ADD COLUMN copies integer NOT NULL DEFAULT 0;
+  CREATE INDEX filters_public ON filters (published_at DESC) WHERE is_public;
+  CREATE TABLE filter_ratings (
+    filter_id text NOT NULL REFERENCES filters (id) ON DELETE CASCADE,
+    user_id text NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    value smallint NOT NULL CHECK (value BETWEEN 1 AND 5),
+    rated_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (filter_id, user_id)
+  );
+  CREATE TABLE filter_subscriptions (
+    filter_id text NOT NULL REFERENCES filters (id) ON DELETE CASCADE,
+    user_id text NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    subscribed_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (filter_id, user_id)
+  );
+  CREATE INDEX filter_subscriptions_user ON filter_subscriptions (user_id);`,
 ]
 
 async function migrate(db: Db) {

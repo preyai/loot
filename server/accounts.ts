@@ -33,6 +33,19 @@ export interface SavedFilter {
   createdAt: string
   updatedAt: string
   shareCode?: string
+  /** Опубликован в «Фильтрах сообщества». */
+  isPublic: boolean
+  description: string
+  /** Оценки, подписчики и копии — в списке своих фильтров и в каталоге. */
+  stats?: FilterStats
+}
+
+export interface FilterStats {
+  /** Средняя оценка (1–5); null — оценок нет. */
+  rating: number | null
+  ratings: number
+  subscribers: number
+  copies: number
 }
 
 export type FilterSummary = Omit<SavedFilter, 'config'>
@@ -52,7 +65,7 @@ const iso = (value: Date | string) => new Date(value).toISOString()
 let ready: Promise<Db> | null = null
 
 /** База с перенесёнными данными: до перехода на базу учётные записи лежали в JSON-файлах. */
-function database(): Promise<Db> {
+export function database(): Promise<Db> {
   ready ??= db().then(async (instance) => {
     await importJson(instance)
     return instance
@@ -175,24 +188,40 @@ export async function discordSignIn(discord: DiscordProfile): Promise<{ login: s
 
 // --- Фильтры пользователя
 
-interface FilterRow {
+export interface FilterRow {
   id: string
   name: string
   config?: Record<string, unknown>
   share_code: string | null
+  is_public: boolean
+  description: string
   created_at: Date
   updated_at: Date
+  copies: number
+  rating?: number | null
+  ratings?: number
+  subscribers?: number
 }
 
-const summary = (row: FilterRow): FilterSummary => ({
+export const summary = (row: FilterRow): FilterSummary => ({
   id: row.id,
   name: row.name,
   createdAt: iso(row.created_at),
   updatedAt: iso(row.updated_at),
   ...(row.share_code ? { shareCode: row.share_code } : {}),
+  isPublic: row.is_public,
+  description: row.description,
+  ...(row.ratings !== undefined
+    ? { stats: { rating: row.rating ?? null, ratings: row.ratings, subscribers: row.subscribers ?? 0, copies: row.copies } }
+    : {}),
 })
 
-const SUMMARY_COLUMNS = 'id, name, share_code, created_at, updated_at'
+const SUMMARY_COLUMNS = 'id, name, share_code, is_public, description, copies, created_at, updated_at'
+
+/** Оценки и подписчики фильтра f — подзапросами: их немного, а соединения раздули бы строки. */
+export const STATS_COLUMNS = `(SELECT avg(value)::float8 FROM filter_ratings r WHERE r.filter_id = f.id) AS rating,
+  (SELECT count(*)::int FROM filter_ratings r WHERE r.filter_id = f.id) AS ratings,
+  (SELECT count(*)::int FROM filter_subscriptions s WHERE s.filter_id = f.id) AS subscribers`
 
 function checkName(name: unknown): string {
   if (typeof name !== 'string' || !name.trim() || name.trim().length > 60) throw new AccountError(400, 'name: 1–60 characters')
@@ -213,7 +242,7 @@ function checkConfig(config: unknown): string {
 export async function listFilters(userId: string): Promise<FilterSummary[]> {
   const rows = await (
     await database()
-  ).query<FilterRow>(`SELECT ${SUMMARY_COLUMNS} FROM filters WHERE user_id = $1 ORDER BY updated_at DESC`, [userId])
+  ).query<FilterRow>(`SELECT ${SUMMARY_COLUMNS}, ${STATS_COLUMNS} FROM filters f WHERE user_id = $1 ORDER BY updated_at DESC`, [userId])
   return rows.map(summary)
 }
 
@@ -275,19 +304,9 @@ export async function shareFilter(userId: string, id: string): Promise<{ shareCo
 export async function unshareFilter(userId: string, id: string) {
   const rows = await (
     await database()
-  ).query(`UPDATE filters SET share_code = NULL WHERE user_id = $1 AND id = $2 RETURNING id`, [userId, id])
+    // Без ссылки фильтр не открыть — значит, и в каталоге ему не место.
+  ).query(`UPDATE filters SET share_code = NULL, is_public = false WHERE user_id = $1 AND id = $2 RETURNING id`, [userId, id])
   if (rows.length === 0) throw new AccountError(404, 'filter not found')
-}
-
-export async function sharedFilter(code: string): Promise<{ name: string; owner: string; config: Record<string, unknown>; updatedAt: string }> {
-  const [row] = await (
-    await database()
-  ).query<{ name: string; owner: string; config: Record<string, unknown>; updated_at: Date }>(
-    `SELECT f.name, u.login AS owner, f.config, f.updated_at FROM filters f JOIN users u ON u.id = f.user_id WHERE f.share_code = $1`,
-    [code],
-  )
-  if (!row) throw new AccountError(404, 'link not found')
-  return { name: row.name, owner: row.owner, config: row.config, updatedAt: iso(row.updated_at) }
 }
 
 // --- Сайт открыт всем: не больше 5 новых учётных записей с адреса за час, чтобы их не плодили скриптом.
@@ -333,7 +352,7 @@ export function setToken(req: IncomingMessage, res: ServerResponse, token: strin
 
 const MAX_BODY = MAX_CONFIG_BYTES + 64 * 1024
 
-async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+export async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = []
   let size = 0
   for await (const chunk of req) {
@@ -370,9 +389,7 @@ export async function handleAccounts(req: IncomingMessage, res: ServerResponse, 
     return {}
   }
 
-  const shared = /^\/api\/shared\/([\w-]{6,32})$/.exec(path)
-  if (shared && method === 'GET') return sharedFilter(shared[1])
-
+  // Фильтр по ссылке, каталог, оценки и подписки — server/catalog.ts.
   if (!path.startsWith('/api/filters')) return undefined
   const user = await sessionUser(readToken(req))
   if (!user) throw new AccountError(401, 'sign in first')

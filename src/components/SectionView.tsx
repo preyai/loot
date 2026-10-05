@@ -30,6 +30,35 @@ const CHOICES: TierChoice[] = [...TIER_IDS, 'hide']
 const GROUPS = ['custom', ...TIER_IDS, 'stack', 'hide'] as const
 type GroupId = (typeof GROUPS)[number]
 
+/**
+ * Размер стопки: набираемый текст хранится, пока его правят, — иначе «10» не набрать (первая «1» меньше минимума).
+ * Применяется при уходе из поля или по Enter: с ручной стопкой предмет переезжает в другую группу списка,
+ * и поле, применяй его на каждую цифру, теряло бы фокус посреди ввода. Пусто — без ручной стопки.
+ */
+function StackInput({ value, max, placeholder, onChange }: { value: number | null; max: number; placeholder: string; onChange: (size: number | null) => void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const commit = () => {
+    if (draft !== null) {
+      const n = Math.round(Number(draft))
+      if (!draft.trim()) onChange(null)
+      else if (n >= 2) onChange(Math.min(n, max))
+    }
+    setDraft(null)
+  }
+  return (
+    <input
+      type="number"
+      min={2}
+      max={max}
+      placeholder={placeholder}
+      value={draft ?? value ?? ''}
+      onChange={(e) => setDraft(e.target.value)}
+      onKeyDown={(e) => e.key === 'Enter' && commit()}
+      onBlur={commit}
+    />
+  )
+}
+
 /** Значок стопки: монеты одна на другой. */
 function StackIcon() {
   return (
@@ -347,16 +376,11 @@ export function SectionView({ section, snapshot, config, update }: Props) {
                       <div className="item-stack">
                         <label className="check">
                           {t('items.stackManual')}
-                          <input
-                            type="number"
-                            min={2}
+                          <StackInput
+                            value={config.itemStacks[key] ?? null}
                             max={maxStack(item.name)}
                             placeholder={display.kind === 'stack' ? String(display.stackSize) : ''}
-                            value={config.itemStacks[key] ?? ''}
-                            onChange={(e) => {
-                              const n = Math.round(Number(e.target.value))
-                              setItemStack(key, e.target.value && n >= 2 ? Math.min(n, maxStack(item.name)) : null)
-                            }}
+                            onChange={(size) => setItemStack(key, size)}
                           />
                           {t('items.stackUnit')}
                         </label>

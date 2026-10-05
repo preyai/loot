@@ -2293,3 +2293,89 @@ a.discord-button:hover {
 .publish-form textarea {
   resize: vertical;
 }
+
+/* Цвет с прозрачностью: образец и дорожка ползунка — на шахматке, чтобы альфа была видна. */
+.color-swatch {
+  --checker: repeating-conic-gradient(#3b342a 0 25%, #1c1813 0 50%) 0 0 / 8px 8px;
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 28px;
+  border: 1px solid var(--bronze);
+  border-radius: 3px;
+  background: var(--checker);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.color-swatch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--swatch);
+  pointer-events: none;
+}
+
+.color-swatch:hover {
+  border-color: var(--gold);
+}
+
+.color-swatch input[type='color'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+input[type='text'].hex-input {
+  width: 92px;
+  min-height: 28px;
+  padding: 3px 8px;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.color-alpha {
+  display: flex;
+  flex: 1 1 130px;
+  align-items: center;
+  gap: 6px;
+}
+
+.color-alpha .alpha-slider {
+  flex: 1;
+  min-width: 70px;
+}
+
+input[type='range'].alpha-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  background:
+    linear-gradient(90deg, transparent, var(--opaque)),
+    repeating-conic-gradient(#3b342a 0 25%, #1c1813 0 50%) 0 0 / 8px 8px;
+}
+
+input[type='range'].alpha-slider::-moz-range-track {
+  height: 8px;
+  background:
+    linear-gradient(90deg, transparent, var(--opaque)),
+    repeating-conic-gradient(#3b342a 0 25%, #1c1813 0 50%) 0 0 / 8px 8px;
+}
+
+input[type='range'].alpha-slider::-moz-range-progress {
+  background: transparent;
+}
+
+input[type='range'].alpha-slider::-webkit-slider-thumb {
+  margin-top: -4px;
+}
+
+.alpha-value {
+  width: 36px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

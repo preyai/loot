@@ -14,6 +14,40 @@ const fromHex = (hex: string, a: number): Rgba => ({
   a,
 })
 const OPAQUE_BLACK: Rgba = { r: 0, g: 0, b: 0, a: 255 }
+const hex2 = (v: number) => v.toString(16).padStart(2, '0')
+/** Цвет с прозрачностью: #RRGGBBAA; непрозрачный — короче, #RRGGBB. */
+const toHex8 = (c: Rgba) => toHex(c) + (c.a === 255 ? '' : hex2(c.a))
+const css = ({ r, g, b, a }: Rgba) => `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`
+
+/** #RGB, #RRGGBB или #RRGGBBAA (решётка необязательна); null — не цвет. */
+export function parseHex(text: string): Rgba | null {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(text.trim())
+  if (!m) return null
+  const h = m[1].length === 3 ? [...m[1]].map((c) => c + c).join('') : m[1]
+  const at = (i: number) => parseInt(h.slice(i, i + 2), 16)
+  return { r: at(0), g: at(2), b: at(4), a: h.length === 8 ? at(6) : 255 }
+}
+
+/** Поле HEX: правится свободно, применяется, как только набран целый цвет; при уходе — снова значение цвета. */
+function HexInput({ value, onChange, label }: { value: Rgba; onChange: (v: Rgba) => void; label: string }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  return (
+    <input
+      type="text"
+      className="hex-input"
+      aria-label={label}
+      spellCheck={false}
+      maxLength={9}
+      value={draft ?? toHex8(value)}
+      onChange={(e) => {
+        setDraft(e.target.value)
+        const parsed = parseHex(e.target.value)
+        if (parsed) onChange(parsed)
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  )
+}
 const ICON_SIZES = [0, 1, 2] as const
 
 function ColorField(props: { label: string; value: Rgba; onChange: (v: Rgba) => void }): React.ReactNode
@@ -41,21 +75,27 @@ function ColorField({
       </label>
       {value && (
         <>
-          <input
-            type="color"
-            aria-label={label}
-            value={toHex(value)}
-            onChange={(e) => onChange(fromHex(e.target.value, value.a))}
-          />
-          <input
-            type="range"
-            min={0}
-            max={255}
-            aria-label={`${label}: ${t('styles.opacity')}`}
-            title={t('styles.opacity')}
-            value={value.a}
-            onChange={(e) => onChange({ ...value, a: Number(e.target.value) })}
-          />
+          {/* Системный выбор цвета не знает прозрачности: образец рисуем сами (на шахматке), а палитру открывает
+              невидимое поле поверх него. */}
+          <label className="color-swatch" style={{ '--swatch': css(value) } as React.CSSProperties} title={toHex8(value)}>
+            <input type="color" aria-label={label} value={toHex(value)} onChange={(e) => onChange(fromHex(e.target.value, value.a))} />
+          </label>
+          <HexInput value={value} onChange={onChange} label={`${label}: HEX`} />
+          <span className="color-alpha" style={{ '--opaque': css({ ...value, a: 255 }) } as React.CSSProperties}>
+            <input
+              type="range"
+              className="alpha-slider"
+              min={0}
+              max={255}
+              aria-label={`${label}: ${t('styles.opacity')}`}
+              title={t('styles.opacity')}
+              value={value.a}
+              onChange={(e) => onChange({ ...value, a: Number(e.target.value) })}
+            />
+            <span className="alpha-value" title={t('styles.opacity')}>
+              {Math.round((value.a / 255) * 100)}%
+            </span>
+          </span>
         </>
       )}
     </div>

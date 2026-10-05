@@ -24,13 +24,59 @@ interface Props {
   gameFolder: GameFolder
 }
 
-export function ExportView({ snapshot, config, update, gameFolder }: Props) {
+/** Название фильтра, папка игры и итог последнего сохранения — на странице экспорта и на стартовой. */
+export function FilterTarget({ config, update, gameFolder }: Omit<Props, 'snapshot'>) {
   const { t, locale } = useI18n()
+  const file = filterFileName(config.filterName)
+  const { supported, folder, choose, status } = gameFolder
+  return (
+    <>
+      <label className="check">
+        {t('export.name')}
+        <input
+          type="text"
+          maxLength={60}
+          value={config.filterName}
+          placeholder="ExileFilter"
+          onChange={(e) => update((c) => ({ ...c, filterName: e.target.value }))}
+        />
+      </label>
+      <p className="note">{t('export.nameHint', { file })}</p>
+
+      <h2>{t('export.folderTitle')}</h2>
+      {supported ? (
+        <>
+          <div className="actions">
+            <button onClick={choose}>{folder ? t('export.changeFolder') : t('export.chooseFolder')}</button>
+            {folder && <span>{t('export.folderChosen', { folder })}</span>}
+          </div>
+          {folder && folder !== GAME_FOLDER_NAME && <p className="note note--error">{t('export.folderWrong', { folder: GAME_FOLDER_NAME })}</p>}
+          <p className="note">{t('export.folderNote', { path: t('export.folder') })}</p>
+        </>
+      ) : (
+        <p className="note">{t('export.noFolderApi')}</p>
+      )}
+      {status?.kind === 'saved' && (
+        <p className="note note--ok">
+          {t('export.saved', { file: status.file, time: status.at.toLocaleTimeString(locale) })}
+          {status.sounds > 0 && ` · ${t('export.savedSounds', { n: status.sounds })}`}
+        </p>
+      )}
+      {status?.kind === 'saved' && status.missing.length > 0 && (
+        <p className="note note--error">{t('export.soundsMissing', { files: status.missing.join(', ') })}</p>
+      )}
+      {status?.kind === 'error' && <p className="note note--error">{t('export.saveError', { error: status.message })}</p>}
+    </>
+  )
+}
+
+export function ExportView({ snapshot, config, update, gameFolder }: Props) {
+  const { t } = useI18n()
   const text = useMemo(() => generateFilter(snapshot, config), [snapshot, config])
   const [copied, setCopied] = useState(false)
   const file = filterFileName(config.filterName)
   const name = file.replace(/\.filter$/, '')
-  const { supported, folder, choose, save, status } = gameFolder
+  const { supported, folder, save } = gameFolder
   const sounds = useMemo(() => soundsInFilter(text), [text])
   const library = useSoundLibrary()
 
@@ -56,41 +102,7 @@ export function ExportView({ snapshot, config, update, gameFolder }: Props) {
       </header>
 
       <section className="panel export-settings">
-        <label className="check">
-          {t('export.name')}
-          <input
-            type="text"
-            maxLength={60}
-            value={config.filterName}
-            placeholder="ExileFilter"
-            onChange={(e) => update((c) => ({ ...c, filterName: e.target.value }))}
-          />
-        </label>
-        <p className="note">{t('export.nameHint', { file })}</p>
-
-        <h2>{t('export.folderTitle')}</h2>
-        {supported ? (
-          <>
-            <div className="actions">
-              <button onClick={choose}>{folder ? t('export.changeFolder') : t('export.chooseFolder')}</button>
-              {folder && <span>{t('export.folderChosen', { folder })}</span>}
-            </div>
-            {folder && folder !== GAME_FOLDER_NAME && <p className="note note--error">{t('export.folderWrong', { folder: GAME_FOLDER_NAME })}</p>}
-            <p className="note">{t('export.folderNote', { path: t('export.folder') })}</p>
-          </>
-        ) : (
-          <p className="note">{t('export.noFolderApi')}</p>
-        )}
-        {status?.kind === 'saved' && (
-          <p className="note note--ok">
-            {t('export.saved', { file: status.file, time: status.at.toLocaleTimeString(locale) })}
-            {status.sounds > 0 && ` · ${t('export.savedSounds', { n: status.sounds })}`}
-          </p>
-        )}
-        {status?.kind === 'saved' && status.missing.length > 0 && (
-          <p className="note note--error">{t('export.soundsMissing', { files: status.missing.join(', ') })}</p>
-        )}
-        {status?.kind === 'error' && <p className="note note--error">{t('export.saveError', { error: status.message })}</p>}
+        <FilterTarget config={config} update={update} gameFolder={gameFolder} />
       </section>
 
       {sounds.length > 0 && (

@@ -8,6 +8,7 @@ import { PreviewView } from './components/PreviewView'
 import { downloadFilter, ExportView } from './components/ExportView'
 import { SectionView } from './components/SectionView'
 import { SharedView } from './components/SharedView'
+import { StartView } from './components/StartView'
 import { StylesView } from './components/StylesView'
 import { WaystonesView } from './components/WaystonesView'
 import { CURRENCIES } from './defaults'
@@ -21,7 +22,7 @@ import { useConfig, useMarket, type UpdateConfig } from './store'
 import { convertCurrency, perDivine } from './tiering'
 import type { Config, Currency } from './types'
 
-const PAGES = ['filters', 'waystones', 'gold', 'extras', 'bases', 'preview', 'styles', 'export'] as const
+const PAGES = ['start', 'filters', 'waystones', 'gold', 'extras', 'bases', 'preview', 'styles', 'export'] as const
 type Route = (typeof SECTIONS)[number]['id'] | (typeof PAGES)[number] | 'shared'
 
 /** Код из ссылки «поделиться»: #/shared/<код>. */
@@ -31,6 +32,8 @@ function readRoute(): Route {
   if (sharedCode()) return 'shared'
   // После «?» — переход к строке страницы (focus.ts), к маршруту он не относится.
   const id = location.hash.replace(/^#\/?/, '').split('?')[0]
+  // Без адреса — стартовая страница: новичку сначала три шага, а не раздел рынка.
+  if (!id) return 'start'
   const known = SECTIONS.some((s) => s.id === id) || (PAGES as readonly string[]).includes(id)
   return known ? (id as Route) : SECTIONS[0].id
 }
@@ -89,6 +92,9 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
           </div>
         </div>
         <nav>
+          <a href="#/start" className={route === 'start' ? 'active nav-start' : 'nav-start'}>
+            {t('nav.start')}
+          </a>
           {SECTIONS.map((s, i) => (
             <Fragment key={s.id}>
               {i === 0 && <div className="nav-group">{t('nav.market')}</div>}
@@ -212,6 +218,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
             </p>
           )}
           {!snapshot && market.loading && <p className="note">{t('top.loading')}</p>}
+          {route === 'start' && <StartView config={config} update={update} snapshot={snapshot} gameFolder={gameFolder} />}
           {route === 'filters' && <FiltersView config={config} update={update} />}
           {route === 'shared' && <SharedView code={sharedCode()!} config={config} update={update} />}
           {route === 'waystones' && <WaystonesView config={config} update={update} />}

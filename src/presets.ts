@@ -1,7 +1,7 @@
 import { BASE_CLASSES, classesOf, classNames, EMPTY_RULE, GEAR_CLASSES, POPULAR_SHARE, popularBases, topBases } from './bases'
 import { GEAR_STYLES } from './gearStyles'
 import type { T } from './i18n'
-import type { BaseRule, Config, Rarity, Rgba, TierId, TierStyle } from './types'
+import type { BaseRule, Config, Rarity, Rgba, TierId, TierStyle, Visibility } from './types'
 
 type Draft = Omit<BaseRule, 'id'>
 
@@ -278,4 +278,26 @@ export function applyPreset(
     ],
     gear: { ...config.gear, hideLowRarity: preset.hideLowRarity },
   }
+}
+
+/**
+ * Показ на рынке для строгости со стартовой страницы. Мягкие наборы показывают всё; сбалансированный скрывает
+ * мусор (тир E), строгий — и мелочь (D). Скрытое дешёвое показывается стопками на сумму от границы тира.
+ */
+export const MARKET_LEVELS: Record<PresetId, Visibility> = {
+  leveling: { minTier: 'E', minPrice: 0, stacks: true },
+  soft: { minTier: 'E', minPrice: 0, stacks: true },
+  balanced: { minTier: 'D', minPrice: 0, stacks: true },
+  strict: { minTier: 'C', minPrice: 0, stacks: true },
+}
+
+/** Строгость целиком: набор правил баз и общий показ на рынке. Свои настройки разделов остаются. */
+export function applyLevel(
+  config: Config,
+  preset: RulePreset,
+  shares: Record<string, number> | null,
+  t: T,
+  chancing: Draft | null = null,
+): Config {
+  return { ...applyPreset(config, preset, shares, t, chancing), visibility: MARKET_LEVELS[preset.id], level: preset.id }
 }

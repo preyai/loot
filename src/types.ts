@@ -245,6 +245,8 @@ export interface Config {
   visibility: Visibility
   /** Разделы со своими настройками показа вместо общих. */
   sectionVisibility: Partial<Record<SectionId, Visibility>>
+  /** Строгость, выбранная на стартовой странице; меняется и вручную — тогда это просто последний выбор. */
+  level?: 'leveling' | 'soft' | 'balanced' | 'strict'
   /** Своё оформление тиров в разделе рынка; тиров, которых здесь нет, — общее оформление (tiers). */
   sectionTiers: Partial<Record<SectionId, Partial<Record<TierId, TierStyle>>>>
   /** plainHidden — скрытые правилами баз вещи под Alt без оформления правила: мелко и прозрачно, как у NeverSink. */

@@ -14,14 +14,15 @@ import {
   wikiUrl,
   type BaseInfo,
 } from '../bases'
-import { CHANCING_MIN_DIVINE, chancingBases, chancingRule, uniquesByBase } from '../chancing'
+import { uniquesByBase } from '../chancing'
 import { CURRENCIES } from '../defaults'
 import { baseOffers } from '../exceptional'
 import { keyOf, translateOr, type T } from '../i18n'
 import { useFocus } from '../focus'
 import { useI18n } from '../i18n-react'
 import { applyPreset, RULE_PRESETS, type RulePreset } from '../presets'
-import { useExceptionalScan, usePopularity, type UpdateConfig } from '../store'
+import { useExceptionalScan, type UpdateConfig } from '../store'
+import { usePresetInputs } from '../usePresetInputs'
 import { formatPrice } from '../tiering'
 import {
   RARITIES,
@@ -517,8 +518,7 @@ interface Props {
 export function BasesView({ config, update, snapshot }: Props) {
   const { t, locale } = useI18n()
   const rates = snapshot?.rates ?? null
-  const popularity = usePopularity(config.league)
-  const shares = popularity.data?.shares ?? null
+  const { popularity, shares, chancing } = usePresetInputs(config, snapshot)
   const exceptional = useExceptionalScan(config.league)
   const uniques = useMemo(() => uniquesByBase(snapshot?.items ?? []), [snapshot])
   const context: BaseContext = {
@@ -528,12 +528,6 @@ export function BasesView({ config, update, snapshot }: Props) {
     uniques,
     priceOf: (unique) => (rates ? formatPrice(unique.divine, rates, config.currency, t) : ''),
   }
-
-  const chancing = useMemo(() => {
-    if (!snapshot || !rates) return null
-    const bases = chancingBases(snapshot.items, CHANCING_MIN_DIVINE)
-    return bases.length ? chancingRule(bases, formatPrice(CHANCING_MIN_DIVINE, rates, config.currency, t), t) : null
-  }, [snapshot, rates, config.currency, t])
 
   const setRules = (change: (rules: BaseRule[]) => BaseRule[]) => update((c) => ({ ...c, baseRules: change(c.baseRules) }))
   const addRule = (rule: Omit<BaseRule, 'id'>) => setRules((rules) => [...rules, { ...rule, id: crypto.randomUUID() }])

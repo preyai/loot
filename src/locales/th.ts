@@ -514,6 +514,8 @@ export const th: Dictionary = {
   'filters.unshare': 'หยุดแชร์',
   'filters.delete': 'ลบ',
   'filters.deleteConfirm': 'ลบฟิลเตอร์ “{name}” หรือไม่?',
+  'filters.yes': 'ใช่',
+  'filters.cancel': 'ยกเลิก',
   'filters.link': 'ลิงก์:',
   'shared.title': 'ฟิลเตอร์ที่แชร์',
   'shared.by': 'โดย {owner} แก้ไขเมื่อ {time}',

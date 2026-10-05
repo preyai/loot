@@ -514,6 +514,8 @@ export const ko: Dictionary = {
   'filters.unshare': '공유 중지',
   'filters.delete': '삭제',
   'filters.deleteConfirm': '필터 “{name}”을(를) 삭제할까요?',
+  'filters.yes': '예',
+  'filters.cancel': '취소',
   'filters.link': '링크:',
   'shared.title': '공유된 필터',
   'shared.by': '작성자: {owner}, {time} 수정됨',

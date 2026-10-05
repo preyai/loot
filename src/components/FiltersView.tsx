@@ -82,6 +82,10 @@ export function FiltersView({ config, update }: Props) {
   const [filters, setFilters] = useState<FilterSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  // Окна prompt/confirm во встроенных браузерах (например, в VS Code) не работают — всё спрашиваем на странице.
+  const [newName, setNewName] = useState<string | null>(null)
+  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null)
+  const [confirming, setConfirming] = useState<{ id: string; action: 'open' | 'delete' } | null>(null)
 
   const refresh = () => api.list().then(setFilters, (e: Error) => setError(e.message))
   useEffect(() => {
@@ -100,6 +104,36 @@ export function FiltersView({ config, update }: Props) {
   }
 
   const when = (iso: string) => new Date(iso).toLocaleString(locale)
+
+  const open = (id: string) =>
+    run(async () => {
+      setConfirming(null)
+      const saved = await api.get(id)
+      const next = applySaved(config, saved.config)
+      update(() => next)
+      setActive({ id: saved.id, name: saved.name, saved: snapshotOf(next) })
+    })
+
+  const remove = (id: string) =>
+    run(async () => {
+      setConfirming(null)
+      await api.remove(id)
+      if (active?.id === id) setActive(null)
+    })
+
+  const saveAs = (name: string) =>
+    run(async () => {
+      const saved = await api.create(name, config)
+      setActive({ id: saved.id, name: saved.name, saved: snapshotOf(config) })
+      setNewName(null)
+    })
+
+  const rename = (id: string, name: string) =>
+    run(async () => {
+      const saved = await api.update(id, { name })
+      if (active?.id === saved.id) setActive({ ...active, name: saved.name })
+      setRenaming(null)
+    })
 
   if (me === undefined) return <p className="note">{t('account.loading')}</p>
 
@@ -126,7 +160,7 @@ export function FiltersView({ config, update }: Props) {
               {active && dirty && <span className="count"> · {t('filters.changed')}</span>}
             </p>
             <div className="actions">
-              {active && (
+              {active && newName === null && (
                 <button
                   className="primary"
                   disabled={!dirty}
@@ -140,79 +174,107 @@ export function FiltersView({ config, update }: Props) {
                   {t('filters.save')}
                 </button>
               )}
-              <button
-                onClick={() => {
-                  const name = prompt(t('filters.namePrompt'), active?.name ?? config.filterName)
-                  if (name?.trim()) {
-                    void run(async () => {
-                      const saved = await api.create(name.trim(), config)
-                      setActive({ id: saved.id, name: saved.name, saved: snapshotOf(config) })
-                    })
-                  }
+              {newName === null && (
+                <button className={active ? undefined : 'primary'} onClick={() => setNewName(active?.name ?? config.filterName)}>
+                  {t('filters.saveAs')}
+                </button>
+              )}
+            </div>
+            {newName !== null && (
+              <form
+                className="name-form"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (newName.trim()) void saveAs(newName.trim())
                 }}
               >
-                {t('filters.saveAs')}
-              </button>
-            </div>
+                <label className="check">
+                  {t('filters.namePrompt')}
+                  <input autoFocus value={newName} maxLength={60} onChange={(e) => setNewName(e.target.value)} />
+                </label>
+                <button className="primary" type="submit" disabled={!newName.trim()}>
+                  {t('filters.save')}
+                </button>
+                <button type="button" onClick={() => setNewName(null)}>
+                  {t('filters.cancel')}
+                </button>
+              </form>
+            )}
+            {error && <p className="note note--error">{t('account.error', { error })}</p>}
           </section>
 
           <section className="panel">
             <h2>{t('filters.list')}</h2>
-            {error && <p className="note note--error">{t('account.error', { error })}</p>}
             {filters?.length === 0 && <p className="note">{t('filters.empty')}</p>}
             <ul className="saved-filters">
               {filters?.map((filter) => (
                 <li key={filter.id} className={active?.id === filter.id ? 'active' : undefined}>
                   <div className="saved-filter-head">
-                    <strong>{filter.name}</strong>
+                    {renaming?.id === filter.id ? (
+                      <form
+                        className="name-form"
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          const name = renaming.name.trim()
+                          if (!name || name === filter.name) setRenaming(null)
+                          else void rename(filter.id, name)
+                        }}
+                      >
+                        <input
+                          autoFocus
+                          value={renaming.name}
+                          maxLength={60}
+                          onChange={(e) => setRenaming({ id: filter.id, name: e.target.value })}
+                        />
+                        <button className="primary" type="submit">
+                          {t('filters.save')}
+                        </button>
+                        <button type="button" onClick={() => setRenaming(null)}>
+                          {t('filters.cancel')}
+                        </button>
+                      </form>
+                    ) : (
+                      <strong>{filter.name}</strong>
+                    )}
                     {active?.id === filter.id && <span className="badge">{t('filters.active')}</span>}
                     <span className="count">{t('filters.updated', { time: when(filter.updatedAt) })}</span>
                   </div>
-                  <div className="actions">
-                    <button
-                      onClick={() => {
-                        if (active && dirty && !confirm(t('filters.openConfirm', { name: filter.name }))) return
-                        void run(async () => {
-                          const saved = await api.get(filter.id)
-                          const next = applySaved(config, saved.config)
-                          update(() => next)
-                          setActive({ id: saved.id, name: saved.name, saved: snapshotOf(next) })
-                        })
-                      }}
-                    >
-                      {t('filters.open')}
-                    </button>
-                    <button
-                      onClick={() => {
-                        const name = prompt(t('filters.namePrompt'), filter.name)
-                        if (name?.trim() && name.trim() !== filter.name) {
-                          void run(async () => {
-                            const saved = await api.update(filter.id, { name: name.trim() })
-                            if (active?.id === saved.id) setActive({ ...active, name: saved.name })
-                          })
+                  {confirming?.id === filter.id ? (
+                    <div className="actions confirm-row">
+                      <span>
+                        {confirming.action === 'open'
+                          ? t('filters.openConfirm', { name: filter.name })
+                          : t('filters.deleteConfirm', { name: filter.name })}
+                      </span>
+                      <button
+                        className={confirming.action === 'delete' ? 'danger' : 'primary'}
+                        onClick={() => (confirming.action === 'open' ? open(filter.id) : remove(filter.id))}
+                      >
+                        {t('filters.yes')}
+                      </button>
+                      <button onClick={() => setConfirming(null)}>{t('filters.cancel')}</button>
+                    </div>
+                  ) : (
+                    <div className="actions">
+                      <button
+                        onClick={() =>
+                          // Несохранённые изменения пропадут — сначала спросить.
+                          active && dirty ? setConfirming({ id: filter.id, action: 'open' }) : void open(filter.id)
                         }
-                      }}
-                    >
-                      {t('filters.rename')}
-                    </button>
-                    {filter.shareCode ? (
-                      <button onClick={() => run(() => api.unshare(filter.id))}>{t('filters.unshare')}</button>
-                    ) : (
-                      <button onClick={() => run(() => api.share(filter.id))}>{t('filters.share')}</button>
-                    )}
-                    <button
-                      className="danger"
-                      onClick={() =>
-                        confirm(t('filters.deleteConfirm', { name: filter.name })) &&
-                        run(async () => {
-                          await api.remove(filter.id)
-                          if (active?.id === filter.id) setActive(null)
-                        })
-                      }
-                    >
-                      {t('filters.delete')}
-                    </button>
-                  </div>
+                      >
+                        {t('filters.open')}
+                      </button>
+                      <button onClick={() => setRenaming({ id: filter.id, name: filter.name })}>{t('filters.rename')}</button>
+                      {filter.shareCode ? (
+                        <button onClick={() => run(() => api.unshare(filter.id))}>{t('filters.unshare')}</button>
+                      ) : (
+                        <button onClick={() => run(() => api.share(filter.id))}>{t('filters.share')}</button>
+                      )}
+                      <button className="danger" onClick={() => setConfirming({ id: filter.id, action: 'delete' })}>
+                        {t('filters.delete')}
+                      </button>
+                    </div>
+                  )}
                   {filter.shareCode && (
                     <div className="share-link">
                       <span className="count">{t('filters.link')}</span>

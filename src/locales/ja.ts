@@ -514,6 +514,8 @@ export const ja: Dictionary = {
   'filters.unshare': '共有を停止',
   'filters.delete': '削除',
   'filters.deleteConfirm': 'フィルター「{name}」を削除しますか？',
+  'filters.yes': 'はい',
+  'filters.cancel': 'キャンセル',
   'filters.link': 'リンク：',
   'shared.title': '共有フィルター',
   'shared.by': '作成者：{owner}、{time} 更新',

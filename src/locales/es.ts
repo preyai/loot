@@ -514,6 +514,8 @@ export const es: Dictionary = {
   'filters.unshare': 'Dejar de compartir',
   'filters.delete': 'Eliminar',
   'filters.deleteConfirm': '¿Eliminar el filtro «{name}»?',
+  'filters.yes': 'Sí',
+  'filters.cancel': 'Cancelar',
   'filters.link': 'Enlace:',
   'shared.title': 'Filtro compartido',
   'shared.by': 'De {owner}, modificado {time}',

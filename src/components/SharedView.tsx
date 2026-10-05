@@ -17,6 +17,7 @@ export function SharedView({ code, config, update }: Props) {
   const [shared, setShared] = useState<SharedFilter | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(false)
 
   useEffect(() => {
     setShared(null)
@@ -36,17 +37,25 @@ export function SharedView({ code, config, update }: Props) {
         <h2>{shared.name}</h2>
         <p className="note">{t('shared.by', { owner: shared.owner, time: new Date(shared.updatedAt).toLocaleString(locale) })}</p>
         <p className="note">{t('shared.note')}</p>
+        {confirming && (
+          <div className="actions confirm-row">
+            <span>{t('shared.openConfirm', { name: shared.name })}</span>
+            <button
+              className="primary"
+              onClick={() => {
+                update((current) => applySaved(current, shared.config))
+                // Открытая копия чужого фильтра не связана с сохранёнными: «Сохранить» её не перезапишет.
+                setActive(null)
+                location.hash = '#/currency'
+              }}
+            >
+              {t('filters.yes')}
+            </button>
+            <button onClick={() => setConfirming(false)}>{t('filters.cancel')}</button>
+          </div>
+        )}
         <div className="actions">
-          <button
-            className="primary"
-            onClick={() => {
-              if (!confirm(t('shared.openConfirm', { name: shared.name }))) return
-              update((current) => applySaved(current, shared.config))
-              // Открытая копия чужого фильтра не связана с сохранёнными: «Сохранить» её не перезапишет.
-              setActive(null)
-              location.hash = '#/currency'
-            }}
-          >
+          <button className="primary" disabled={confirming} onClick={() => setConfirming(true)}>
             {t('shared.open')}
           </button>
           <button

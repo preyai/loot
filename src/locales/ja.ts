@@ -5,6 +5,9 @@ export const ja: Dictionary = {
   'app.title': 'Exile Filter — Path of Exile 2 ルートフィルターエディター',
   'app.brand': 'Exile Filter',
   'app.disclaimer': 'ファンプロジェクトです。Grinding Gear Games とは無関係で、公認も受けていません。',
+  'community.link': 'Discord コミュニティ',
+  'community.title': 'コミュニティ',
+  'community.text': '質問・アイデア・不具合は Discord へどうぞ。フィルターの共有やサイトの更新情報もあります。',
 
   'nav.market': 'マーケット',
   'nav.uniques': 'ユニーク',

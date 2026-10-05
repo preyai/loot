@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAccount, useActiveFilter } from './account'
 import { BasesView } from './components/BasesView'
 import { CatalogView } from './components/CatalogView'
+import { CommunityLink } from './components/Community'
 import { ExtrasView } from './components/ExtrasView'
 import { FiltersView } from './components/FiltersView'
 import { GoldView } from './components/GoldView'
@@ -145,6 +146,7 @@ function Shell({ config, update }: { config: Config; update: UpdateConfig }) {
             {t('nav.export')}
           </a>
         </nav>
+        <CommunityLink className="community-link--sidebar" />
         <p className="disclaimer">{t('app.disclaimer')}</p>
       </aside>
 

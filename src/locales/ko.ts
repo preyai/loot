@@ -5,6 +5,9 @@ export const ko: Dictionary = {
   'app.title': 'Exile Filter — Path of Exile 2 아이템 필터 편집기',
   'app.brand': 'Exile Filter',
   'app.disclaimer': '팬 프로젝트입니다. Grinding Gear Games와 무관하며 승인받지 않았습니다.',
+  'community.link': 'Discord 커뮤니티',
+  'community.title': '커뮤니티',
+  'community.text': '질문, 아이디어, 버그는 Discord로 알려 주세요. 필터를 공유하고 사이트 새 버전 소식도 전합니다.',
 
   'nav.market': '시장',
   'nav.uniques': '고유',

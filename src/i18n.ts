@@ -39,6 +39,9 @@ const ru = {
   'app.title': 'Exile Filter — редактор лутфильтра для Path of Exile 2',
   'app.brand': 'Exile Filter',
   'app.disclaimer': 'Фан-проект. Не связан с Grinding Gear Games и не одобрен ею.',
+  'community.link': 'Сообщество в Discord',
+  'community.title': 'Сообщество',
+  'community.text': 'Вопросы, идеи и найденные ошибки — пишите в наш Discord. Там же делятся фильтрами и рассказывают о новых версиях сайта.',
 
   'nav.market': 'Рынок',
   'nav.uniques': 'Уникальные',
@@ -657,6 +660,9 @@ const en: Dictionary = {
   'app.title': 'Exile Filter — Path of Exile 2 loot filter editor',
   'app.brand': 'Exile Filter',
   'app.disclaimer': 'Fan project. Not affiliated with or endorsed by Grinding Gear Games.',
+  'community.link': 'Join our Discord',
+  'community.title': 'Community',
+  'community.text': 'Questions, ideas and bugs — tell us in our Discord. People share filters there and we announce new versions of the site.',
 
   'nav.market': 'Market',
   'nav.uniques': 'Uniques',

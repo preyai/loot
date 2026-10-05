@@ -5,6 +5,9 @@ export const th: Dictionary = {
   'app.title': 'Exile Filter — ตัวแก้ไขฟิลเตอร์ไอเทมสำหรับ Path of Exile 2',
   'app.brand': 'Exile Filter',
   'app.disclaimer': 'โปรเจกต์ของแฟน ๆ ไม่มีส่วนเกี่ยวข้องและไม่ได้รับการรับรองจาก Grinding Gear Games',
+  'community.link': 'ชุมชนบน Discord',
+  'community.title': 'ชุมชน',
+  'community.text': 'คำถาม ไอเดีย และบั๊ก — บอกเราได้ใน Discord ที่นั่นมีการแชร์ฟิลเตอร์และประกาศเวอร์ชันใหม่ของเว็บ',
 
   'nav.market': 'ตลาด',
   'nav.uniques': 'ยูนิค',

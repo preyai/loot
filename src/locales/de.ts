@@ -5,6 +5,9 @@ export const de: Dictionary = {
   'app.title': 'Exile Filter — Lootfilter-Editor für Path of Exile 2',
   'app.brand': 'Exile Filter',
   'app.disclaimer': 'Fanprojekt. Nicht mit Grinding Gear Games verbunden oder von ihr unterstützt.',
+  'community.link': 'Unser Discord',
+  'community.title': 'Community',
+  'community.text': 'Fragen, Ideen und Fehler – schreib uns in unserem Discord. Dort werden Filter geteilt und neue Versionen der Seite angekündigt.',
 
   'nav.market': 'Markt',
   'nav.uniques': 'Einzigartige',

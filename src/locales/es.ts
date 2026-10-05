@@ -5,6 +5,9 @@ export const es: Dictionary = {
   'app.title': 'Exile Filter — editor de filtro de botín para Path of Exile 2',
   'app.brand': 'Exile Filter',
   'app.disclaimer': 'Proyecto de fans. No está afiliado a Grinding Gear Games ni avalado por ella.',
+  'community.link': 'Nuestro Discord',
+  'community.title': 'Comunidad',
+  'community.text': 'Preguntas, ideas y errores: escríbenos en nuestro Discord. Allí se comparten filtros y anunciamos las nuevas versiones del sitio.',
 
   'nav.market': 'Mercado',
   'nav.uniques': 'Únicos',

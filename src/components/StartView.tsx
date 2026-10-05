@@ -7,6 +7,7 @@ import { applyLevel, MARKET_LEVELS, RULE_PRESETS, type RulePreset } from '../pre
 import type { UpdateConfig } from '../store'
 import type { Config, MarketSnapshot } from '../types'
 import { usePresetInputs } from '../usePresetInputs'
+import { CommunityPanel } from './Community'
 import { downloadFilter, FilterTarget } from './ExportView'
 
 interface Props {
@@ -133,6 +134,8 @@ export function StartView({ config, update, snapshot, gameFolder }: Props) {
           ))}
         </ul>
       </section>
+
+      <CommunityPanel />
     </div>
   )
 }

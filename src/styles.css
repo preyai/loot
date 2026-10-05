@@ -2422,3 +2422,30 @@ fieldset.thresholds:disabled {
   margin: -2px 0 4px;
   font-size: 12px;
 }
+
+/* Ссылка на сервер сообщества в Discord — в фирменном цвете Discord. */
+.community-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid #5865f2;
+  border-radius: 3px;
+  background: #5865f2;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.community-link:hover {
+  border-color: #7983f5;
+  background: #4752c4;
+  color: #fff;
+}
+
+.community-link--sidebar {
+  display: flex;
+  justify-content: center;
+  margin: 18px 6px 0;
+  font-size: 13px;
+}

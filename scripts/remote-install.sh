@@ -88,8 +88,44 @@ tar -xzf "$SRC/release.tar.gz" -C "$SRC"
 $DOCKER build --quiet -t "$NAME:$TAG" -f "$SRC/release.Dockerfile" "$SRC" >/dev/null
 echo "Собран образ $NAME:$TAG"
 
-# Общая сеть, чтобы Caddy обращался к приложению по имени контейнера.
+# Общая сеть, чтобы Caddy обращался к приложению, а приложение к базе по имени контейнера.
 $DOCKER network inspect "$NETWORK" >/dev/null 2>&1 || $DOCKER network create "$NETWORK" >/dev/null
+
+# --- База данных: Postgres в своём контейнере, наружу не публикуется — к ней ходит только приложение.
+DB="$NAME-db"
+DB_DIR="$APP_DIR/postgres"
+DB_ENV="$APP_DIR/db.env"
+if [ ! -f "$DB_ENV" ]; then
+  # Пароль создаётся один раз; hex — чтобы без экранирования вставлять в адрес базы.
+  DB_PASSWORD=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  printf 'POSTGRES_USER=loot\nPOSTGRES_DB=loot\nPOSTGRES_PASSWORD=%s\n' "$DB_PASSWORD" | $SUDO tee "$DB_ENV" >/dev/null
+  $SUDO chown "$(id -u):$(id -g)" "$DB_ENV"
+  $SUDO chmod 600 "$DB_ENV"
+  echo "Создан пароль базы данных: $DB_ENV"
+fi
+DB_PASSWORD=$(grep '^POSTGRES_PASSWORD=' "$DB_ENV" | cut -d= -f2-)
+if [ "$($DOCKER inspect -f '{{.State.Running}}' "$DB" 2>/dev/null || true)" != "true" ]; then
+  $DOCKER rm -f "$DB" >/dev/null 2>&1 || true
+  $SUDO mkdir -p "$DB_DIR"
+  # Настройки под маленький сервер: памяти на всё 2 ГБ.
+  $DOCKER run -d --name "$DB" --restart unless-stopped --network "$NETWORK" \
+    --env-file "$DB_ENV" -v "$DB_DIR:/var/lib/postgresql/data" \
+    postgres:17-alpine -c shared_buffers=64MB -c max_connections=30 >/dev/null
+  echo "Запущен Postgres ($DB), данные — в $DB_DIR"
+fi
+for _ in $(seq 30); do
+  if $DOCKER exec "$DB" pg_isready -h 127.0.0.1 -U loot -d loot >/dev/null 2>&1; then break; fi
+  sleep 1
+done
+if ! $DOCKER exec "$DB" pg_isready -h 127.0.0.1 -U loot -d loot >/dev/null 2>&1; then
+  echo "База данных не запустилась. Последние строки журнала:" >&2
+  $DOCKER logs --tail 20 "$DB" >&2 || true
+  exit 1
+fi
+# Адрес базы — в настройки приложения (одноимённую строку заменяем, остальные не трогаем).
+REST=$($SUDO grep -v '^DATABASE_URL=' "$ENV_FILE" 2>/dev/null || true)
+{ if [ -n "$REST" ]; then printf '%s\n' "$REST"; fi; printf 'DATABASE_URL=postgres://loot:%s@%s:5432/loot\n' "$DB_PASSWORD" "$DB"; } | $SUDO tee "$ENV_FILE" >/dev/null
+$SUDO chmod 600 "$ENV_FILE"
 
 # С доменом приложение наружу напрямую не публикуется: иначе пароль можно было бы отправить мимо HTTPS.
 if [ -n "$DOMAIN" ]; then PUBLISH="127.0.0.1:$PORT:8080"; else PUBLISH="$PORT:8080"; fi

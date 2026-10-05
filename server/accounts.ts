@@ -1,11 +1,13 @@
 import { createHash, randomBytes } from 'node:crypto'
+import { rename } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { readData, writeData } from './storage'
+import path from 'node:path'
+import { db, type Db } from './db'
+import { DATA_DIR, readData } from './storage'
 
 /**
- * Пользователи, их сохранённые фильтры и ссылки «поделиться».
- * Хранится в JSON-файлах каталога данных: пользователей и фильтров немного, база данных пока не нужна.
- * Вход — только через Discord (server/discord.ts); сессия — случайный токен в HttpOnly-cookie, на диске лежит его хеш.
+ * Пользователи, их сохранённые фильтры и ссылки «поделиться» — в базе данных (server/db.ts).
+ * Вход — только через Discord (server/discord.ts); сессия — случайный токен в HttpOnly-cookie, в базе лежит его хеш.
  */
 
 export class AccountError extends Error {
@@ -17,26 +19,10 @@ export class AccountError extends Error {
   }
 }
 
-interface User {
-  id: string
-  /** Имя на сайте: из Discord при первом входе, дальше не меняется. */
-  login: string
-  createdAt: string
-  /** Нет у учётных записей, созданных до входа через Discord: войти в них больше нельзя. */
-  discordId?: string
-  /** Текущее имя в Discord — обновляется при каждом входе. */
-  discordName?: string
-}
-
 /** Учётная запись Discord, которой вошёл пользователь. */
 export interface DiscordProfile {
   id: string
   name: string
-}
-
-interface Session {
-  userId: string
-  expires: number
 }
 
 export interface SavedFilter {
@@ -51,11 +37,6 @@ export interface SavedFilter {
 
 export type FilterSummary = Omit<SavedFilter, 'config'>
 
-const USERS = 'accounts/users.json'
-const SESSIONS = 'accounts/sessions.json'
-const SHARES = 'accounts/shares.json'
-const filtersFile = (userId: string) => `accounts/filters/${userId}.json`
-
 export const SESSION_DAYS = 30
 const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000
 const MAX_FILTERS = 50
@@ -64,194 +45,249 @@ const MAX_CONFIG_BYTES = 512 * 1024
 /** Имя на сайте: буквы, цифры, «_», «.», «-». */
 const LOGIN = /^[\p{L}\p{N}_.-]{3,32}$/u
 
-// --- Запись по очереди: одновременные запросы не должны терять изменения друг друга.
-const queues = new Map<string, Promise<unknown>>()
-function locked<T>(file: string, run: () => Promise<T>): Promise<T> {
-  const previous = queues.get(file) ?? Promise.resolve()
-  const next = previous.then(run, run)
-  queues.set(
-    file,
-    next.catch(() => undefined),
-  )
-  return next
-}
-
-async function update<T, R>(file: string, fallback: T, change: (value: T) => R | Promise<R>): Promise<R> {
-  return locked(file, async () => {
-    const value = (await readData<T>(file)) ?? fallback
-    const result = await change(value)
-    await writeData(file, value)
-    return result
-  })
-}
-
 const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex')
 const newId = (bytes = 12) => randomBytes(bytes).toString('base64url')
+const iso = (value: Date | string) => new Date(value).toISOString()
+
+let ready: Promise<Db> | null = null
+
+/** База с перенесёнными данными: до перехода на базу учётные записи лежали в JSON-файлах. */
+function database(): Promise<Db> {
+  ready ??= db().then(async (instance) => {
+    await importJson(instance)
+    return instance
+  })
+  return ready
+}
+
+// --- Перенос из JSON-файлов (data/accounts) — один раз, в пустую базу; папка потом переименовывается.
+
+interface JsonUser {
+  id: string
+  login: string
+  createdAt: string
+  discordId?: string
+  discordName?: string
+}
+
+async function importJson(instance: Db) {
+  const users = await readData<Record<string, JsonUser>>('accounts/users.json')
+  if (!users) return
+  const [{ count }] = await instance.query<{ count: number }>(`SELECT count(*)::int AS count FROM users`)
+  if (count > 0) return
+  const sessions = (await readData<Record<string, { userId: string; expires: number }>>('accounts/sessions.json')) ?? {}
+  await instance.transaction(async (tx) => {
+    for (const user of Object.values(users)) {
+      await tx.query(`INSERT INTO users (id, login, discord_id, discord_name, created_at) VALUES ($1, $2, $3, $4, $5)`, [
+        user.id,
+        user.login,
+        user.discordId ?? null,
+        user.discordName ?? null,
+        user.createdAt,
+      ])
+      for (const filter of (await readData<SavedFilter[]>(`accounts/filters/${user.id}.json`)) ?? []) {
+        await tx.query(
+          `INSERT INTO filters (id, user_id, name, config, share_code, created_at, updated_at) VALUES ($1, $2, $3, $4::text::jsonb, $5, $6, $7)`,
+          [filter.id, user.id, filter.name, JSON.stringify(filter.config), filter.shareCode ?? null, filter.createdAt, filter.updatedAt],
+        )
+      }
+    }
+    for (const [hash, session] of Object.entries(sessions)) {
+      if (session.expires < Date.now() || !Object.values(users).some((u) => u.id === session.userId)) continue
+      await tx.query(`INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)`, [hash, session.userId, new Date(session.expires)])
+    }
+  })
+  const dir = path.join(DATA_DIR, 'accounts')
+  await rename(dir, `${dir}.imported`)
+  console.log(`Учётные записи перенесены в базу: ${Object.keys(users).length}; файлы — в ${dir}.imported`)
+}
+
+// --- Сессии
 
 export async function newSession(userId: string): Promise<string> {
   const token = newId(32)
-  await update<Record<string, Session>, void>(SESSIONS, {}, (sessions) => {
-    const now = Date.now()
-    // Заодно выбрасываем истёкшие сессии.
-    for (const [key, session] of Object.entries(sessions)) if (session.expires < now) delete sessions[key]
-    sessions[tokenHash(token)] = { userId, expires: now + SESSION_MS }
-  })
+  const sql = await database()
+  // Заодно выбрасываем истёкшие сессии.
+  await sql.query(`DELETE FROM sessions WHERE expires_at < now()`)
+  await sql.query(`INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)`, [
+    tokenHash(token),
+    userId,
+    new Date(Date.now() + SESSION_MS),
+  ])
   return token
 }
 
 export async function logout(token: string) {
-  await update<Record<string, Session>, void>(SESSIONS, {}, (sessions) => {
-    delete sessions[tokenHash(token)]
-  })
+  await (await database()).query(`DELETE FROM sessions WHERE token_hash = $1`, [tokenHash(token)])
 }
 
 export async function sessionUser(token: string | null): Promise<{ id: string; login: string } | null> {
   if (!token) return null
-  const session = ((await readData<Record<string, Session>>(SESSIONS)) ?? {})[tokenHash(token)]
-  if (!session || session.expires < Date.now()) return null
-  const users = (await readData<Record<string, User>>(USERS)) ?? {}
-  const user = Object.values(users).find((u) => u.id === session.userId)
-  return user ? { id: user.id, login: user.login } : null
+  const [user] = await (
+    await database()
+  ).query<{ id: string; login: string }>(
+    `SELECT u.id, u.login FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > now()`,
+    [tokenHash(token)],
+  )
+  return user ?? null
 }
 
 /** Что показывает интерфейс о вошедшем пользователе. */
 export async function profile(userId: string) {
-  const users = (await readData<Record<string, User>>(USERS)) ?? {}
-  const user = Object.values(users).find((u) => u.id === userId)
-  if (!user) return null
+  const [user] = await (
+    await database()
+  ).query<{ login: string; discord_name: string | null }>(`SELECT login, discord_name FROM users WHERE id = $1`, [userId])
   // У старых учётных записей с паролем (до входа через Discord) имени в Discord нет.
-  return { login: user.login, discord: user.discordName ?? null }
+  return user ? { login: user.login, discord: user.discord_name } : null
 }
 
+// --- Вход через Discord
+
 /** Логин для нового пользователя из Discord: имя оттуда, а если занято или не подходит — с числом. */
-function freeLogin(users: Record<string, User>, name: string): string {
+async function freeLogin(sql: Db, name: string): Promise<string> {
   const base = name.replace(/[^\p{L}\p{N}_.-]/gu, '').slice(0, 26) || 'exile'
-  const fits = (login: string) => LOGIN.test(login) && !users[login.toLowerCase()]
-  if (fits(base)) return base
+  const taken = async (login: string) =>
+    (await sql.query(`SELECT 1 FROM users WHERE lower(login) = lower($1)`, [login])).length > 0
+  if (LOGIN.test(base) && !(await taken(base))) return base
   for (;;) {
     const login = `${base}-${randomBytes(2).readUInt16BE() % 10000}`
-    if (fits(login)) return login
+    if (LOGIN.test(login) && !(await taken(login))) return login
   }
 }
 
 /** Вход через Discord: находит пользователя с этой учётной записью Discord или создаёт нового. */
 export async function discordSignIn(discord: DiscordProfile): Promise<{ login: string; token: string; created: boolean }> {
-  const { user, created } = await update<Record<string, User>, { user: User; created: boolean }>(USERS, {}, (users) => {
-    const found = Object.values(users).find((u) => u.discordId === discord.id)
-    if (found) {
-      found.discordName = discord.name
-      return { user: found, created: false }
-    }
-    const login = freeLogin(users, discord.name)
-    const user: User = {
-      id: newId(),
-      login,
-      createdAt: new Date().toISOString(),
-      discordId: discord.id,
-      discordName: discord.name,
-    }
-    users[login.toLowerCase()] = user
-    return { user, created: true }
+  const sql = await database()
+  const user = await sql.transaction(async (tx) => {
+    const [found] = await tx.query<{ id: string; login: string }>(
+      `UPDATE users SET discord_name = $2 WHERE discord_id = $1 RETURNING id, login`,
+      [discord.id, discord.name],
+    )
+    if (found) return { ...found, created: false }
+    const [made] = await tx.query<{ id: string; login: string }>(
+      `INSERT INTO users (id, login, discord_id, discord_name) VALUES ($1, $2, $3, $4) RETURNING id, login`,
+      [newId(), await freeLogin(tx, discord.name), discord.id, discord.name],
+    )
+    return { ...made, created: true }
   })
-  return { login: user.login, token: await newSession(user.id), created }
+  return { login: user.login, token: await newSession(user.id), created: user.created }
 }
 
 // --- Фильтры пользователя
 
-const summary = ({ config: _config, ...rest }: SavedFilter): FilterSummary => rest
+interface FilterRow {
+  id: string
+  name: string
+  config?: Record<string, unknown>
+  share_code: string | null
+  created_at: Date
+  updated_at: Date
+}
+
+const summary = (row: FilterRow): FilterSummary => ({
+  id: row.id,
+  name: row.name,
+  createdAt: iso(row.created_at),
+  updatedAt: iso(row.updated_at),
+  ...(row.share_code ? { shareCode: row.share_code } : {}),
+})
+
+const SUMMARY_COLUMNS = 'id, name, share_code, created_at, updated_at'
 
 function checkName(name: unknown): string {
   if (typeof name !== 'string' || !name.trim() || name.trim().length > 60) throw new AccountError(400, 'name: 1–60 characters')
   return name.trim()
 }
 
-function checkConfig(config: unknown): Record<string, unknown> {
+/**
+ * Настройки уходят в базу готовой JSON-строкой, а в SQL приводятся так: $n::text::jsonb. Просто $n::jsonb драйвер
+ * postgres сериализовал бы строку ещё раз, и в базе лежала бы строка, а не объект.
+ */
+function checkConfig(config: unknown): string {
   if (!config || typeof config !== 'object' || Array.isArray(config)) throw new AccountError(400, 'config must be an object')
-  if (JSON.stringify(config).length > MAX_CONFIG_BYTES) throw new AccountError(413, 'config is too large')
-  return config as Record<string, unknown>
+  const json = JSON.stringify(config)
+  if (json.length > MAX_CONFIG_BYTES) throw new AccountError(413, 'config is too large')
+  return json
 }
 
 export async function listFilters(userId: string): Promise<FilterSummary[]> {
-  const list = (await readData<SavedFilter[]>(filtersFile(userId))) ?? []
-  return list.map(summary).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  const rows = await (
+    await database()
+  ).query<FilterRow>(`SELECT ${SUMMARY_COLUMNS} FROM filters WHERE user_id = $1 ORDER BY updated_at DESC`, [userId])
+  return rows.map(summary)
 }
 
 export async function getFilter(userId: string, id: string): Promise<SavedFilter> {
-  const found = ((await readData<SavedFilter[]>(filtersFile(userId))) ?? []).find((f) => f.id === id)
-  if (!found) throw new AccountError(404, 'filter not found')
-  return found
+  const [row] = await (
+    await database()
+  ).query<FilterRow>(`SELECT ${SUMMARY_COLUMNS}, config FROM filters WHERE user_id = $1 AND id = $2`, [userId, id])
+  if (!row) throw new AccountError(404, 'filter not found')
+  return { ...summary(row), config: row.config! }
 }
 
 export async function createFilter(userId: string, name: unknown, config: unknown): Promise<FilterSummary> {
-  const filter: SavedFilter = {
-    id: newId(),
-    name: checkName(name),
-    config: checkConfig(config),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
-  return update<SavedFilter[], FilterSummary>(filtersFile(userId), [], (list) => {
-    if (list.length >= MAX_FILTERS) throw new AccountError(400, `no more than ${MAX_FILTERS} filters`)
-    list.push(filter)
-    return summary(filter)
+  const values = [newId(), userId, checkName(name), checkConfig(config)]
+  return (await database()).transaction(async (tx) => {
+    // Блокируем строку пользователя: одновременные сохранения не обойдут ограничение на число фильтров.
+    await tx.query(`SELECT 1 FROM users WHERE id = $1 FOR UPDATE`, [userId])
+    const [{ count }] = await tx.query<{ count: number }>(`SELECT count(*)::int AS count FROM filters WHERE user_id = $1`, [userId])
+    if (count >= MAX_FILTERS) throw new AccountError(400, `no more than ${MAX_FILTERS} filters`)
+    const [row] = await tx.query<FilterRow>(
+      `INSERT INTO filters (id, user_id, name, config) VALUES ($1, $2, $3, $4::text::jsonb) RETURNING ${SUMMARY_COLUMNS}`,
+      values,
+    )
+    return summary(row)
   })
 }
 
 export async function updateFilter(userId: string, id: string, changes: { name?: unknown; config?: unknown }): Promise<FilterSummary> {
-  const name = changes.name === undefined ? undefined : checkName(changes.name)
-  const config = changes.config === undefined ? undefined : checkConfig(changes.config)
-  return update<SavedFilter[], FilterSummary>(filtersFile(userId), [], (list) => {
-    const filter = list.find((f) => f.id === id)
-    if (!filter) throw new AccountError(404, 'filter not found')
-    if (name !== undefined) filter.name = name
-    if (config !== undefined) filter.config = config
-    filter.updatedAt = new Date().toISOString()
-    return summary(filter)
-  })
+  const name = changes.name === undefined ? null : checkName(changes.name)
+  const config = changes.config === undefined ? null : checkConfig(changes.config)
+  const [row] = await (
+    await database()
+  ).query<FilterRow>(
+    `UPDATE filters SET name = coalesce($3, name), config = coalesce($4::text::jsonb, config), updated_at = now()
+     WHERE user_id = $1 AND id = $2 RETURNING ${SUMMARY_COLUMNS}`,
+    [userId, id, name, config],
+  )
+  if (!row) throw new AccountError(404, 'filter not found')
+  return summary(row)
 }
 
 export async function deleteFilter(userId: string, id: string) {
-  const removed = await update<SavedFilter[], SavedFilter | undefined>(filtersFile(userId), [], (list) => {
-    const index = list.findIndex((f) => f.id === id)
-    return index >= 0 ? list.splice(index, 1)[0] : undefined
-  })
-  if (!removed) throw new AccountError(404, 'filter not found')
-  if (removed.shareCode) await update<Record<string, unknown>, void>(SHARES, {}, (shares) => void delete shares[removed.shareCode!])
+  const rows = await (await database()).query(`DELETE FROM filters WHERE user_id = $1 AND id = $2 RETURNING id`, [userId, id])
+  if (rows.length === 0) throw new AccountError(404, 'filter not found')
 }
 
-// --- Ссылки «поделиться»: код → чей и какой фильтр. По коду фильтр видит любой, у кого есть ссылка.
+// --- Ссылки «поделиться»: по коду фильтр видит любой, у кого есть ссылка.
 
 export async function shareFilter(userId: string, id: string): Promise<{ shareCode: string }> {
-  const filter = await getFilter(userId, id)
-  if (filter.shareCode) return { shareCode: filter.shareCode }
-  const shareCode = newId(9)
-  await update<Record<string, { userId: string; filterId: string }>, void>(SHARES, {}, (shares) => {
-    shares[shareCode] = { userId, filterId: id }
-  })
-  await update<SavedFilter[], void>(filtersFile(userId), [], (list) => {
-    const target = list.find((f) => f.id === id)
-    if (target) target.shareCode = shareCode
-  })
-  return { shareCode }
+  const [row] = await (
+    await database()
+  ).query<{ share_code: string }>(
+    `UPDATE filters SET share_code = coalesce(share_code, $3) WHERE user_id = $1 AND id = $2 RETURNING share_code`,
+    [userId, id, newId(9)],
+  )
+  if (!row) throw new AccountError(404, 'filter not found')
+  return { shareCode: row.share_code }
 }
 
 export async function unshareFilter(userId: string, id: string) {
-  const filter = await getFilter(userId, id)
-  if (!filter.shareCode) return
-  await update<Record<string, unknown>, void>(SHARES, {}, (shares) => void delete shares[filter.shareCode!])
-  await update<SavedFilter[], void>(filtersFile(userId), [], (list) => {
-    const target = list.find((f) => f.id === id)
-    if (target) delete target.shareCode
-  })
+  const rows = await (
+    await database()
+  ).query(`UPDATE filters SET share_code = NULL WHERE user_id = $1 AND id = $2 RETURNING id`, [userId, id])
+  if (rows.length === 0) throw new AccountError(404, 'filter not found')
 }
 
 export async function sharedFilter(code: string): Promise<{ name: string; owner: string; config: Record<string, unknown>; updatedAt: string }> {
-  const link = ((await readData<Record<string, { userId: string; filterId: string }>>(SHARES)) ?? {})[code]
-  if (!link) throw new AccountError(404, 'link not found')
-  const filter = await getFilter(link.userId, link.filterId)
-  const users = (await readData<Record<string, User>>(USERS)) ?? {}
-  const owner = Object.values(users).find((u) => u.id === link.userId)?.login ?? '?'
-  return { name: filter.name, owner, config: filter.config, updatedAt: filter.updatedAt }
+  const [row] = await (
+    await database()
+  ).query<{ name: string; owner: string; config: Record<string, unknown>; updated_at: Date }>(
+    `SELECT f.name, u.login AS owner, f.config, f.updated_at FROM filters f JOIN users u ON u.id = f.user_id WHERE f.share_code = $1`,
+    [code],
+  )
+  if (!row) throw new AccountError(404, 'link not found')
+  return { name: row.name, owner: row.owner, config: row.config, updatedAt: iso(row.updated_at) }
 }
 
 // --- Сайт открыт всем: не больше 5 новых учётных записей с адреса за час, чтобы их не плодили скриптом.

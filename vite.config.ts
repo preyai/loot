@@ -19,10 +19,13 @@ function marketApi(): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  // Ключи входа через Discord для разработки — из .env.local (в git не попадает), на сервере — из .env контейнера.
-  Object.assign(process.env, loadEnv(mode, process.cwd(), 'DISCORD_'))
+  // Ключи входа через Discord и адрес базы для разработки — из .env.local (в git не попадает), на сервере — из .env контейнера.
+  Object.assign(process.env, loadEnv(mode, process.cwd(), ['DISCORD_', 'DATABASE_']))
   return {
     plugins: [react(), marketApi()],
+    // Образ на сервере — без node_modules: драйвер Postgres входит в сборку сервера.
+    // PGlite нужен только в разработке и тестах (когда нет DATABASE_URL) и в сборку не попадает.
+    ssr: { noExternal: ['postgres'], external: ['@electric-sql/pglite'] },
     // Сохранённые данные переписываются сервером — это не повод перезагружать страницу.
     // Только каталог в корне проекта: шаблон «**/data/**» задел бы и src/data со справочником баз.
     server: { watch: { ignored: [`${DATA_DIR.replaceAll('\\', '/')}/**`] } },
